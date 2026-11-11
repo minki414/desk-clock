@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>섹터 다이얼</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600&family=Hahmlet:wght@300;500;700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="common.js"></script>
+<style>
+:root{--wall:#e7e2d8;--ring:#f1ead9;--band:#dccfb4;--center:#efe7d4;--ink:#22201b;--sub:#6b6457;--blue:#1e3a8a;--red:#b8321f}
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:radial-gradient(120% 90% at 30% 40%,#efebe3,var(--wall));color:var(--ink);font-family:"Pretendard Variable",sans-serif}
+.l{position:absolute;left:70px;top:40px;width:740px;display:flex;flex-direction:column;align-items:center}
+svg.face{width:720px;height:720px;filter:drop-shadow(0 22px 34px rgba(60,45,20,.22)) drop-shadow(0 2px 3px rgba(60,45,20,.25))}
+.timer{margin-top:18px;display:flex;align-items:baseline;gap:14px;font-family:"Barlow Condensed";color:var(--ink)}
+.timer i{font-style:normal;font-family:"Hahmlet";font-size:22px;color:var(--sub)}
+.timer b{font-size:58px;font-weight:500;letter-spacing:.02em;font-variant-numeric:tabular-nums}
+.timer em{font-style:normal;width:10px;height:10px;border-radius:50%;background:var(--red);align-self:center}
+.r{position:absolute;left:880px;top:78px;width:500px}
+.date{font-family:Hahmlet;font-weight:700;font-size:58px;letter-spacing:-.02em;line-height:1.05}
+.dsub{font-family:Hahmlet;font-weight:300;font-size:24px;color:var(--sub);margin-top:10px;display:flex;align-items:center;gap:14px}
+.dsub b{font-family:"Barlow Condensed";font-weight:500;font-size:44px;color:var(--ink)}
+.dsub svg{width:34px;height:34px;color:var(--blue)}
+h4{font-family:"Barlow Condensed";font-weight:600;font-size:17px;letter-spacing:.04em;color:var(--sub);margin:40px 0 10px;padding-bottom:8px;border-bottom:1px solid #cfc6b4}
+.ev{display:grid;grid-template-columns:92px 1fr auto;align-items:baseline;padding:8px 0;font-size:27px}
+.ev .t{font-family:"Barlow Condensed";font-size:30px;font-weight:500}
+.ev .p{font-size:18px;color:var(--sub)}
+.ev.past{color:#a39a88}.ev.past .n{text-decoration:line-through;text-decoration-thickness:1.5px}
+.ev.next .t{color:var(--blue);font-weight:600}
+.wk{display:grid;grid-template-columns:repeat(7,1fr);font-size:17px}
+.wk div{padding:2px 0 0;color:var(--sub);white-space:nowrap;overflow:hidden}
+.wk b{display:block;font-family:Hahmlet;font-weight:500;font-size:22px;color:var(--ink);margin-bottom:4px}
+.wk .sun b{color:var(--red)}
+.memo li{list-style:none;font-size:24px;padding:5px 0}
+.memo ul{padding:0}
+.dot{position:absolute;right:22px;bottom:20px;width:7px;height:7px;border-radius:50%;background:#9bb08f}
+</style></head><body>
+<div class="l"><svg class="face" id="f" viewBox="-300 -300 600 600"></svg>
+<div class="timer"><em></em><i>타이머</i><b>3:24</b></div></div>
+<div class="r">
+  <div class="date">11월 11일<br>수요일</div>
+  <div class="dsub"><b>8°</b>흐림 · 최고 12° 최저 3°<span id="ic"></span></div>
+  <h4>오늘</h4><div id="ev"></div>
+  <h4>이번 주</h4><div class="wk" id="wk"></div>
+  <h4>메모</h4><div class="memo"><ul id="mm"></ul></div>
+</div>
+<i class="dot"></i>
+<script>
+const S=SAMPLE,f=document.getElementById('f');
+document.getElementById('ic').innerHTML=ICON.umbrella;
+document.getElementById('ev').innerHTML=S.today.map(e=>`<div class="ev ${e.st}"><span class="t">${e.t}</span><span class="n">${e.n}</span><span class="p">${e.p||''}</span></div>`).join('');
+document.getElementById('wk').innerHTML=S.week.map(w=>`<div class="${w[2]||''}"><b>${w[0]}</b>${w[1]||""}</div>`).join('');
+document.getElementById('mm').innerHTML=S.memos.map(m=>`<li>${m}</li>`).join('');
+// 케이스·베젤
+svgEl(f,'circle',{r:296,fill:'#c9bfa9'});svgEl(f,'circle',{r:290,fill:'#f6f0e2'});
+// 바깥 분 트랙(철로)
+svgEl(f,'circle',{r:282,fill:'var(--ring)'});
+svgEl(f,'circle',{r:276,fill:'none',stroke:'#22201b','stroke-width':1.2});svgEl(f,'circle',{r:258,fill:'none',stroke:'#22201b','stroke-width':1.2});
+for(let i=0;i<300;i++){const a=i*1.2,big=i%25==0,mid=i%5==0;const[x1,y1]=polar(258,a),[x2,y2]=polar(big?276:mid?272:266,a);svgEl(f,'line',{x1,y1,x2,y2,stroke:'#22201b','stroke-width':big?2.2:mid?1.1:.5})}
+for(let i=1;i<=12;i++){const[x,y]=polar(240,i*30);const t=svgEl(f,'text',{x,y:y+7,'text-anchor':'middle','font-family':'Barlow Condensed','font-size':20,'font-weight':500,fill:'#6b6457'});t.textContent=String(i*5).padStart(2,'0')}
+// 시 숫자 띠(섹터)
+svgEl(f,'circle',{r:222,fill:'var(--band)'});svgEl(f,'circle',{r:150,fill:'var(--center)'});
+svgEl(f,'circle',{r:222,fill:'none',stroke:'#22201b','stroke-width':1});svgEl(f,'circle',{r:150,fill:'none',stroke:'#22201b','stroke-width':1});
+for(let i=1;i<=12;i++){const[x,y]=polar(186,i*30);const t=svgEl(f,'text',{x,y:y+19,'text-anchor':'middle','font-family':'Barlow Condensed','font-size':54,'font-weight':600,fill:'#22201b'});t.textContent=i}
+// 중앙 동심 무늬
+for(let r=20;r<150;r+=6)svgEl(f,'circle',{r,fill:'none',stroke:'rgba(80,60,30,.07)','stroke-width':1});
+// 스몰 세컨즈(6시)
+const sc=document.createElementNS('http://www.w3.org/2000/svg','g');sc.setAttribute('transform','translate(0,88)');f.appendChild(sc);
+svgEl(sc,'circle',{r:46,fill:'#e6dcc6',stroke:'#22201b','stroke-width':1});
+for(let i=0;i<60;i++){const[x1,y1]=polar(i%5?40:36,i*6),[x2,y2]=polar(44,i*6);svgEl(sc,'line',{x1,y1,x2,y2,stroke:'#22201b','stroke-width':i%5?.6:1.4})}
+const A=angles();
+svgEl(sc,'line',{x1:0,y1:8,x2:0,y2:-40,stroke:'#b8321f','stroke-width':1.6,transform:`rotate(${A.s})`});svgEl(sc,'circle',{r:3,fill:'#b8321f'});
+// 청색 강철 검 바늘
+function sword(len,w,deg){svgEl(f,'path',{d:`M0 ${len*.18} L${-w} 0 L${-w*.55} ${-len*.82} L0 ${-len} L${w*.55} ${-len*.82} L${w} 0 Z`,fill:'url(#blue)',transform:`rotate(${deg})`})}
+const defs=svgEl(f,'defs',{});defs.innerHTML='<linearGradient id="blue" x1="0" x2="1"><stop offset="0" stop-color="#2d4fb0"/><stop offset=".5" stop-color="#1b2f74"/><stop offset="1" stop-color="#11204f"/></linearGradient>';
+sword(132,12,A.h);sword(250,8,A.m);
+svgEl(f,'circle',{r:9,fill:'#1b2f74'});svgEl(f,'circle',{r:3,fill:'#c9bfa9'});
+</script></body></html>

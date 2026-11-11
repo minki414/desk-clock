@@ -1,0 +1,13 @@
+/* 핵심 앱 크롬(스테이지 바깥). 테마 CSS는 .theme-<id> 아래에서만 정의합니다. */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+body { cursor: none; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; transition: background-color 2s; }
+body.awake, body.drawer-open { cursor: default; }
+/* 높이 900·너비 가변(app.js fit이 --stage-w를 정함) 캔버스를 창 높이에 맞춰 확대·축소 */
+#stage { position: absolute; left: 50%; top: 50%; width: var(--stage-w, 1440px); height: 900px; transform-origin: 0 0; overflow: hidden; }
+#toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(20, 20, 20, .82); color: #eee; font-size: 16px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 39; }
+#toast.on { opacity: 1; }
+#gear { position: fixed; right: 18px; bottom: 18px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(20, 20, 20, .6); color: #ddd; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 30; cursor: pointer; }
+body.awake #gear { opacity: 1; pointer-events: auto; }
+body.drawer-open #gear { opacity: 0; pointer-events: none; }
+/* 야간 감광 대체 막(WMI 밝기 조절이 안 될 때) */
+#dim { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 1s; }

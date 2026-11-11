@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<title>테마 미리보기</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="../src/renderer/fonts.css">
+<link rel="stylesheet" href="../src/renderer/themes/bauhaus/theme.css">
+<link rel="stylesheet" href="../src/renderer/themes/sector/theme.css">
+<link rel="stylesheet" href="../src/renderer/themes/navy/theme.css">
+<link rel="stylesheet" href="../src/renderer/themes/receiver/theme.css">
+<link rel="stylesheet" href="../src/renderer/themes/flip/theme.css">
+<link rel="stylesheet" href="../src/renderer/themes/standby/theme.css">
+<style>
+  html, body { margin: 0; background: #777; }
+  #stage { width: var(--stage-w, 1440px); height: 900px; }
+  .idx { font: 16px/1.9 "Pretendard Variable", sans-serif; padding: 32px; color: #222; background: #eee; min-height: 100vh; }
+  .idx a { color: #124; margin-right: 10px; }
+  .idx h1 { font-size: 22px; margin: 0 0 8px; }
+</style>
+</head><body>
+<script src="../src/renderer/icons.js"></script>
+<script src="fixtures.js"></script>
+<script src="../src/renderer/themes/bauhaus/theme.js"></script>
+<script src="../src/renderer/themes/sector/theme.js"></script>
+<script src="../src/renderer/themes/navy/theme.js"></script>
+<script src="../src/renderer/themes/receiver/theme.js"></script>
+<script src="../src/renderer/themes/flip/theme.js"></script>
+<script src="../src/renderer/themes/standby/theme.js"></script>
+<script>
+// 쓰는 법: theme-preview.html?theme=bauhaus&mode=dark&fx=timerRinging&w=1600  (w=스테이지 너비 1200~1800, live=1 이면 실제 시각으로 1초마다 갱신, adv=ms 는 그 뒤 1분 앞으로)
+(function () {
+  var q = new URLSearchParams(location.search), id = q.get('theme');
+  var themes = window.ClockThemes || {}, fixtures = window.ClockFixtures;
+  if (!id || !themes[id]) {
+    var d = document.createElement('div'); d.className = 'idx';
+    var h = '<h1>테마 미리보기 (높이 900 고정, 너비는 w= 로 지정, 배율 없음)</h1>';
+    Object.keys(themes).forEach(function (t) {
+      h += '<div><b>' + t + '</b> ' + themes[t].name + ' · ';
+      ['light', 'dark'].forEach(function (m) {
+        h += m + ': ' + Object.keys(fixtures).map(function (f) { return '<a href="?theme=' + t + '&mode=' + m + '&fx=' + f + '">' + f + '</a>'; }).join('');
+        h += ' &nbsp; ';
+      });
+      h += '</div>';
+    });
+    d.innerHTML = h; document.body.appendChild(d); return;
+  }
+  var stage = document.createElement('div'); stage.id = 'stage'; document.body.appendChild(stage);
+  // w=<px>: 스테이지 너비(기본 1440, 16:9는 1600, 3:2는 1350). 앱과 같이 CSS 변수로도 알려 준다
+  var sw = Math.max(1200, Math.min(1800, +q.get('w') || 1440));
+  stage.style.width = sw + 'px'; stage.style.setProperty('--stage-w', sw + 'px');
+  var mode = q.get('mode') === 'dark' ? 'dark' : 'light';
+  stage.setAttribute('data-mode', mode);
+  var model = JSON.parse(JSON.stringify(fixtures[q.get('fx') || 'morning'] || fixtures.morning));
+  var base = fixtures[q.get('fx') || 'morning'] || fixtures.morning;
+  model.now = new Date(base.now.getTime()); model.mode = mode;
+  var th = themes[id]; th.mount(stage); th.render(model);
+  // adv=<ms>: 그만큼 뒤에 시각을 1분 앞으로 옮겨 다시 그린다(분 바뀜 연출 확인용)
+  if (q.get('adv')) setTimeout(function () { model.now = new Date(model.now.getTime() + 60000); th.render(model); }, +q.get('adv'));
+  // freeze=<ms>: 모든 CSS 애니메이션을 그 시점에서 멈춘다(연출의 중간 모습 캡처용)
+  if (q.get('freeze')) setTimeout(function () { document.getAnimations().forEach(function (a) { a.pause(); a.currentTime = +q.get('freeze'); }); }, (+q.get('adv') || 0) + 60);
+  if (q.get('live')) setInterval(function () { model.now = new Date(); th.render(model); }, 1000);
+})();
+</script>
+</body></html>

@@ -1,0 +1,45 @@
+{
+  "name": "desk-clock",
+  "productName": "DeskClock",
+  "version": "1.2.1",
+  "description": "식탁 시계 - 전체화면 탁상시계",
+  "private": true,
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"tests/*.test.js\"",
+    "dist": "electron-builder --win portable --x64"
+  },
+  "build": {
+    "appId": "local.desk.clock",
+    "productName": "DeskClock",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "DeskClock-${version}-portable.exe"
+    }
+  },
+  "dependencies": {
+    "koffi": "3.3.7"
+  },
+  "devDependencies": {
+    "electron": "45.3.0",
+    "electron-builder": "26.18.0"
+  }
+}

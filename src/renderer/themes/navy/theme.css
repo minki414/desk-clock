@@ -1,0 +1,124 @@
+/* A4 네이비 다이얼. 정본 시안 a4-navy.html. 다크=시안 그대로, 라이트=은색 오팔린 문자판 + 진청 인덱스·바늘. */
+@property --nv-bg1 { syntax: '<color>'; inherits: true; initial-value: #141b2b; }
+@property --nv-bg2 { syntax: '<color>'; inherits: true; initial-value: #090c13; }
+@property --nv-ink { syntax: '<color>'; inherits: true; initial-value: #e9ecf2; }
+@property --nv-sub { syntax: '<color>'; inherits: true; initial-value: #8a93a6; }
+@property --nv-silver { syntax: '<color>'; inherits: true; initial-value: #d7dbe2; }
+@property --nv-acc { syntax: '<color>'; inherits: true; initial-value: #cfe8d2; }
+@property --nv-past { syntax: '<color>'; inherits: true; initial-value: #4d5669; }
+@property --nv-hr { syntax: '<color>'; inherits: true; initial-value: #3a4560; }
+@property --nv-ok { syntax: '<color>'; inherits: true; initial-value: #4f7a5c; }
+@property --nv-sbA { syntax: '<color>'; inherits: true; initial-value: #1d3466; }
+@property --nv-sbB { syntax: '<color>'; inherits: true; initial-value: #172a55; }
+@property --nv-glow { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.07); }
+@property --nv-hi { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.12); }
+@property --nv-inset { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.65); }
+@property --nv-i1 { syntax: '<color>'; inherits: true; initial-value: #9ba2ad; }
+@property --nv-i2 { syntax: '<color>'; inherits: true; initial-value: #ffffff; }
+@property --nv-i3 { syntax: '<color>'; inherits: true; initial-value: #c3c8d0; }
+@property --nv-i4 { syntax: '<color>'; inherits: true; initial-value: #7e8590; }
+@property --nv-lume { syntax: '<color>'; inherits: true; initial-value: rgba(223,240,225,.85); }
+@property --nv-tick { syntax: '<color>'; inherits: true; initial-value: rgba(230,235,245,.55); }
+@property --nv-fl1 { syntax: '<color>'; inherits: true; initial-value: #f4f6f9; }
+@property --nv-fl2 { syntax: '<color>'; inherits: true; initial-value: #c7ccd4; }
+@property --nv-fr1 { syntax: '<color>'; inherits: true; initial-value: #8e95a0; }
+@property --nv-fr2 { syntax: '<color>'; inherits: true; initial-value: #5f6670; }
+@property --nv-hlume { syntax: '<color>'; inherits: true; initial-value: rgba(214,240,217,.8); }
+@property --nv-sec { syntax: '<color>'; inherits: true; initial-value: #e9ecf2; }
+@property --nv-pin { syntax: '<color>'; inherits: true; initial-value: #121826; }
+@property --nv-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.6); }
+
+.theme-navy {
+  --nv-bg1: #141b2b; --nv-bg2: #090c13; --nv-ink: #e9ecf2; --nv-sub: #8a93a6; --nv-silver: #d7dbe2; --nv-acc: #cfe8d2;
+  --nv-past: #4d5669; --nv-hr: #3a4560; --nv-ok: #4f7a5c; --nv-sbA: #1d3466; --nv-sbB: #172a55; --nv-glow: rgba(255,255,255,.07);
+  --nv-hi: rgba(255,255,255,.12); --nv-inset: rgba(0,0,0,.65); --nv-i1: #9ba2ad; --nv-i2: #ffffff; --nv-i3: #c3c8d0; --nv-i4: #7e8590;
+  --nv-lume: rgba(223,240,225,.85); --nv-tick: rgba(230,235,245,.55); --nv-fl1: #f4f6f9; --nv-fl2: #c7ccd4; --nv-fr1: #8e95a0; --nv-fr2: #5f6670;
+  --nv-hlume: rgba(214,240,217,.8); --nv-sec: #e9ecf2; --nv-pin: #121826; --nv-shadow: rgba(0,0,0,.6);
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden;
+  background: radial-gradient(70% 90% at 32% 50%, var(--nv-bg1), var(--nv-bg2) 70%); color: var(--nv-ink);
+  font-family: "Pretendard Variable", sans-serif;
+  transition: --nv-bg1 2s, --nv-bg2 2s, --nv-ink 2s, --nv-sub 2s, --nv-silver 2s, --nv-acc 2s, --nv-past 2s, --nv-hr 2s, --nv-ok 2s, --nv-sbA 2s, --nv-sbB 2s, --nv-glow 2s, --nv-hi 2s, --nv-inset 2s, --nv-i1 2s, --nv-i2 2s, --nv-i3 2s, --nv-i4 2s, --nv-lume 2s, --nv-tick 2s, --nv-fl1 2s, --nv-fl2 2s, --nv-fr1 2s, --nv-fr2 2s, --nv-hlume 2s, --nv-sec 2s, --nv-pin 2s, --nv-shadow 2s;
+}
+/* 라이트: 바탕 #e4e6ea, 글자 #1a2233, 문자판 은색 오팔린(#e9ebee→#cfd3d9 선버스트), 인덱스·바늘 진청 #1b2a4a 광택 */
+.theme-navy[data-mode=light] {
+  --nv-bg1: #eceef1; --nv-bg2: #e4e6ea; --nv-ink: #1a2233; --nv-sub: #5c6578; --nv-silver: #1b2a4a; --nv-acc: #2f6a52;
+  --nv-past: #a2a9b6; --nv-hr: #c5cad3; --nv-ok: #9db3a4; --nv-sbA: #eceef1; --nv-sbB: #e2e5e9; --nv-glow: rgba(255,255,255,.55);
+  --nv-hi: rgba(255,255,255,.5); --nv-inset: rgba(40,55,85,.28); --nv-i1: #3a5288; --nv-i2: #1b2a4a; --nv-i3: #1b2a4a; --nv-i4: #0f1a33;
+  --nv-lume: rgba(255,255,255,.3); --nv-tick: rgba(27,42,74,.55); --nv-fl1: #3a5288; --nv-fl2: #1b2a4a; --nv-fr1: #14203d; --nv-fr2: #0b1329;
+  --nv-hlume: rgba(255,255,255,.28); --nv-sec: #1b2a4a; --nv-pin: #e9ebee; --nv-shadow: rgba(40,55,85,.32);
+}
+.theme-navy * { box-sizing: border-box; margin: 0; }
+.theme-navy [hidden] { display: none !important; }
+
+.theme-navy .l { position: absolute; left: 80px; top: 40px; width: 720px; display: flex; flex-direction: column; align-items: center; }
+.theme-navy .case { width: 700px; height: 700px; border-radius: 50%; padding: 18px; background: conic-gradient(from 200deg, #8d939d, #f1f3f6 12%, #9aa0aa 30%, #e6e9ee 48%, #7d838d 66%, #eef0f3 82%, #8d939d); box-shadow: 0 40px 70px var(--nv-shadow), 0 0 0 1px rgba(255,255,255,.08); }
+.theme-navy .dial { position: relative; width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, var(--nv-glow), transparent 60%), repeating-conic-gradient(from 0deg, var(--nv-sbA) 0deg .6deg, var(--nv-sbB) .6deg 1.2deg), var(--nv-sbB);
+  box-shadow: inset 0 0 40px var(--nv-inset); }
+.theme-navy .dial::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent, var(--nv-hi) 12%, transparent 25%, transparent 50%, var(--nv-hi) 62%, transparent 75%, transparent); pointer-events: none; }
+.theme-navy .dial svg { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; }
+.theme-navy .hand { transform-origin: 50% 50%; will-change: transform; }
+.theme-navy .hand.s { animation: nv-spin 60s linear infinite; }
+@keyframes nv-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.theme-navy .hand.s line { stroke: var(--nv-sec); stroke-width: 2; }
+.theme-navy .g-steel1 { stop-color: var(--nv-i1); } .theme-navy .g-steel2 { stop-color: var(--nv-i2); } .theme-navy .g-steel3 { stop-color: var(--nv-i3); } .theme-navy .g-steel4 { stop-color: var(--nv-i4); }
+.theme-navy .g-fl1 { stop-color: var(--nv-fl1); } .theme-navy .g-fl2 { stop-color: var(--nv-fl2); }
+.theme-navy .g-fr1 { stop-color: var(--nv-fr1); } .theme-navy .g-fr2 { stop-color: var(--nv-fr2); }
+.theme-navy .idxLume { fill: var(--nv-lume); } .theme-navy .hlume { fill: var(--nv-hlume); }
+.theme-navy .tick { stroke: var(--nv-tick); stroke-width: 1.2; }
+.theme-navy .pin { fill: var(--nv-pin); }
+.theme-navy .dwin { fill: #f4f2ec; stroke: url(#nv-steel); stroke-width: 3; }
+.theme-navy .dnum { font-family: "Pretendard Variable", sans-serif; font-weight: 600; font-size: 32px; fill: #121826; text-anchor: middle; }
+
+/* 타이머 */
+.theme-navy .tm { position: relative; margin-top: 22px; height: 56px; width: 100%; display: flex; justify-content: center; align-items: baseline; gap: 16px; }
+.theme-navy .tm.t-hidden { visibility: hidden; }
+.theme-navy .tm small { font-size: 18px; color: var(--nv-sub); letter-spacing: .08em; }
+.theme-navy .tm b { font-family: "Bodoni Moda", "Pretendard Variable", serif; font-weight: 400; font-size: 46px; line-height: 56px; color: var(--nv-silver); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-navy .tm .th { position: absolute; top: 54px; left: 0; right: 0; text-align: center; font-size: 17px; color: var(--nv-sub); }
+.theme-navy .t-paused b { opacity: .32; }
+.theme-navy .t-ringing b { animation: nv-blink 1s step-end infinite; }
+.theme-navy .tm b.shake { animation: nv-shake .4s; }
+@keyframes nv-blink { 0% { opacity: 1; } 50% { opacity: .08; } }
+@keyframes nv-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+.theme-navy .legend { position: absolute; left: 80px; width: 720px; bottom: 20px; text-align: center; font-size: 14.5px; color: var(--nv-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 30px; }
+.theme-navy .legend b { font-family: "Bodoni Moda", serif; font-weight: 600; font-size: 15px; color: var(--nv-silver); }
+.theme-navy .legend .sep { margin: 0 .7em; font-style: normal; opacity: .6; }
+.theme-navy .legend.off { opacity: .3; }
+
+/* 오른쪽 열 */
+.theme-navy .r { position: absolute; right: 80px; top: 52px; width: clamp(420px, calc(var(--stage-w) - 970px), 520px); }   /* 우측 고정(sector와 같은 이유) */
+.theme-navy .date { font-size: 100px; line-height: .95; font-weight: 200; letter-spacing: -.04em; }
+.theme-navy .date small { display: block; font-size: 28px; font-weight: 500; color: var(--nv-sub); margin-top: 10px; letter-spacing: 0; }
+.theme-navy .wx { margin-top: 22px; display: flex; align-items: center; gap: 16px; font-size: 22px; color: var(--nv-sub); min-height: 56px; white-space: nowrap; }
+.theme-navy .wx b { font-family: "Bodoni Moda", serif; font-size: 52px; color: var(--nv-ink); font-weight: 400; }
+.theme-navy .wx .wl { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-navy .fl { display: flex; gap: 10px; flex: none; }
+.theme-navy .fl span { width: 30px; height: 30px; color: var(--nv-acc); }
+.theme-navy .fl svg { width: 100%; height: 100%; }
+.theme-navy .st { font-size: 15px; color: var(--nv-sub); padding: 0 0 6px; }
+.theme-navy .hr { height: 1px; background: linear-gradient(90deg, var(--nv-hr), transparent); margin: 20px 0 12px; }
+.theme-navy .ev { display: grid; grid-template-columns: 96px minmax(0, 1fr); font-size: 26px; padding: 5px 0; align-items: baseline; }
+.theme-navy .ev .t { font-family: "Bodoni Moda", serif; font-size: 27px; color: var(--nv-silver); white-space: nowrap; }
+.theme-navy .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-navy .ev[data-st=past] { color: var(--nv-past); }
+.theme-navy .ev[data-st=past] .t { color: var(--nv-past); }
+.theme-navy .ev[data-st=next] .t, .theme-navy .ev[data-st=now] .t { color: var(--nv-acc); }
+.theme-navy .ev[data-st=next] .n, .theme-navy .ev[data-st=now] .n { font-weight: 600; }
+.theme-navy .more { font-size: 17px; color: var(--nv-sub); padding: 2px 0; }
+.theme-navy .none { font-size: 20px; color: var(--nv-sub); padding: 4px 0; }
+.theme-navy .wk { display: flex; gap: 18px; font-size: 18px; color: var(--nv-sub); }
+.theme-navy .wk span { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.theme-navy .wk i { width: 5px; height: 5px; border-radius: 50%; background: var(--nv-silver); }
+.theme-navy .wk span[data-has=false] i { background: var(--nv-hr); }
+.theme-navy .wk span[data-sun=true] { color: var(--nv-acc); }
+.theme-navy .memo .li { font-size: 23px; line-height: 1.55; color: var(--nv-ink); opacity: .85; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.theme-navy .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--nv-ok); transition: background .6s; }
+.theme-navy .dot[data-h=net] { background: #e0a030; }
+.theme-navy .dot[data-h=server] { background: #d6453d; }
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 a4 이식, 라이트판(은색 오팔린·진청 인덱스)·연속 초침(CSS linear 60s)·타이머 단계·단축키 줄 | DESIGN.md */
+.theme-navy[data-mode=light] .case { box-shadow: 0 40px 70px var(--nv-shadow), 0 0 0 1px rgba(70, 82, 105, .3); }
+/* 개정 기록 | 2026-11-11 | v1.2 | 우측 덩어리를 right 기준으로 고정, 폭은 420~520 범위로 가변 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */

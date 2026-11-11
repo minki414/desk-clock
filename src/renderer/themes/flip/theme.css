@@ -1,0 +1,121 @@
+/* D2 플립. 정본 시안 d2-flip.html. 분이 바뀔 때 해당 카드만 위쪽 반이 아래로 넘어가는 0.6초 접힘(3D rotateX). */
+@property --fl-bg { syntax: '<color>'; inherits: true; initial-value: #0e0e0e; }
+@property --fl-t1 { syntax: '<color>'; inherits: true; initial-value: #232323; }
+@property --fl-t2 { syntax: '<color>'; inherits: true; initial-value: #1d1d1d; }
+@property --fl-b1 { syntax: '<color>'; inherits: true; initial-value: #151515; }
+@property --fl-b2 { syntax: '<color>'; inherits: true; initial-value: #191919; }
+@property --fl-ink { syntax: '<color>'; inherits: true; initial-value: #e4e4e2; }
+@property --fl-sub { syntax: '<color>'; inherits: true; initial-value: #7d7d7a; }
+@property --fl-acc { syntax: '<color>'; inherits: true; initial-value: #f5a524; }
+@property --fl-past { syntax: '<color>'; inherits: true; initial-value: #4a4a48; }
+@property --fl-line { syntax: '<color>'; inherits: true; initial-value: #1e1e1e; }
+@property --fl-hinge { syntax: '<color>'; inherits: true; initial-value: #070707; }
+@property --fl-shine { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.035); }
+@property --fl-dark { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.18); }
+@property --fl-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.6); }
+@property --fl-ok { syntax: '<color>'; inherits: true; initial-value: #4d6b4a; }
+@property --fl-tile1 { syntax: '<color>'; inherits: true; initial-value: #242424; }
+@property --fl-tile2 { syntax: '<color>'; inherits: true; initial-value: #181818; }
+
+.theme-flip {
+  --fl-bg: #0e0e0e; --fl-t1: #232323; --fl-t2: #1d1d1d; --fl-b1: #151515; --fl-b2: #191919; --fl-ink: #e4e4e2; --fl-sub: #7d7d7a; --fl-acc: #f5a524;
+  --fl-past: #4a4a48; --fl-line: #1e1e1e; --fl-hinge: #070707; --fl-shine: rgba(255,255,255,.035); --fl-dark: rgba(0,0,0,.18); --fl-shadow: rgba(0,0,0,.6);
+  --fl-ok: #4d6b4a; --fl-tile1: #242424; --fl-tile2: #181818;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--fl-bg); color: var(--fl-ink); font-family: "Pretendard Variable", sans-serif;
+  transition: --fl-bg 2s, --fl-t1 2s, --fl-t2 2s, --fl-b1 2s, --fl-b2 2s, --fl-ink 2s, --fl-sub 2s, --fl-acc 2s, --fl-past 2s, --fl-line 2s, --fl-hinge 2s, --fl-shine 2s, --fl-dark 2s, --fl-shadow 2s, --fl-ok 2s, --fl-tile1 2s, --fl-tile2 2s;
+}
+/* 라이트: 바탕 #e9e8e4, 카드 #fbfbf9→#efeee9, 숫자 #1d1d1d, 강조 #d9822b */
+.theme-flip[data-mode=light] {
+  --fl-bg: #e9e8e4; --fl-t1: #fbfbf9; --fl-t2: #f5f4f0; --fl-b1: #efeee9; --fl-b2: #f3f2ee; --fl-ink: #1d1d1d; --fl-sub: #6c6b66; --fl-acc: #d9822b;
+  --fl-past: #b2b0aa; --fl-line: #d9d7d0; --fl-hinge: #b9b7b0; --fl-shine: rgba(255,255,255,0); --fl-dark: rgba(60,50,30,.07); --fl-shadow: rgba(70,60,40,.28);
+  --fl-ok: #aab9a2; --fl-tile1: #fbfbf9; --fl-tile2: #efeee9;
+}
+.theme-flip * { box-sizing: border-box; margin: 0; }
+.theme-flip [hidden] { display: none !important; }
+
+.theme-flip .clock { position: absolute; left: 0; right: 0; top: 56px; display: flex; justify-content: center; gap: 34px; }
+.theme-flip .card { position: relative; width: 560px; height: 440px; border-radius: 30px; overflow: hidden; perspective: 1600px; background: var(--fl-hinge); box-shadow: 0 30px 50px var(--fl-shadow), inset 0 1px 0 rgba(255,255,255,.05); }
+.theme-flip .h { position: absolute; left: 0; right: 0; height: 50%; overflow: hidden; }
+.theme-flip .h.top { top: 0; border-radius: 30px 30px 0 0; background: linear-gradient(180deg, var(--fl-t1), var(--fl-t2)); }
+.theme-flip .h.bot { bottom: 0; border-radius: 0 0 30px 30px; background: linear-gradient(180deg, var(--fl-b1), var(--fl-b2)); }
+.theme-flip .h::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
+.theme-flip .h.top::after { background: linear-gradient(180deg, var(--fl-shine), transparent); }
+.theme-flip .h.bot::after { background: linear-gradient(180deg, transparent, var(--fl-dark)); }
+.theme-flip .h .n { position: absolute; left: 0; width: 100%; height: 440px; display: grid; place-items: center; font-family: Archivo, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 380px; line-height: 440px; letter-spacing: -.03em; color: var(--fl-ink); }
+.theme-flip .h .n span { transform: translateY(-6px); }
+.theme-flip .h.top .n { top: 0; }
+.theme-flip .h.bot .n { top: -220px; }
+.theme-flip .card::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 2px); height: 4px; background: var(--fl-hinge); z-index: 5; pointer-events: none; }
+.theme-flip .card i { position: absolute; top: calc(50% - 14px); width: 10px; height: 28px; background: var(--fl-hinge); border-radius: 3px; z-index: 6; }
+.theme-flip .card i.l { left: -3px; } .theme-flip .card i.r { right: -3px; }
+/* 접힘: 옛 윗장이 아래로 넘어간 뒤(0.3초) 새 아랫장이 내려앉는다(0.3초). 접히지 않는 평상시에는 잎 층을 숨긴다. */
+.theme-flip .leaf, .theme-flip .h.old { display: none; }
+.theme-flip .card.flip .leaf, .theme-flip .card.flip .h.old { display: block; }
+.theme-flip .leaf { z-index: 3; backface-visibility: hidden; }
+.theme-flip .leaf.a { transform-origin: 50% 100%; animation: fl-a .3s ease-in both; }
+.theme-flip .leaf.b { transform-origin: 50% 0; animation: fl-b .3s ease-out .3s both; }
+.theme-flip .leaf.a::before, .theme-flip .leaf.b::before { content: ""; position: absolute; inset: 0; z-index: 2; background: #000; pointer-events: none; }
+.theme-flip .leaf.a::before { animation: fl-sa .3s ease-in both; }
+.theme-flip .leaf.b::before { animation: fl-sb .3s ease-out .3s both; }
+.theme-flip .h.old { z-index: 1; animation: fl-old .6s steps(1, end) both; }
+@keyframes fl-a { from { transform: rotateX(0deg); } to { transform: rotateX(-90deg); } }
+@keyframes fl-b { from { transform: rotateX(90deg); } to { transform: rotateX(0deg); } }
+@keyframes fl-sa { from { opacity: 0; } to { opacity: .5; } }
+@keyframes fl-sb { from { opacity: .5; } to { opacity: 0; } }
+@keyframes fl-old { from { opacity: 1; } to { opacity: 0; } }
+
+/* 타이머: 시계 바로 아래 작은 플립 타일 */
+.theme-flip .tm { position: absolute; left: 0; right: 0; top: 520px; height: 62px; display: flex; justify-content: center; align-items: center; gap: 8px; }
+.theme-flip .tm.t-hidden { visibility: hidden; }
+.theme-flip .tm small { font-size: 18px; color: var(--fl-sub); margin-right: 10px; letter-spacing: .06em; }
+.theme-flip .tiles { display: flex; gap: 8px; align-items: center; }
+.theme-flip .tile { position: relative; width: 44px; height: 62px; border-radius: 6px; background: linear-gradient(180deg, var(--fl-tile1) 49.5%, var(--fl-tile2) 50.5%); display: grid; place-items: center; font-family: Archivo, sans-serif; font-weight: 700; font-size: 44px; color: var(--fl-acc); box-shadow: 0 6px 10px var(--fl-shadow); }
+.theme-flip .tile::after { content: ""; position: absolute; left: 0; right: 0; top: calc(50% - 1px); height: 2px; background: var(--fl-hinge); }
+.theme-flip .tile.c { width: 18px; background: none; box-shadow: none; }
+.theme-flip .tile.c::after { display: none; }
+.theme-flip .tm .th { position: absolute; left: 0; right: 0; top: 66px; text-align: center; font-size: 16px; color: var(--fl-sub); }
+.theme-flip .t-paused .tiles { opacity: .32; }
+.theme-flip .t-ringing .tiles { animation: fl-blink 1s step-end infinite; }
+.theme-flip .tiles.shake { animation: fl-shake .4s; }
+@keyframes fl-blink { 0% { opacity: 1; } 50% { opacity: .08; } }
+@keyframes fl-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+.theme-flip .board { position: absolute; left: 110px; right: 110px; top: 616px; display: grid; grid-template-columns: 330px minmax(0, 1fr) 340px; gap: 40px; }
+.theme-flip .col { min-width: 0; }
+.theme-flip h5 { display: flex; align-items: baseline; gap: 12px; font-size: 14px; font-weight: 600; color: var(--fl-sub); letter-spacing: .16em; margin-bottom: 8px; white-space: nowrap; }
+.theme-flip h5 .st { font-weight: 400; letter-spacing: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-flip .dt { font-size: 26px; font-weight: 600; margin-bottom: 6px; white-space: nowrap; }
+.theme-flip .wx { display: flex; align-items: center; gap: 12px; font-size: 21px; color: var(--fl-sub); white-space: nowrap; }
+.theme-flip .wx b { font-family: Archivo, sans-serif; font-size: 58px; color: var(--fl-ink); font-weight: 800; }
+.theme-flip .wx .wl { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-flip .fl { display: flex; gap: 8px; flex: none; }
+.theme-flip .fl span { width: 30px; height: 30px; color: var(--fl-acc); }
+.theme-flip .fl svg { width: 100%; height: 100%; }
+.theme-flip .wst { font-size: 14px; color: var(--fl-sub); margin-top: 4px; }
+.theme-flip .none { font-size: 19px; color: var(--fl-sub); padding: 6px 0; }
+.theme-flip .more { font-size: 16px; color: var(--fl-sub); padding: 4px 0 0; }
+.theme-flip .row { position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; padding: 4px 0; border-bottom: 1px solid var(--fl-line); font-size: 23px; }
+.theme-flip .row .t { font-family: Archivo, "Pretendard Variable", sans-serif; font-weight: 700; font-size: 23px; color: var(--fl-acc); white-space: nowrap; }
+.theme-flip .row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-flip .row[data-st=past] { color: var(--fl-past); }
+.theme-flip .row[data-st=past] .t { color: var(--fl-past); }
+.theme-flip .row[data-st=next] .n, .theme-flip .row[data-st=now] .n { font-weight: 700; }
+.theme-flip .row[data-st=next]::before, .theme-flip .row[data-st=now]::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--fl-acc); }
+.theme-flip .wk { display: flex; gap: 12px; margin-top: 8px; font-size: 15px; color: var(--fl-sub); white-space: nowrap; overflow: hidden; }
+.theme-flip .wk span { flex: 0 1 auto; max-width: 120px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.theme-flip .wk b { color: var(--fl-ink); font-weight: 600; }
+.theme-flip .wk span[data-sun=true] b { color: var(--fl-acc); }
+.theme-flip .wk .wl { flex: none; color: var(--fl-sub); font-weight: 600; letter-spacing: .1em; }
+.theme-flip .memo .li { font-size: 22px; padding: 4px 0; border-bottom: 1px solid var(--fl-line); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.theme-flip .legend { position: absolute; left: 110px; right: 110px; bottom: 18px; text-align: center; font-size: 14.5px; color: var(--fl-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.theme-flip .legend b { font-family: Archivo, sans-serif; font-weight: 700; font-size: 14px; color: var(--fl-ink); }
+.theme-flip .legend .sep { margin: 0 .7em; font-style: normal; opacity: .6; }
+.theme-flip .legend.off { opacity: .3; }
+
+.theme-flip .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--fl-ok); transition: background .6s; }
+.theme-flip .dot[data-h=net] { background: #e0a030; }
+.theme-flip .dot[data-h=server] { background: #d6453d; }
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 d2 이식, 라이트판·분 바뀜 0.6초 접힘·타이머 단계·단축키 줄·상태 점 | DESIGN.md */
+/* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로(카드는 가운데, 아래 3단은 기존 grid가 폭을 흡수) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */

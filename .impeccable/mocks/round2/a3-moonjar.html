@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>백자</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap">
+<script src="common.js"></script>
+<style>
+:root{--paper:#ebe4d4;--ink:#2a2620;--sub:#7a7062;--cobalt:#2d4e8f}
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:radial-gradient(90% 80% at 32% 48%,#f3eee2 0,var(--paper) 70%,#e2d9c5);color:var(--ink);font-family:"Gowun Batang",serif}
+.l{position:absolute;left:90px;top:56px;width:700px;display:flex;flex-direction:column;align-items:center}
+svg.face{width:680px;height:700px}
+.timer{margin-top:20px;font-size:30px;color:var(--ink);display:flex;gap:14px;align-items:baseline}
+.timer small{font-size:20px;color:var(--sub)}
+.r{position:absolute;left:900px;top:110px;width:440px}
+.date{font-size:64px;font-weight:700;line-height:1.15;letter-spacing:-.01em}
+.wx{font-size:26px;color:var(--sub);margin-top:18px;display:flex;align-items:center;gap:12px}
+.wx b{font-size:40px;color:var(--ink);font-weight:400}
+.wx svg{width:30px;height:30px;color:var(--cobalt)}
+.sep{width:42px;height:2px;background:var(--cobalt);margin:44px 0 26px}
+.ev{font-size:27px;line-height:1.75}
+.ev span{display:inline-block;width:92px;color:var(--sub);font-size:24px}
+.ev.past{color:#b0a693;text-decoration:line-through;text-decoration-thickness:1px}
+.ev.next{color:var(--cobalt)}.ev.next span{color:var(--cobalt)}
+.wk{font-size:20px;color:var(--sub);line-height:1.8;display:grid;grid-template-columns:repeat(3,auto);justify-content:start;column-gap:26px}.wk span{white-space:nowrap}
+.wk b{color:var(--ink);font-weight:700;margin-right:8px}
+.memo{font-size:24px;line-height:1.75}
+.dot{position:absolute;right:22px;bottom:20px;width:7px;height:7px;border-radius:50%;background:#9aab95}
+</style></head><body>
+<div class="l"><svg class="face" id="f" viewBox="-340 -330 680 700"></svg><div class="timer"><small>타이머</small>3분 24초</div></div>
+<div class="r">
+  <div class="date">11월 11일<br>수요일</div>
+  <div class="wx"><b>8°</b>흐림 · 낮 12° 밤 3°<span id="ic"></span></div>
+  <div class="sep"></div>
+  <div id="ev"></div>
+  <div class="sep"></div>
+  <div class="wk" id="wk"></div>
+  <div class="sep"></div>
+  <div class="memo" id="mm"></div>
+</div>
+<i class="dot"></i>
+<script>
+const S=SAMPLE,f=document.getElementById('f');
+document.getElementById('ic').innerHTML=ICON.umbrella;
+document.getElementById('ev').innerHTML=S.today.map(e=>`<div class="ev ${e.st}"><span>${e.t}</span>${e.n}</div>`).join('');
+document.getElementById('wk').innerHTML=S.week.filter(w=>w[1]).map(w=>`<span><b>${w[0]}</b>${w[1]}</span>`).join('');
+document.getElementById('mm').innerHTML=S.memos.join('<br>');
+const defs=svgEl(f,'defs',{});
+defs.innerHTML=`<radialGradient id="glaze" cx=".4" cy=".34" r=".75"><stop offset="0" stop-color="#fdfcf7"/><stop offset=".55" stop-color="#f4f1e7"/><stop offset=".85" stop-color="#e7e2d3"/><stop offset="1" stop-color="#d9d2bf"/></radialGradient>
+<radialGradient id="hi" cx=".33" cy=".27" r=".22"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+<filter id="sh" x="-40%" y="-40%" width="180%" height="190%"><feDropShadow dx="0" dy="26" stdDeviation="26" flood-color="#6b5a3a" flood-opacity=".22"/></filter>`;
+// 달항아리처럼 살짝 기운 원(정원 아님)
+const jar='M0 -292 C 168 -292 296 -170 290 4 C 284 172 160 294 -6 290 C -170 286 -294 168 -288 -6 C -282 -176 -160 -292 0 -292 Z';
+svgEl(f,'path',{d:jar,fill:'url(#glaze)',filter:'url(#sh)'});
+svgEl(f,'path',{d:jar,fill:'url(#hi)'});
+for(let i=0;i<12;i++){const[x,y]=polar(i%3?250:246,i*30);svgEl(f,'circle',{cx:x,cy:y,r:i%3?4:7,fill:'#2d4e8f',opacity:i%3?.55:.85})}
+const A=angles();
+function brush(len,w,deg,col){svgEl(f,'path',{d:`M${-w*.6} 26 C ${-w} -${len*.4}, ${-w*.4} -${len*.85}, 0 -${len} C ${w*.4} -${len*.85}, ${w} -${len*.4}, ${w*.6} 26 Z`,fill:col,transform:`rotate(${deg})`})}
+brush(150,9,A.h,'#2a2620');brush(232,6.5,A.m,'#2a2620');
+svgEl(f,'circle',{r:12,fill:'#2a2620'});svgEl(f,'circle',{r:4,fill:'#e9e3d3'});
+const[sx,sy]=polar(272,A.s);svgEl(f,'circle',{cx:sx,cy:sy,r:9,fill:'#2d4e8f'});
+</script></body></html>

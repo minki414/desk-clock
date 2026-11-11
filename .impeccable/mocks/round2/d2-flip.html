@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>플립</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="common.js"></script>
+<style>
+:root{--bg:#0e0e0e;--card:#1c1c1c;--card2:#161616;--ink:#e4e4e2;--sub:#7d7d7a;--amber:#f5a524}
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",sans-serif}
+.clock{position:absolute;left:0;right:0;top:60px;display:flex;justify-content:center;gap:34px}
+.card{position:relative;width:560px;height:440px;border-radius:30px;background:linear-gradient(180deg,#232323 0,#1d1d1d 49.6%,#151515 50.4%,#191919 100%);box-shadow:0 30px 50px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;overflow:hidden}
+.card span{font-family:Archivo;font-weight:800;font-size:380px;line-height:1;letter-spacing:-.03em;color:var(--ink);transform:translateY(-6px)}
+.card::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 2px);height:4px;background:#070707;box-shadow:0 1px 0 rgba(255,255,255,.04)}
+.card::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.035),transparent 50%,rgba(0,0,0,.18));z-index:1;pointer-events:none}
+.card i{position:absolute;top:calc(50% - 14px);width:10px;height:28px;background:#0a0a0a;border-radius:3px;z-index:2}
+.card i.l{left:-3px}.card i.r{right:-3px}
+.timer{position:absolute;left:0;right:0;top:524px;display:flex;justify-content:center;align-items:center;gap:8px}
+.timer small{font-size:18px;color:var(--sub);margin-right:10px;letter-spacing:.06em}
+.tile{position:relative;width:44px;height:62px;border-radius:6px;background:linear-gradient(180deg,#242424 49.5%,#181818 50.5%);display:grid;place-items:center;font-family:Archivo;font-weight:700;font-size:44px;color:var(--amber);box-shadow:0 6px 10px rgba(0,0,0,.5)}
+.tile::after{content:"";position:absolute;left:0;right:0;top:calc(50% - 1px);height:2px;background:#080808}
+.tile.c{width:18px;background:none;box-shadow:none}.tile.c::after{display:none}
+.board{position:absolute;left:110px;right:110px;top:620px;display:grid;grid-template-columns:330px 1fr 340px;gap:40px}
+.col h5{font-size:14px;font-weight:600;color:var(--sub);letter-spacing:.16em;margin-bottom:12px}
+.wx{display:flex;align-items:center;gap:14px;font-size:22px;color:var(--sub)}
+.wx b{font-family:Archivo;font-size:58px;color:var(--ink)}
+.wx svg{width:30px;height:30px;color:var(--amber)}
+.dt{font-size:26px;font-weight:600;margin-bottom:6px}
+.row{display:grid;grid-template-columns:100px 1fr;align-items:center;padding:6px 0;border-bottom:1px solid #1e1e1e;font-size:24px}
+.row .t{font-family:Archivo;font-weight:700;font-size:24px;color:var(--amber)}
+.row.past{color:#4a4a48}.row.past .t{color:#4a4a48}
+.memo div{font-size:22px;padding:5px 0;border-bottom:1px solid #1e1e1e}
+.wk{display:flex;gap:12px;margin-top:10px;font-size:15px;color:var(--sub)}
+.wk b{color:var(--ink);font-weight:600}
+.dot{position:absolute;right:22px;bottom:20px;width:7px;height:7px;border-radius:50%;background:#4d6b4a}
+</style></head><body>
+<div class="clock"><div class="card"><i class="l"></i><i class="r"></i><span>10</span></div><div class="card"><i class="l"></i><i class="r"></i><span>09</span></div></div>
+<div class="timer"><small>타이머</small><div class="tile">3</div><div class="tile c">:</div><div class="tile">2</div><div class="tile">4</div></div>
+<div class="board">
+  <div class="col"><h5>오늘</h5><div class="dt">11월 11일 수요일</div><div class="wx"><b>8°</b>흐림 12°/3°<span id="ic"></span></div></div>
+  <div class="col"><h5>일정</h5><div id="ev"></div><div class="wk" id="wk"></div></div>
+  <div class="col memo"><h5>메모</h5><div id="mm"></div></div>
+</div>
+<i class="dot"></i>
+<script>
+const S=SAMPLE;
+document.getElementById('ic').innerHTML=ICON.umbrella;
+document.getElementById('ev').innerHTML=S.today.map(e=>`<div class="row ${e.st}"><span class="t">${e.t}</span><span>${e.n}</span></div>`).join('');
+document.getElementById('wk').innerHTML=S.week.filter(w=>w[1]).map(w=>`<span><b>${w[0]}</b> ${w[1]}</span>`).join('');
+document.getElementById('mm').innerHTML=S.memos.map(m=>`<div>${m}</div>`).join('');
+</script></body></html>

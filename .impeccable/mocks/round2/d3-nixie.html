@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>닉시관</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@200;300&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="common.js"></script>
+<style>
+:root{--bg:#0c0907;--glow:#ff7b1c;--brass:#c9a86a;--sub:#7f7363;--ink:#e8dccb}
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:radial-gradient(60% 55% at 50% 34%,#24170e,var(--bg) 75%);color:var(--ink);font-family:"Pretendard Variable",sans-serif}
+.rack{position:absolute;left:0;right:0;top:56px;display:flex;justify-content:center;align-items:flex-end;gap:26px}
+.tube{position:relative;width:196px;height:400px;border-radius:98px 98px 22px 22px;background:linear-gradient(90deg,rgba(255,255,255,.07),rgba(255,255,255,.015) 22%,rgba(255,255,255,0) 50%,rgba(255,255,255,.02) 78%,rgba(255,255,255,.09)),rgba(40,28,20,.35);box-shadow:inset 0 0 0 1.5px rgba(255,235,210,.14),inset 0 -30px 40px rgba(0,0,0,.5);overflow:hidden}
+.tube::before{content:"";position:absolute;inset:40px 22px 46px;background:radial-gradient(circle,rgba(160,140,120,.28) 1px,transparent 1.6px) 0 0/7px 7px;border-radius:70px 70px 6px 6px}
+.tube::after{content:"";position:absolute;left:30px;top:24px;width:18px;height:210px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0));filter:blur(1px)}
+.tube .g,.tube .n{position:absolute;inset:0;display:grid;place-items:center;font-family:Jost;font-weight:200;font-size:300px;line-height:1;padding-top:30px}
+.tube .g span{grid-area:1/1;color:rgba(120,95,70,.08)}
+.tube .n{color:#ffd2a6;text-shadow:0 0 6px #ff9a3c,0 0 18px var(--glow),0 0 42px rgba(255,100,20,.55)}
+.tube.s{width:120px;height:250px;border-radius:60px 60px 16px 16px}
+.tube.s .g,.tube.s .n{font-size:180px;padding-top:18px}
+.colon{display:flex;flex-direction:column;gap:56px;padding-bottom:130px}
+.colon i{width:16px;height:16px;border-radius:50%;background:#ffc58f;box-shadow:0 0 10px var(--glow),0 0 24px rgba(255,100,20,.6)}
+.base{position:absolute;left:150px;right:150px;top:452px;height:34px;border-radius:6px;background:linear-gradient(180deg,#5a3720,#3b2313);box-shadow:0 18px 30px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,220,180,.18)}
+.base b{position:absolute;left:50%;top:7px;transform:translateX(-50%);padding:3px 18px;border-radius:2px;background:linear-gradient(180deg,#d8bb80,#a8874c);color:#2c1d0e;font-size:14px;font-weight:700;letter-spacing:.12em;display:flex;gap:14px}
+.info{position:absolute;left:150px;right:150px;top:540px;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:56px}
+.info h5{font-size:14px;color:var(--brass);letter-spacing:.18em;font-weight:600;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid #3a2a1b}
+.dt{font-size:30px;font-weight:600}
+.wx{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:20px;color:var(--sub)}
+.wx b{font-family:Jost;font-weight:300;font-size:56px;color:var(--ink)}
+.wx svg{width:28px;height:28px;color:var(--glow)}
+.ev{display:grid;grid-template-columns:86px 1fr;font-size:24px;padding:5px 0}
+.ev .t{font-family:Jost;font-weight:300;font-size:26px;color:#ffb37a}
+.ev.past{color:#56493b}.ev.past .t{color:#56493b}
+.wk{font-size:16px;color:var(--sub);margin-top:10px;display:flex;gap:14px}.wk b{color:var(--ink)}
+.memo div{font-size:23px;padding:4px 0}
+.dot{position:absolute;right:22px;bottom:20px;width:7px;height:7px;border-radius:50%;background:#5c7a4c}
+</style></head><body>
+<div class="rack" id="rk"></div>
+<div class="base"><b><span>타이머</span><span>3:24</span></b></div>
+<div class="info">
+  <div><h5>오늘</h5><div class="dt">11월 11일 수요일</div><div class="wx"><b>8°</b>흐림 · 12° / 3°<span id="ic"></span></div></div>
+  <div><h5>일정</h5><div id="ev"></div><div class="wk" id="wk"></div></div>
+  <div class="memo"><h5>메모</h5><div id="mm"></div></div>
+</div>
+<i class="dot"></i>
+<script>
+const S=SAMPLE,ghost='<span>0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>';
+const tube=(d,s)=>`<div class="tube ${s?'s':''}"><div class="g">${ghost}</div><div class="n">${d}</div></div>`;
+document.getElementById('rk').innerHTML=tube(1)+tube(0)+'<div class="colon"><i></i><i></i></div>'+tube(0)+tube(9)+'<div class="colon" style="padding-bottom:70px;gap:34px"><i></i><i></i></div>'+tube(3,1)+tube(2,1);
+document.getElementById('ic').innerHTML=ICON.umbrella;
+document.getElementById('ev').innerHTML=S.today.map(e=>`<div class="ev ${e.st}"><span class="t">${e.t}</span><span>${e.n}</span></div>`).join('');
+document.getElementById('wk').innerHTML=S.week.filter(w=>w[1]).map(w=>`<span><b>${w[0]}</b> ${w[1]}</span>`).join('');
+document.getElementById('mm').innerHTML=S.memos.map(m=>`<div>${m}</div>`).join('');
+</script></body></html>

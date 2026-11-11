@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>네이비 다이얼</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,400;6..96,600&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
+<script src="common.js"></script>
+<style>
+:root{--bg:#090c13;--ink:#e9ecf2;--sub:#8a93a6;--silver:#d7dbe2;--lume:#cfe8d2}
+*{box-sizing:border-box;margin:0}
+html,body{width:1440px;height:900px;overflow:hidden;background:radial-gradient(70% 90% at 32% 50%,#141b2b,var(--bg) 70%);color:var(--ink);font-family:"Pretendard Variable",sans-serif}
+.l{position:absolute;left:80px;top:46px;width:720px;display:flex;flex-direction:column;align-items:center}
+.case{width:700px;height:700px;border-radius:50%;padding:18px;background:conic-gradient(from 200deg,#8d939d,#f1f3f6 12%,#9aa0aa 30%,#e6e9ee 48%,#7d838d 66%,#eef0f3 82%,#8d939d);box-shadow:0 40px 70px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.dial{position:relative;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.07),transparent 60%),repeating-conic-gradient(from 0deg,#1d3466 0deg .6deg,#172a55 .6deg 1.2deg),#172a55;box-shadow:inset 0 0 40px rgba(0,0,0,.65)}
+.dial::after{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,transparent,rgba(255,255,255,.13) 12%,transparent 25%,transparent 50%,rgba(255,255,255,.1) 62%,transparent 75%,transparent)}
+.dial svg{position:absolute;inset:0;width:100%;height:100%;z-index:2}
+.timer{margin-top:26px;font-family:"Bodoni Moda";font-size:46px;color:var(--silver);display:flex;gap:16px;align-items:baseline}
+.timer small{font-family:"Pretendard Variable";font-size:18px;color:var(--sub);letter-spacing:.08em}
+.r{position:absolute;left:890px;top:100px;width:470px}
+.date{font-family:"Pretendard Variable";font-size:110px;line-height:.95;font-weight:200;letter-spacing:-.04em}
+.date small{display:block;font-family:"Pretendard Variable";font-size:28px;font-weight:500;color:var(--sub);margin-top:12px;letter-spacing:0}
+.wx{margin-top:34px;display:flex;align-items:center;gap:16px;font-size:22px;color:var(--sub)}
+.wx b{font-family:"Bodoni Moda";font-size:52px;color:var(--ink);font-weight:400}
+.wx svg{width:30px;height:30px;color:var(--lume)}
+.hr{height:1px;background:linear-gradient(90deg,#3a4560,transparent);margin:34px 0 18px}
+.ev{display:grid;grid-template-columns:96px 1fr;font-size:26px;padding:7px 0}
+.ev .t{font-family:"Bodoni Moda";font-size:27px;color:var(--silver)}
+.ev.past{color:#4d5669}.ev.past .t{color:#4d5669}
+.ev.next .t{color:var(--lume)}
+.wk{display:flex;gap:18px;font-size:18px;color:var(--sub)}
+.wk span{display:flex;flex-direction:column;gap:6px;align-items:center}
+.wk i{width:5px;height:5px;border-radius:50%;background:var(--silver)}.wk i.no{background:#2a3247}
+.memo{font-size:23px;line-height:1.7;color:#c9cfdb}
+.dot{position:absolute;right:22px;bottom:20px;width:7px;height:7px;border-radius:50%;background:#4f7a5c}
+</style></head><body>
+<div class="l"><div class="case"><div class="dial"><svg id="f" viewBox="-300 -300 600 600"></svg></div></div><div class="timer"><small>타이머</small>3:24</div></div>
+<div class="r">
+  <div class="date">11<small>11월 · 수요일</small></div>
+  <div class="wx"><b>8°</b>흐림 · 12° / 3° · 마포구<span id="ic"></span></div>
+  <div class="hr"></div><div id="ev"></div>
+  <div class="hr"></div><div class="wk" id="wk"></div>
+  <div class="hr"></div><div class="memo" id="mm"></div>
+</div>
+<i class="dot"></i>
+<script>
+const S=SAMPLE,f=document.getElementById('f');
+document.getElementById('ic').innerHTML=ICON.umbrella;
+document.getElementById('ev').innerHTML=S.today.map(e=>`<div class="ev ${e.st}"><span class="t">${e.t}</span><span>${e.n}</span></div>`).join('');
+document.getElementById('wk').innerHTML=S.week.map(w=>`<span><i class="${w[1]?'':'no'}"></i>${w[0]}</span>`).join('');
+document.getElementById('mm').innerHTML=S.memos.join('<br>');
+const defs=svgEl(f,'defs',{});
+defs.innerHTML=`<linearGradient id="steel" x1="0" x2="1"><stop offset="0" stop-color="#9ba2ad"/><stop offset=".45" stop-color="#ffffff"/><stop offset=".55" stop-color="#c3c8d0"/><stop offset="1" stop-color="#7e8590"/></linearGradient>
+<linearGradient id="facetL" x1="0" x2="1"><stop offset="0" stop-color="#f4f6f9"/><stop offset="1" stop-color="#c7ccd4"/></linearGradient>
+<linearGradient id="facetR" x1="0" x2="1"><stop offset="0" stop-color="#8e95a0"/><stop offset="1" stop-color="#5f6670"/></linearGradient>`;
+for(let i=0;i<60;i++){if(i%5==0)continue;const[x1,y1]=polar(268,i*6),[x2,y2]=polar(276,i*6);svgEl(f,'line',{x1,y1,x2,y2,stroke:'rgba(230,235,245,.55)','stroke-width':1.2})}
+for(let i=0;i<12;i++){if(i==3)continue;const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('transform',`rotate(${i*30})`);f.appendChild(g);
+ const w=i==0?9:11,L=i%3==0?62:52;
+ const pairs=i==0?[-11,11]:[0];
+ pairs.forEach(dx=>{svgEl(g,'rect',{x:dx-w/2,y:-272,width:w,height:L,rx:1.5,fill:'url(#steel)'});svgEl(g,'rect',{x:dx-w/2+3,y:-266,width:w-6,height:L-24,rx:1,fill:'#dff0e1',opacity:.85})})}
+// 날짜 창(3시)
+svgEl(f,'rect',{x:196,y:-24,width:62,height:48,rx:3,fill:'#f4f2ec',stroke:'url(#steel)','stroke-width':3});
+const dt=svgEl(f,'text',{x:227,y:14,'text-anchor':'middle','font-family':'Pretendard Variable','font-size':32,'font-weight':600,fill:'#121826'});dt.textContent='11';
+const A=angles();
+function dauphine(len,w,deg){const g=document.createElementNS('http://www.w3.org/2000/svg','g');g.setAttribute('transform',`rotate(${deg})`);f.appendChild(g);
+ svgEl(g,'path',{d:`M0 ${-len} L${-w} -18 L0 22 Z`,fill:'url(#facetL)'});svgEl(g,'path',{d:`M0 ${-len} L${w} -18 L0 22 Z`,fill:'url(#facetR)'});
+ svgEl(g,'path',{d:`M0 ${-len+30} L${-w*.38} ${-len*.45} L0 ${-len*.38} Z`,fill:'#d6f0d9',opacity:.8})}
+dauphine(165,15,A.h);dauphine(250,12,A.m);
+svgEl(f,'line',{x1:0,y1:60,x2:0,y2:-262,stroke:'#e9ecf2','stroke-width':2,transform:`rotate(${A.s})`});
+svgEl(f,'circle',{r:11,fill:'url(#steel)'});svgEl(f,'circle',{r:3.5,fill:'#121826'});
+</script></body></html>

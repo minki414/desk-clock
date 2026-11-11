@@ -1,0 +1,114 @@
+/* D1 리시버. 정본 시안 d1-receiver.html. 형광표시관 창은 라이트에서도 검정(실물처럼), 전면판·버튼만 은색으로 바뀐다. */
+@property --rc-room { syntax: '<color>'; inherits: true; initial-value: #0a0908; }
+@property --rc-f1 { syntax: '<color>'; inherits: true; initial-value: #2a2826; }
+@property --rc-f2 { syntax: '<color>'; inherits: true; initial-value: #1c1b1a; }
+@property --rc-f3 { syntax: '<color>'; inherits: true; initial-value: #141312; }
+@property --rc-grain { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.012); }
+@property --rc-hl { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.12); }
+@property --rc-engrave { syntax: '<color>'; inherits: true; initial-value: #958e84; }
+@property --rc-k1 { syntax: '<color>'; inherits: true; initial-value: #3c3a37; }
+@property --rc-k2 { syntax: '<color>'; inherits: true; initial-value: #272523; }
+@property --rc-k3 { syntax: '<color>'; inherits: true; initial-value: #211f1d; }
+@property --rc-ksh { syntax: '<color>'; inherits: true; initial-value: #0b0a09; }
+@property --rc-ktx { syntax: '<color>'; inherits: true; initial-value: #d6cfc3; }
+@property --rc-kin { syntax: '<color>'; inherits: true; initial-value: rgba(255,255,255,.09); }
+@property --rc-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.7); }
+@property --rc-ok { syntax: '<color>'; inherits: true; initial-value: #5f7d4f; }
+
+.theme-receiver {
+  --rc-room: #0a0908; --rc-f1: #2a2826; --rc-f2: #1c1b1a; --rc-f3: #141312; --rc-grain: rgba(255,255,255,.012); --rc-hl: rgba(255,255,255,.12);
+  --rc-engrave: #958e84; --rc-k1: #3c3a37; --rc-k2: #272523; --rc-k3: #211f1d; --rc-ksh: #0b0a09; --rc-ktx: #d6cfc3; --rc-kin: rgba(255,255,255,.09);
+  --rc-shadow: rgba(0,0,0,.7); --rc-ok: #5f7d4f;
+  --amber: #ffb02a; --amber2: #d98a22; --ghost: rgba(255,176,42,.065);
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; container-type: inline-size; background: var(--rc-room); font-family: "Pretendard Variable", sans-serif;
+  transition: --rc-room 2s, --rc-f1 2s, --rc-f2 2s, --rc-f3 2s, --rc-grain 2s, --rc-hl 2s, --rc-engrave 2s, --rc-k1 2s, --rc-k2 2s, --rc-k3 2s, --rc-ksh 2s, --rc-ktx 2s, --rc-kin 2s, --rc-shadow 2s, --rc-ok 2s;
+}
+/* 라이트: 은색 브러시드 전면판(#d9d9d6→#bdbdb9), 각인 글자 #4a4844, 버튼 은색 */
+.theme-receiver[data-mode=light] {
+  --rc-room: #e4e1db; --rc-f1: #dcdcd9; --rc-f2: #cdcdca; --rc-f3: #bdbdb9; --rc-grain: rgba(0,0,0,.03); --rc-hl: rgba(255,255,255,.7);
+  --rc-engrave: #4a4844; --rc-k1: #f3f3f1; --rc-k2: #dcdcd8; --rc-k3: #c9c9c5; --rc-ksh: #8f8f8b; --rc-ktx: #2a2826; --rc-kin: rgba(255,255,255,.9);
+  --rc-shadow: rgba(60,50,40,.4); --rc-ok: #a9b79d;
+}
+.theme-receiver * { box-sizing: border-box; margin: 0; }
+.theme-receiver [hidden] { display: none !important; }
+
+.theme-receiver .unit { position: absolute; inset: 34px 30px; display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; border-radius: 12px; overflow: hidden; box-shadow: 0 40px 80px var(--rc-shadow); }
+.theme-receiver .cheek { background: linear-gradient(90deg, #2e1a0e, #5a3520 30%, #6b4128 55%, #4a2b18 80%, #2a170c); }
+.theme-receiver .face { position: relative; min-width: 0; padding: 40px 46px 28px; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 24px;
+  background: repeating-linear-gradient(0deg, var(--rc-grain) 0 1px, transparent 1px 3px), linear-gradient(180deg, var(--rc-f1), var(--rc-f2) 50%, var(--rc-f3)); }
+.theme-receiver .face::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--rc-hl); }
+
+.theme-receiver .glass { position: relative; background: linear-gradient(180deg, #0b0907, #060504); border-radius: 6px; box-shadow: inset 0 3px 18px rgba(0,0,0,.95), 0 1px 0 rgba(255,255,255,.07); padding: 26px 40px 22px; display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 50px; }
+.theme-receiver .glass::after { content: ""; position: absolute; inset: 0; border-radius: 6px; background: linear-gradient(160deg, rgba(255,255,255,.05), transparent 35%); pointer-events: none; }
+.theme-receiver .vfd { color: var(--amber); text-shadow: 0 0 14px rgba(255,160,30,.5), 0 0 2px rgba(255,200,110,.9); }
+.theme-receiver .time { position: relative; font-family: DSEG7, monospace; font-weight: 700; font-size: 196px; line-height: 1; white-space: nowrap; }
+.theme-receiver .time .g { position: absolute; left: 0; top: 0; color: var(--ghost); text-shadow: none; }
+.theme-receiver .time sup { position: relative; font-size: 64px; vertical-align: top; margin-left: 12px; }
+.theme-receiver .time sup .g { position: absolute; }
+.theme-receiver .side { display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; min-width: 0; width: min(100%, 290px); justify-self: center; }   /* 넓은 화면에서 남는 폭을 시계와 정보 사이·오른쪽으로 나눔 */
+.theme-receiver .d { font-family: DSEG7, monospace; font-weight: 700; font-size: 44px; display: flex; align-items: center; gap: 14px; }
+.theme-receiver .d small { font-family: "Pretendard Variable", sans-serif; font-weight: 700; font-size: 32px; }
+.theme-receiver .w { font-size: 30px; font-weight: 600; display: flex; align-items: center; gap: 10px; white-space: nowrap; min-width: 0; }
+.theme-receiver .w .ic { display: flex; gap: 6px; flex: none; }
+.theme-receiver .w .ic span { width: 30px; height: 30px; color: var(--amber); }
+.theme-receiver .w .ic svg { width: 100%; height: 100%; }
+.theme-receiver .w .sub { font-weight: 400; font-size: 21px; color: var(--amber2); text-shadow: none; }
+.theme-receiver .w .lbl { flex: none; }
+.theme-receiver .w .sub { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-receiver .wst { font-size: 15px; font-weight: 400; color: var(--amber2); text-shadow: none; margin-top: 2px; }
+.theme-receiver .tm { position: relative; display: flex; align-items: center; gap: 14px; font-size: 20px; font-weight: 600; letter-spacing: .1em; height: 44px; white-space: nowrap; }
+.theme-receiver .tm.t-hidden { visibility: hidden; }
+.theme-receiver .tm i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.theme-receiver .tm b { font-family: DSEG7, monospace; font-weight: 300; font-size: 40px; letter-spacing: 0; white-space: nowrap; }
+.theme-receiver .tm .th { position: absolute; right: 0; top: 46px; font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--amber2); text-shadow: none; white-space: nowrap; }
+.theme-receiver .t-paused b { opacity: .32; }
+.theme-receiver .t-ringing b { animation: rc-blink 1s step-end infinite; }
+.theme-receiver .tm b.shake { animation: rc-shake .4s; }
+@keyframes rc-blink { 0% { opacity: 1; } 50% { opacity: .06; } }
+@keyframes rc-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+.theme-receiver .mid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 26px; min-height: 0; }
+.theme-receiver .win { position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #080706; border-radius: 5px; box-shadow: inset 0 2px 12px rgba(0,0,0,.9), 0 1px 0 rgba(255,255,255,.05); padding: 16px 26px; }
+.theme-receiver .lab { display: flex; align-items: baseline; gap: 14px; font-size: 14px; font-weight: 600; color: #958e84; letter-spacing: .18em; margin-bottom: 8px; white-space: nowrap; }
+.theme-receiver .lab .st { font-weight: 400; letter-spacing: 0; font-size: 14px; color: var(--amber2); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-receiver .ev { position: relative; display: grid; grid-template-columns: 118px minmax(0, 1fr); font-size: 26px; padding: 5px 0; align-items: baseline; }
+.theme-receiver .ev .t { font-family: DSEG7, monospace; font-weight: 700; font-size: 24px; white-space: nowrap; }
+.theme-receiver .ev .t.ad { font-family: "Pretendard Variable", sans-serif; font-size: 22px; }
+.theme-receiver .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-receiver .ev[data-st=past] { color: #4a3618; text-shadow: none; }
+.theme-receiver .ev[data-st=later] { opacity: .8; }
+.theme-receiver .ev[data-st=next]::before, .theme-receiver .ev[data-st=now]::before { content: ""; position: absolute; left: -15px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+.theme-receiver .ev[data-st=next] .n, .theme-receiver .ev[data-st=now] .n { font-weight: 700; }
+.theme-receiver .more { font-size: 16px; color: var(--amber2); padding: 2px 0; }
+.theme-receiver .none { font-size: 20px; color: #6b5427; padding: 6px 0; }
+.theme-receiver .week { display: flex; gap: 20px; margin-top: 10px; padding-top: 12px; border-top: 1px solid #1d1a16; }
+.theme-receiver .week div { display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 15px; color: #958e84; }
+.theme-receiver .lamp { width: 11px; height: 11px; border-radius: 50%; background: #261d12; box-shadow: inset 0 1px 2px rgba(0,0,0,.8); }
+.theme-receiver .week div[data-has=true] .lamp { background: var(--amber); box-shadow: 0 0 10px rgba(255,160,30,.75); }
+.theme-receiver .week div[data-sun=true] { color: #d9a24a; }
+.theme-receiver .mm .li { font-size: 25px; padding: 5px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 프리셋 버튼: 라벨은 설정 슬롯 이름, 숫자키를 누르면 0.2초 눌림(pressedKey) */
+.theme-receiver .presets { display: grid; grid-template-columns: repeat(9, 1fr) 1.15fr 1fr; gap: 12px; }
+.theme-receiver .presets.off { opacity: .3; }
+.theme-receiver .key { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; }
+.theme-receiver .key b { width: 100%; height: 44px; border-radius: 3px; background: linear-gradient(180deg, var(--rc-k1), var(--rc-k2) 60%, var(--rc-k3)); box-shadow: 0 3px 0 var(--rc-ksh), 0 4px 8px rgba(0,0,0,.45), inset 0 1px 0 var(--rc-kin); display: grid; place-items: center; color: var(--rc-ktx); font-size: 19px; font-weight: 700; transition: transform .05s, box-shadow .05s; }
+.theme-receiver .key span { font-size: 14px; color: var(--rc-engrave); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-receiver .key.home b { background: linear-gradient(180deg, #6a4327, #47291a); color: #f2dcbc; }
+.theme-receiver .key.pressed b { transform: translateY(3px); box-shadow: 0 0 0 var(--rc-ksh), 0 1px 3px rgba(0,0,0,.5), inset 0 2px 6px rgba(0,0,0,.4); color: #ffb02a; }
+.theme-receiver[data-mode=light] .key.pressed b { color: #8a4f06; }
+.theme-receiver .key.tkey b { font-size: 17px; }
+
+.theme-receiver .dot { position: absolute; left: 12px; bottom: 10px; width: 7px; height: 7px; border-radius: 50%; background: var(--rc-ok); transition: background .6s; }
+.theme-receiver .dot[data-h=net] { background: #e0a030; }
+.theme-receiver .dot[data-h=server] { background: #d6453d; }
+
+/* 3:2처럼 좁은 화면: 시계 글자는 그대로 두고 옆판·여백을 줄여 오른쪽 정보 칸(날씨·타이머)이 눌리지 않게 함 */
+@container (max-width: 1420px) {
+  .theme-receiver .unit { inset: 34px 24px; grid-template-columns: 40px minmax(0, 1fr) 40px; }
+  .theme-receiver .face { padding-left: 30px; padding-right: 30px; }
+  .theme-receiver .glass { padding-left: 28px; padding-right: 28px; column-gap: 30px; }
+}
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 d1 이식, 라이트(은색 브러시드)·프리셋 11키(슬롯 라벨+T 타이머)·눌림 표시·타이머 단계 | DESIGN.md */
+/* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로, 3:2용 컨테이너 쿼리와 정보 칸 중앙 배치 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */

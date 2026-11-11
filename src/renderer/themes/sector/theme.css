@@ -1,0 +1,128 @@
+/* A1 섹터 다이얼. 정본 시안 a1-sector.html. 변경(사용자): 시·분 바늘을 더 가늘게(시 7·분 5), 청색 강철 → 구운 갈색. */
+@property --sc-w1 { syntax: '<color>'; inherits: true; initial-value: #efebe3; }
+@property --sc-w2 { syntax: '<color>'; inherits: true; initial-value: #e7e2d8; }
+@property --sc-case { syntax: '<color>'; inherits: true; initial-value: #c9bfa9; }
+@property --sc-base { syntax: '<color>'; inherits: true; initial-value: #f6f0e2; }
+@property --sc-ring { syntax: '<color>'; inherits: true; initial-value: #f1ead9; }
+@property --sc-band { syntax: '<color>'; inherits: true; initial-value: #dccfb4; }
+@property --sc-center { syntax: '<color>'; inherits: true; initial-value: #efe7d4; }
+@property --sc-sdial { syntax: '<color>'; inherits: true; initial-value: #e6dcc6; }
+@property --sc-ink { syntax: '<color>'; inherits: true; initial-value: #22201b; }
+@property --sc-sub { syntax: '<color>'; inherits: true; initial-value: #6b6457; }
+@property --sc-rule { syntax: '<color>'; inherits: true; initial-value: #cfc6b4; }
+@property --sc-past { syntax: '<color>'; inherits: true; initial-value: #a39a88; }
+@property --sc-acc { syntax: '<color>'; inherits: true; initial-value: #6b3e1f; }
+@property --sc-red { syntax: '<color>'; inherits: true; initial-value: #b8321f; }
+@property --sc-ok { syntax: '<color>'; inherits: true; initial-value: #9bb08f; }
+@property --sc-lines { syntax: '<color>'; inherits: true; initial-value: rgba(80,60,30,.07); }
+@property --sc-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(60,45,20,.24); }
+@property --sc-h1 { syntax: '<color>'; inherits: true; initial-value: #7a4624; }
+@property --sc-h2 { syntax: '<color>'; inherits: true; initial-value: #5a3219; }
+@property --sc-h3 { syntax: '<color>'; inherits: true; initial-value: #3d2210; }
+
+.theme-sector {
+  --sc-w1: #efebe3; --sc-w2: #e7e2d8; --sc-case: #c9bfa9; --sc-base: #f6f0e2; --sc-ring: #f1ead9; --sc-band: #dccfb4;
+  --sc-center: #efe7d4; --sc-sdial: #e6dcc6; --sc-ink: #22201b; --sc-sub: #6b6457; --sc-rule: #cfc6b4; --sc-past: #a39a88;
+  --sc-acc: #6b3e1f; --sc-red: #b8321f; --sc-ok: #9bb08f; --sc-lines: rgba(80,60,30,.07); --sc-shadow: rgba(60,45,20,.24);
+  --sc-h1: #7a4624; --sc-h2: #5a3219; --sc-h3: #3d2210;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; container-type: inline-size;
+  background: radial-gradient(120% 90% at 30% 40%, var(--sc-w1), var(--sc-w2)); color: var(--sc-ink);
+  font-family: "Pretendard Variable", sans-serif;
+  transition: --sc-w1 2s, --sc-w2 2s, --sc-case 2s, --sc-base 2s, --sc-ring 2s, --sc-band 2s, --sc-center 2s, --sc-sdial 2s, --sc-ink 2s, --sc-sub 2s, --sc-rule 2s, --sc-past 2s, --sc-acc 2s, --sc-red 2s, --sc-ok 2s, --sc-lines 2s, --sc-shadow 2s, --sc-h1 2s, --sc-h2 2s, --sc-h3 2s;
+}
+/* 다크: 다이얼 #1d1c1a·띠 #2a2824, 숫자·눈금 #e9dfc8, 갈색 바늘은 밝은 구리색 #b8743f */
+.theme-sector[data-mode=dark] {
+  --sc-w1: #1c1b19; --sc-w2: #0f0e0d; --sc-case: #46413a; --sc-base: #23211e; --sc-ring: #1d1c1a; --sc-band: #2a2824;
+  --sc-center: #1d1c1a; --sc-sdial: #262421; --sc-ink: #e9dfc8; --sc-sub: #a69d89; --sc-rule: #3a362f; --sc-past: #6f6859;
+  --sc-acc: #d9985f; --sc-red: #ea7a63; --sc-ok: #46503f; --sc-lines: rgba(233,223,200,.05); --sc-shadow: rgba(0,0,0,.6);
+  --sc-h1: #cf8a52; --sc-h2: #b8743f; --sc-h3: #93592d;
+}
+.theme-sector * { box-sizing: border-box; margin: 0; }
+.theme-sector [hidden] { display: none !important; }
+
+.theme-sector .l { position: absolute; left: 70px; top: 36px; width: 740px; display: flex; flex-direction: column; align-items: center; }
+.theme-sector .dial { position: relative; width: 720px; height: 720px; }
+.theme-sector .dial .sh { position: absolute; inset: 5px; border-radius: 50%; background: var(--sc-case); box-shadow: 0 22px 34px var(--sc-shadow), 0 2px 3px var(--sc-shadow); }
+.theme-sector .dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.theme-sector .hand { transform-origin: 50% 50%; will-change: transform; }
+.theme-sector .hand.s { transform-origin: 50% 64.667%; transition: transform .22s cubic-bezier(.3, .6, .3, 1); }
+.theme-sector .hand.h path, .theme-sector .hand.m path { fill: url(#sc-brown); }
+.theme-sector .hand.s line { stroke: var(--sc-red); stroke-width: 1.6; }
+.theme-sector .hand.s circle { fill: var(--sc-red); }
+.theme-sector .sc-g1 { stop-color: var(--sc-h1); } .theme-sector .sc-g2 { stop-color: var(--sc-h2); } .theme-sector .sc-g3 { stop-color: var(--sc-h3); }
+.theme-sector .cap1 { fill: var(--sc-h2); } .theme-sector .cap2 { fill: var(--sc-case); }
+.theme-sector .caseOut { fill: var(--sc-case); } .theme-sector .caseIn { fill: var(--sc-base); }
+.theme-sector .ringBg { fill: var(--sc-ring); } .theme-sector .bandBg { fill: var(--sc-band); } .theme-sector .centerBg { fill: var(--sc-center); }
+.theme-sector .sdialBg { fill: var(--sc-sdial); }
+.theme-sector .ln { fill: none; stroke: var(--sc-ink); }
+.theme-sector .ctr { fill: none; stroke: var(--sc-lines); stroke-width: 1; }
+.theme-sector .n5 { font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 500; font-size: 20px; fill: var(--sc-sub); text-anchor: middle; }
+.theme-sector .n12 { font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 600; font-size: 54px; fill: var(--sc-ink); text-anchor: middle; }
+
+/* 타이머: 시계 바로 아래, 숨김이어도 자리 유지 */
+.theme-sector .tm { position: relative; margin-top: 14px; height: 64px; width: 100%; display: flex; justify-content: center; align-items: baseline; gap: 14px; font-family: "Barlow Condensed", sans-serif; }
+.theme-sector .tm.t-hidden { visibility: hidden; }
+.theme-sector .tm i { font-style: normal; font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 300; font-size: 22px; color: var(--sc-sub); }
+.theme-sector .tm b { font-size: 58px; line-height: 64px; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-sector .tm em { font-style: normal; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-red); align-self: center; }
+.theme-sector .tm .th { position: absolute; top: 62px; left: 0; right: 0; text-align: center; font-family: "Pretendard Variable", sans-serif; font-size: 18px; color: var(--sc-sub); }
+.theme-sector .t-paused b { opacity: .32; }
+.theme-sector .t-ringing b { animation: sc-blink 1s step-end infinite; }
+.theme-sector .tm b.shake { animation: sc-shake .4s; }
+@keyframes sc-blink { 0% { opacity: 1; } 50% { opacity: .08; } }
+@keyframes sc-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+.theme-sector .legend { position: absolute; left: 70px; width: 740px; bottom: 22px; text-align: center; font-size: 14.5px; color: var(--sc-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 30px; }
+.theme-sector .legend b { font-family: "Barlow Condensed", sans-serif; font-weight: 600; font-size: 16px; color: var(--sc-ink); }
+.theme-sector .legend .sep { margin: 0 .7em; font-style: normal; opacity: .6; }
+.theme-sector .legend.off { opacity: .3; }
+
+/* 오른쪽 열 */
+.theme-sector .r { position: absolute; right: 60px; top: 60px; width: clamp(440px, calc(var(--stage-w) - 940px), 560px); }   /* 우측 고정: 넓은 화면은 간격이 늘고 3:2는 시계와 겹치기 전에 폭이 준다 */
+.theme-sector .date { font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 700; font-size: 58px; letter-spacing: -.02em; line-height: 1.05; }
+.theme-sector .date span { display: block; }
+.theme-sector .dsub { font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 300; font-size: 24px; color: var(--sc-sub); margin-top: 10px; display: flex; align-items: center; gap: 14px; min-height: 48px; white-space: nowrap; }
+.theme-sector .dsub b { font-family: "Barlow Condensed", sans-serif; font-weight: 500; font-size: 44px; color: var(--sc-ink); }
+.theme-sector .dsub .wl { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-sector .dsub .wp { font-size: 17px; flex: none; }
+.theme-sector .fl { display: flex; gap: 10px; flex: none; }
+.theme-sector .fl span { display: block; width: 32px; height: 32px; color: var(--sc-acc); }
+.theme-sector .fl svg { width: 100%; height: 100%; }
+.theme-sector .dsub .none { font-size: 20px; }
+.theme-sector .wst { font-size: 15px; color: var(--sc-sub); margin-top: 4px; }
+
+.theme-sector h4 { display: flex; align-items: baseline; gap: 12px; font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .04em; color: var(--sc-sub); margin: 22px 0 6px; padding-bottom: 7px; border-bottom: 1px solid var(--sc-rule); white-space: nowrap; }
+.theme-sector h4 .st { font-family: "Pretendard Variable", sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-sector .ev { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: baseline; padding: 5px 0; font-size: 27px; column-gap: 0; }
+.theme-sector .ev .t { font-family: "Barlow Condensed", sans-serif; font-size: 30px; font-weight: 500; white-space: nowrap; }
+.theme-sector .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-sector .ev .p { font-size: 18px; color: var(--sc-sub); padding-left: 14px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-sector .ev[data-st=past] { color: var(--sc-past); }
+.theme-sector .ev[data-st=past] .n { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.theme-sector .ev[data-st=next] .t, .theme-sector .ev[data-st=now] .t { color: var(--sc-acc); font-weight: 600; }
+.theme-sector .ev[data-st=next] .n, .theme-sector .ev[data-st=now] .n { font-weight: 600; }
+.theme-sector .more { font-size: 17px; color: var(--sc-sub); padding: 3px 0 0; }
+.theme-sector .none { font-size: 19px; color: var(--sc-sub); padding: 4px 0; }
+
+.theme-sector .wk { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); font-size: 17px; }
+.theme-sector .wk .c { padding: 2px 4px 0 0; color: var(--sc-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-sector .wk b { display: block; font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 500; font-size: 22px; color: var(--sc-ink); margin-bottom: 4px; }
+.theme-sector .wk .c[data-sun=true] b { color: var(--sc-red); }
+.theme-sector .wk .c i { font-style: normal; font-size: 13px; }
+.theme-sector .wk .c .x { display: block; overflow: hidden; text-overflow: ellipsis; min-height: 24px; }
+
+.theme-sector .memo .li { font-size: 24px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.theme-sector .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--sc-ok); transition: background .6s; }
+.theme-sector .dot[data-h=net] { background: #e0a030; }
+.theme-sector .dot[data-h=server] { background: #d6453d; }
+
+/* 3:2: 이번 주 7칸이 말줄임되지 않게 오른쪽 여백·글자를 조금 줄임 */
+@container (max-width: 1400px) {
+  .theme-sector .r { right: 44px; width: 456px; }
+  .theme-sector .wk { font-size: 15px; }
+  .theme-sector .wk .c { padding-right: 0; }
+}
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 a1 이식, 갈색 가는 바늘·다크 구리색·타이머 단계·단축키 줄·상태 점 | DESIGN.md */
+/* 개정 기록 | 2026-11-11 | v1.2 | 우측 덩어리를 right 기준으로 고정, 폭은 440~560 범위로 가변 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */

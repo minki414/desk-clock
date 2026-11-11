@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; media-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>식탁 시계</title>
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="themes/bauhaus/theme.css">
+<link rel="stylesheet" href="themes/sector/theme.css">
+<link rel="stylesheet" href="themes/navy/theme.css">
+<link rel="stylesheet" href="themes/receiver/theme.css">
+<link rel="stylesheet" href="themes/flip/theme.css">
+<link rel="stylesheet" href="themes/standby/theme.css">
+<link rel="stylesheet" href="app.css">
+<link rel="stylesheet" href="settings.css">
+</head>
+<body>
+<div id="stage"></div>
+<div id="toast" role="status"></div>
+<button id="gear" type="button" aria-label="설정">
+  <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+</button>
+<div id="scrim" hidden></div>
+<aside id="drawer" role="dialog" aria-label="설정" hidden></aside>
+<div id="dim"></div>
+
+<script src="icons.js"></script>
+<script src="themes/bauhaus/theme.js"></script>
+<script src="themes/sector/theme.js"></script>
+<script src="themes/navy/theme.js"></script>
+<script src="themes/receiver/theme.js"></script>
+<script src="themes/flip/theme.js"></script>
+<script src="themes/standby/theme.js"></script>
+<script src="labels.js"></script>
+<script src="timer-parse.js"></script>
+<script src="keys.js"></script>
+<script src="model.js"></script>
+<script src="settings.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

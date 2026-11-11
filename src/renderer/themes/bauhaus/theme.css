@@ -1,0 +1,107 @@
+/* A2 바우하우스(기본). 정본 시안 a2-bauhaus.html, 변경점은 DESIGN.md.
+   색 변수는 @property로 등록해 라이트/다크 전환 때 2초 교차 페이드가 되게 한다. */
+@property --bh-wall { syntax: '<color>'; inherits: true; initial-value: #d9d6d0; }
+@property --bh-face { syntax: '<color>'; inherits: true; initial-value: #fdfdfb; }
+@property --bh-bezel { syntax: '<color>'; inherits: true; initial-value: #2a2a2a; }
+@property --bh-ink { syntax: '<color>'; inherits: true; initial-value: #161616; }
+@property --bh-sub { syntax: '<color>'; inherits: true; initial-value: #5e5b55; }
+@property --bh-past { syntax: '<color>'; inherits: true; initial-value: #9b978f; }
+@property --bh-yel { syntax: '<color>'; inherits: true; initial-value: #f2b200; }
+@property --bh-ok { syntax: '<color>'; inherits: true; initial-value: #8fa38a; }
+@property --bh-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,.18); }
+@property --bh-dome { syntax: '<number>'; inherits: true; initial-value: .35; }
+
+.theme-bauhaus {
+  --bh-wall: #d9d6d0; --bh-face: #fdfdfb; --bh-bezel: #2a2a2a; --bh-ink: #161616; --bh-sub: #5e5b55;
+  --bh-past: #9b978f; --bh-yel: #f2b200; --bh-ok: #8fa38a; --bh-shadow: rgba(0,0,0,.18); --bh-dome: .35;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden;
+  background: var(--bh-wall); color: var(--bh-ink);
+  font-family: "Pretendard Variable", sans-serif;
+  transition: --bh-wall 2s, --bh-face 2s, --bh-bezel 2s, --bh-ink 2s, --bh-sub 2s, --bh-past 2s, --bh-yel 2s, --bh-ok 2s, --bh-shadow 2s, --bh-dome 2s;
+}
+/* 다크: 벽 #121212, 문자판 #1b1b1b(무광), 숫자·바늘 #ecebe7, 초침 노랑 유지, 유리 반사 절반 */
+.theme-bauhaus[data-mode=dark] {
+  --bh-wall: #121212; --bh-face: #1b1b1b; --bh-bezel: #333331; --bh-ink: #ecebe7; --bh-sub: #a09d96;
+  --bh-past: #5f5d58; --bh-ok: #3f4a3c; --bh-shadow: rgba(0,0,0,.55); --bh-dome: .175;
+}
+.theme-bauhaus * { box-sizing: border-box; margin: 0; }
+.theme-bauhaus [hidden] { display: none !important; }
+
+.theme-bauhaus .bh-grid { display: grid; grid-template-columns: var(--bh-side) 1fr var(--bh-side); --bh-side: max(200px, min(330px, calc(330px - (1440px - var(--stage-w)) * .7))); height: 900px; padding: 64px; }
+.theme-bauhaus .bh-col { display: flex; flex-direction: column; gap: 30px; padding-top: 6px; min-width: 0; }
+.theme-bauhaus .bh-mid { position: relative; display: flex; flex-direction: column; align-items: center; }
+
+/* 소제목: 굵은 윗선 + 짧은 명사, 상태 안내는 같은 줄 보조색 작은 글씨 */
+.theme-bauhaus .lab { display: flex; align-items: baseline; gap: 12px; font-size: 15px; font-weight: 600; color: var(--bh-sub); border-top: 2px solid var(--bh-ink); padding-top: 10px; margin-bottom: 8px; white-space: nowrap; }
+.theme-bauhaus .lab .st { font-weight: 400; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-bauhaus .dt { font-size: 30px; font-weight: 600; line-height: 1.3; }
+.theme-bauhaus .dt span { display: block; }
+
+.theme-bauhaus .wx { display: flex; align-items: flex-start; gap: 12px; }
+.theme-bauhaus .wx .t { font-family: Jost, "Pretendard Variable", sans-serif; font-weight: 300; font-size: 84px; line-height: .9; }
+.theme-bauhaus .wx .d { font-size: 20px; color: var(--bh-sub); line-height: 1.45; padding-top: 6px; white-space: nowrap; }
+.theme-bauhaus .fl { display: flex; gap: 8px; margin-left: 8px; padding-top: 4px; }
+/* 우산·마스크: 강조색(노랑) 원 안에 잉크색 선. 노랑 선만 쓰면 벽색 위에서 안 보여서 원으로 받친다. */
+.theme-bauhaus .fl span { width: 38px; height: 38px; border-radius: 50%; background: var(--bh-yel); color: #161616; display: grid; place-items: center; }
+.theme-bauhaus .fl svg { width: 24px; height: 24px; }
+.theme-bauhaus .none { font-size: 18px; color: var(--bh-sub); padding: 4px 0; }
+.theme-bauhaus .more { font-size: 17px; color: var(--bh-sub); padding: 2px 0; }
+
+.theme-bauhaus .mm .li { font-size: 22px; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.theme-bauhaus .ev { display: grid; grid-template-columns: 76px minmax(0, 1fr); font-size: 24px; padding: 5px 0; align-items: baseline; }
+.theme-bauhaus .ev .t { font-family: Jost, "Pretendard Variable", sans-serif; font-weight: 400; font-size: 24px; white-space: nowrap; }
+.theme-bauhaus .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-bauhaus .ev[data-st=past] { color: var(--bh-past); }
+.theme-bauhaus .ev[data-st=next] .t, .theme-bauhaus .ev[data-st=now] .t { background: var(--bh-yel); color: #161616; padding: 0 4px; margin-left: -4px; width: max-content; font-weight: 500; }
+.theme-bauhaus .ev[data-st=now] .n { font-weight: 600; }
+
+.theme-bauhaus .wk { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; font-size: 20px; padding: 3px 0; color: var(--bh-sub); align-items: baseline; }
+.theme-bauhaus .wk b { color: var(--bh-ink); font-weight: 600; }
+.theme-bauhaus .wk[data-sun=true] b { color: #c4402e; }
+.theme-bauhaus[data-mode=dark] .wk[data-sun=true] b { color: #e8745f; }
+.theme-bauhaus .wk .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-bauhaus .wk em { font-style: normal; font-size: 15px; padding-left: 6px; }
+
+/* 시계 */
+.theme-bauhaus .dial { position: relative; width: 640px; height: 640px; }
+.theme-bauhaus .dial .sh { position: absolute; inset: 0; border-radius: 50%; background: var(--bh-bezel); box-shadow: 0 26px 40px var(--bh-shadow), 0 3px 4px var(--bh-shadow); }
+.theme-bauhaus .dial svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.theme-bauhaus .hand { transform-origin: 50% 50%; will-change: transform; }
+.theme-bauhaus .hand rect { fill: var(--bh-ink); }
+.theme-bauhaus .hand.s { transition: transform .15s cubic-bezier(.34, 1.7, .5, 1); }
+.theme-bauhaus .hand.s line { stroke: var(--bh-yel); stroke-width: 3; }
+.theme-bauhaus .hand.s circle.c1 { fill: var(--bh-yel); }
+.theme-bauhaus .hand.s circle.c2 { fill: var(--bh-ink); }
+.theme-bauhaus .bezel { fill: var(--bh-bezel); }
+.theme-bauhaus .faceBg { fill: var(--bh-face); }
+.theme-bauhaus .tk { stroke: var(--bh-ink); fill: none; }
+.theme-bauhaus .num { font-family: Jost, "Pretendard Variable", sans-serif; font-weight: 300; font-size: 48px; fill: var(--bh-ink); text-anchor: middle; }
+.theme-bauhaus .dome stop:nth-child(1) { stop-color: #fff; stop-opacity: var(--bh-dome); }
+.theme-bauhaus .dome stop:nth-child(2) { stop-color: #fff; stop-opacity: 0; }
+.theme-bauhaus .dome stop:nth-child(3) { stop-color: #000; stop-opacity: .06; }
+
+/* 타이머: 시계 바로 아래, 숨김이어도 자리는 유지 */
+.theme-bauhaus .tm { position: relative; width: 100%; height: 76px; margin-top: 30px; display: flex; justify-content: center; }
+.theme-bauhaus .tm.t-hidden { visibility: hidden; }
+.theme-bauhaus .tn { position: relative; font-family: Jost, "Pretendard Variable", sans-serif; font-weight: 300; font-size: 64px; line-height: 76px; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-bauhaus .tn::before { content: ""; position: absolute; left: -32px; top: 31px; width: 14px; height: 14px; border-radius: 50%; background: var(--bh-yel); }
+.theme-bauhaus .th { position: absolute; left: 0; right: 0; top: 72px; text-align: center; font-size: 19px; color: var(--bh-sub); white-space: nowrap; }
+.theme-bauhaus .t-paused .tn { opacity: .32; }
+.theme-bauhaus .t-ringing .tn { animation: bh-blink 1s step-end infinite; }
+.theme-bauhaus .tn.shake { animation: bh-shake .4s; }
+@keyframes bh-blink { 0% { opacity: 1; } 50% { opacity: .08; } }
+@keyframes bh-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+/* 단축키 안내: 하단 중앙 얇은 글자 */
+.theme-bauhaus .legend { position: absolute; left: 64px; right: 64px; bottom: 26px; text-align: center; font-size: 14.5px; font-weight: 400; color: var(--bh-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.theme-bauhaus .legend b { font-family: Jost, "Pretendard Variable", sans-serif; font-weight: 500; color: var(--bh-ink); }
+.theme-bauhaus .legend .sep { margin: 0 .7em; font-style: normal; opacity: .6; }
+.theme-bauhaus .legend.off { opacity: .3; }
+
+.theme-bauhaus .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--bh-ok); transition: background .6s; }
+.theme-bauhaus .dot[data-h=net] { background: #e0a030; }
+.theme-bauhaus .dot[data-h=server] { background: #d6453d; }
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 a2 이식, 다크판·타이머 단계·단축키 줄·상태 점 추가 | DESIGN.md */
+/* 개정 기록 | 2026-11-11 | v1.2 | 좌우 열 폭을 스테이지 너비에 맞춰 가변(1440에서 330, 3:2는 267) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */

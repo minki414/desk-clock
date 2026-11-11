@@ -1,0 +1,104 @@
+/* D4 스탠바이. 정본 시안 d4-standby.html. 초 단위 움직임은 타이머 고리 진행뿐입니다. */
+@property --sb-bg { syntax: '<color>'; inherits: true; initial-value: #000000; }
+@property --sb-pane { syntax: '<color>'; inherits: true; initial-value: #151517; }
+@property --sb-pane2 { syntax: '<color>'; inherits: true; initial-value: #1c1c1f; }
+@property --sb-ink { syntax: '<color>'; inherits: true; initial-value: #f3f3f5; }
+@property --sb-sub { syntax: '<color>'; inherits: true; initial-value: #8b8b93; }
+@property --sb-acc { syntax: '<color>'; inherits: true; initial-value: #ff9f43; }
+@property --sb-min { syntax: '<color>'; inherits: true; initial-value: #ffd6a8; }
+@property --sb-colon { syntax: '<color>'; inherits: true; initial-value: #3a3a40; }
+@property --sb-past { syntax: '<color>'; inherits: true; initial-value: #505056; }
+@property --sb-bar { syntax: '<color>'; inherits: true; initial-value: #3a3a40; }
+@property --sb-pill { syntax: '<color>'; inherits: true; initial-value: #2a2116; }
+@property --sb-track { syntax: '<color>'; inherits: true; initial-value: #2c2c31; }
+@property --sb-circle { syntax: '<color>'; inherits: true; initial-value: #4a4a52; }
+@property --sb-icon { syntax: '<color>'; inherits: true; initial-value: #c9c9d1; }
+@property --sb-red { syntax: '<color>'; inherits: true; initial-value: #ff6b6b; }
+@property --sb-shadow { syntax: '<color>'; inherits: true; initial-value: rgba(0,0,0,0); }
+@property --sb-ok { syntax: '<color>'; inherits: true; initial-value: #2f5d3a; }
+
+.theme-standby {
+  --sb-bg: #000; --sb-pane: #151517; --sb-pane2: #1c1c1f; --sb-ink: #f3f3f5; --sb-sub: #8b8b93; --sb-acc: #ff9f43; --sb-min: #ffd6a8; --sb-colon: #3a3a40;
+  --sb-past: #505056; --sb-bar: #3a3a40; --sb-pill: #2a2116; --sb-track: #2c2c31; --sb-circle: #4a4a52; --sb-icon: #c9c9d1; --sb-red: #ff6b6b; --sb-shadow: rgba(0,0,0,0); --sb-ok: #2f5d3a;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--sb-bg); color: var(--sb-ink); font-family: "Pretendard Variable", sans-serif;
+  transition: --sb-bg 2s, --sb-pane 2s, --sb-pane2 2s, --sb-ink 2s, --sb-sub 2s, --sb-acc 2s, --sb-min 2s, --sb-colon 2s, --sb-past 2s, --sb-bar 2s, --sb-pill 2s, --sb-track 2s, --sb-circle 2s, --sb-icon 2s, --sb-red 2s, --sb-shadow 2s, --sb-ok 2s;
+}
+/* 라이트: 바탕 #f2f2f4, 칸 #ffffff, 글자 #111, 분 숫자 #e8892b */
+.theme-standby[data-mode=light] {
+  --sb-bg: #f2f2f4; --sb-pane: #ffffff; --sb-pane2: #f2f2f4; --sb-ink: #111111; --sb-sub: #6c6c75; --sb-acc: #d9731a; --sb-min: #e8892b; --sb-colon: #cdcdd3;
+  --sb-past: #b4b4bb; --sb-bar: #d3d3d8; --sb-pill: #fdecd8; --sb-track: #e4e4e9; --sb-circle: #c4c4cb; --sb-icon: #55555d; --sb-red: #e5484d; --sb-shadow: rgba(20,20,40,.08); --sb-ok: #a9c4b0;
+}
+.theme-standby * { box-sizing: border-box; margin: 0; }
+.theme-standby [hidden] { display: none !important; }
+
+.theme-standby .l { position: absolute; left: 64px; top: 0; bottom: 0; width: 820px; display: flex; flex-direction: column; justify-content: center; }
+.theme-standby .t { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 900; font-size: 320px; line-height: .86; letter-spacing: -.035em; font-variant-numeric: tabular-nums; display: flex; white-space: nowrap; }
+.theme-standby .t .m { color: var(--sb-min); }
+.theme-standby .t .c { color: var(--sb-colon); margin: 0 4px; }
+.theme-standby .dt { display: flex; align-items: center; gap: 18px; font-size: 36px; font-weight: 600; color: var(--sb-sub); margin: 28px 0 0 14px; white-space: nowrap; }
+.theme-standby .dt b { color: var(--sb-ink); font-weight: 700; flex: none; }
+.theme-standby .dt .nx { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-standby .tm { position: relative; margin: 30px 0 0 10px; height: 78px; align-self: flex-start; display: flex; align-items: center; gap: 18px; background: var(--sb-pane); border-radius: 999px; padding: 12px 30px 12px 14px; max-width: 100%; box-shadow: 0 1px 2px var(--sb-shadow), 0 12px 30px var(--sb-shadow); }
+.theme-standby .tm.t-hidden { visibility: hidden; }
+.theme-standby .tm svg { width: 54px; height: 54px; flex: none; }
+.theme-standby .tm .trk { fill: none; stroke: var(--sb-track); stroke-width: 6; }
+.theme-standby .tm .prg { fill: none; stroke: var(--sb-acc); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 138.2; stroke-dashoffset: 138.2; transform: rotate(-90deg); transform-origin: 27px 27px; transition: stroke-dashoffset 1s linear; }
+.theme-standby .tm b { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 46px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-standby .tm span { font-size: 20px; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .tm .th { color: var(--sb-ink); font-weight: 600; }
+.theme-standby .t-paused b, .theme-standby .t-paused svg { opacity: .35; }
+.theme-standby .t-ringing b, .theme-standby .t-ringing svg { animation: sb-blink 1s step-end infinite; }
+.theme-standby .tm b.shake { animation: sb-shake .4s; }
+@keyframes sb-blink { 0% { opacity: 1; } 50% { opacity: .08; } }
+@keyframes sb-shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-12px); } 40% { transform: translateX(10px); } 60% { transform: translateX(-7px); } 80% { transform: translateX(4px); } }
+
+.theme-standby .legend { position: absolute; left: 78px; width: 800px; bottom: 28px; font-size: 14.5px; color: var(--sb-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.theme-standby .legend b { font-family: Nunito, sans-serif; font-weight: 800; color: var(--sb-ink); }
+.theme-standby .legend .sep { margin: 0 .7em; font-style: normal; opacity: .6; }
+.theme-standby .legend.off { opacity: .3; }
+
+.theme-standby .r { position: absolute; right: 56px; top: 56px; bottom: 56px; width: clamp(400px, calc(var(--stage-w) - 970px), 520px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
+.theme-standby .p { position: relative; min-height: 0; overflow: hidden; background: var(--sb-pane); border-radius: 28px; padding: 24px 28px; box-shadow: 0 1px 2px var(--sb-shadow), 0 12px 30px var(--sb-shadow); }
+.theme-standby .p h3 { display: flex; align-items: baseline; gap: 12px; font-size: 17px; font-weight: 600; color: var(--sb-sub); margin-bottom: 10px; white-space: nowrap; }
+.theme-standby .p h3 .st { font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-standby .wx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; min-height: 145px; }
+.theme-standby .wx .k { width: 64px; height: 64px; color: var(--sb-icon); }
+.theme-standby .wx .k svg { width: 100%; height: 100%; stroke-width: .9; }
+.theme-standby .wx b { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 300; font-size: 80px; line-height: 1; white-space: nowrap; }
+.theme-standby .wx .side { text-align: right; font-size: 21px; color: var(--sb-sub); line-height: 1.5; min-width: 0; }
+.theme-standby .wx .side > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.theme-standby .flags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
+.theme-standby .flag { display: flex; align-items: center; gap: 8px; background: var(--sb-pill); color: var(--sb-acc); border-radius: 999px; padding: 6px 14px 6px 10px; font-size: 17px; font-weight: 600; }
+.theme-standby .flag svg { width: 22px; height: 22px; }
+.theme-standby .wnone { grid-column: 1 / -1; font-size: 22px; color: var(--sb-sub); }
+.theme-standby .wst { grid-column: 1 / -1; font-size: 14px; color: var(--sb-sub); margin-top: -10px; }
+
+.theme-standby .ev { display: grid; grid-template-columns: 6px 84px minmax(0, 1fr); gap: 14px; align-items: center; font-size: 25px; padding: 8px 0; }
+.theme-standby .ev i { width: 6px; height: 30px; border-radius: 3px; background: var(--sb-bar); }
+.theme-standby .ev .tt { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 25px; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .ev .tt.ad { font-family: "Pretendard Variable", sans-serif; font-size: 21px; }
+.theme-standby .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-standby .ev[data-st=next] i, .theme-standby .ev[data-st=now] i { background: var(--sb-acc); }
+.theme-standby .ev[data-st=next] .tt, .theme-standby .ev[data-st=now] .tt { color: var(--sb-acc); }
+.theme-standby .ev[data-st=next] .n, .theme-standby .ev[data-st=now] .n { font-weight: 700; }
+.theme-standby .ev[data-st=later] i { background: #5d7bff; }
+.theme-standby .ev[data-st=past] { color: var(--sb-past); }
+.theme-standby .more { font-size: 16px; color: var(--sb-sub); padding: 2px 0 0 20px; }
+.theme-standby .none { font-size: 20px; color: var(--sb-sub); padding: 6px 0; }
+.theme-standby .wk { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 14px; }
+.theme-standby .wk div { background: var(--sb-pane2); border-radius: 12px; padding: 8px 0; text-align: center; font-size: 15px; color: var(--sb-sub); }
+.theme-standby .wk div b { display: block; color: var(--sb-ink); font-size: 17px; margin-bottom: 4px; }
+.theme-standby .wk div u { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 0 auto; background: var(--sb-acc); text-decoration: none; }
+.theme-standby .wk div[data-has=false] u { background: transparent; }
+.theme-standby .wk div[data-sun=true] b { color: var(--sb-red); }
+.theme-standby .memo .li { font-size: 23px; padding: 5px 0; display: flex; gap: 12px; align-items: center; }
+.theme-standby .memo .li::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--sb-circle); flex: none; }
+.theme-standby .memo .li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-standby .memo .more { padding-left: 28px; }
+
+.theme-standby .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--sb-ok); transition: background .6s; }
+.theme-standby .dot[data-h=net] { background: #e0a030; }
+.theme-standby .dot[data-h=server] { background: #d6453d; }
+
+/* 개정 기록 | 2026-11-11 | v1 | 시안 d4 이식, 라이트판·타이머 고리 진행·단축키 줄·상태 점 | DESIGN.md */
+/* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로, 우측 칸 폭 400~520 가변(3:2에서 시계와 겹침 방지) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
