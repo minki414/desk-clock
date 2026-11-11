@@ -20,7 +20,7 @@
 .theme-standby {
   --sb-bg: #000; --sb-pane: #151517; --sb-pane2: #1c1c1f; --sb-ink: #f3f3f5; --sb-sub: #8b8b93; --sb-acc: #ff9f43; --sb-min: #ffd6a8; --sb-colon: #3a3a40;
   --sb-past: #505056; --sb-bar: #3a3a40; --sb-pill: #2a2116; --sb-track: #2c2c31; --sb-circle: #4a4a52; --sb-icon: #c9c9d1; --sb-red: #ff6b6b; --sb-shadow: rgba(0,0,0,0); --sb-ok: #2f5d3a;
-  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--sb-bg); color: var(--sb-ink); font-family: "Pretendard Variable", sans-serif;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--sb-bg); color: var(--sb-ink); font-family: var(--f-sans), sans-serif;
   transition: --sb-bg 2s, --sb-pane 2s, --sb-pane2 2s, --sb-ink 2s, --sb-sub 2s, --sb-acc 2s, --sb-min 2s, --sb-colon 2s, --sb-past 2s, --sb-bar 2s, --sb-pill 2s, --sb-track 2s, --sb-circle 2s, --sb-icon 2s, --sb-red 2s, --sb-shadow 2s, --sb-ok 2s;
 }
 /* 라이트: 바탕 #f2f2f4, 칸 #ffffff, 글자 #111, 분 숫자 #e8892b */
@@ -32,7 +32,7 @@
 .theme-standby [hidden] { display: none !important; }
 
 .theme-standby .l { position: absolute; left: 64px; top: 0; bottom: 0; width: 820px; display: flex; flex-direction: column; justify-content: center; }
-.theme-standby .t { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 900; font-size: 320px; line-height: .86; letter-spacing: -.035em; font-variant-numeric: tabular-nums; display: flex; white-space: nowrap; }
+.theme-standby .t { font-family: Nunito, var(--f-sans), sans-serif; font-weight: 900; font-size: 320px; line-height: .86; letter-spacing: -.035em; font-variant-numeric: tabular-nums; display: flex; white-space: nowrap; }
 .theme-standby .t .m { color: var(--sb-min); }
 .theme-standby .t .c { color: var(--sb-colon); margin: 0 4px; }
 .theme-standby .dt { display: flex; align-items: center; gap: 18px; font-size: 36px; font-weight: 600; color: var(--sb-sub); margin: 28px 0 0 14px; white-space: nowrap; }
@@ -43,7 +43,7 @@
 .theme-standby .tm svg { width: 54px; height: 54px; flex: none; }
 .theme-standby .tm .trk { fill: none; stroke: var(--sb-track); stroke-width: 6; }
 .theme-standby .tm .prg { fill: none; stroke: var(--sb-acc); stroke-width: 6; stroke-linecap: round; stroke-dasharray: 138.2; stroke-dashoffset: 138.2; transform: rotate(-90deg); transform-origin: 27px 27px; transition: stroke-dashoffset 1s linear; }
-.theme-standby .tm b { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 46px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-standby .tm b { font-family: Nunito, var(--f-sans), sans-serif; font-weight: 800; font-size: 46px; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .theme-standby .tm span { font-size: 20px; color: var(--sb-sub); white-space: nowrap; }
 .theme-standby .tm .th { color: var(--sb-ink); font-weight: 600; }
 .theme-standby .t-paused b, .theme-standby .t-paused svg { opacity: .35; }
@@ -64,7 +64,7 @@
 .theme-standby .wx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; min-height: 145px; }
 .theme-standby .wx .k { width: 64px; height: 64px; color: var(--sb-icon); }
 .theme-standby .wx .k svg { width: 100%; height: 100%; stroke-width: .9; }
-.theme-standby .wx b { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 300; font-size: 80px; line-height: 1; white-space: nowrap; }
+.theme-standby .wx b { font-family: Nunito, var(--f-sans), sans-serif; font-weight: 300; font-size: 80px; line-height: 1; white-space: nowrap; }
 .theme-standby .wx .side { text-align: right; font-size: 21px; color: var(--sb-sub); line-height: 1.5; min-width: 0; }
 .theme-standby .wx .side > div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .theme-standby .flags { display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px; }
@@ -75,8 +75,8 @@
 
 .theme-standby .ev { display: grid; grid-template-columns: 6px 84px minmax(0, 1fr); gap: 14px; align-items: center; font-size: 25px; padding: 8px 0; }
 .theme-standby .ev i { width: 6px; height: 30px; border-radius: 3px; background: var(--sb-bar); }
-.theme-standby .ev .tt { font-family: Nunito, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 25px; color: var(--sb-sub); white-space: nowrap; }
-.theme-standby .ev .tt.ad { font-family: "Pretendard Variable", sans-serif; font-size: 21px; }
+.theme-standby .ev .tt { font-family: Nunito, var(--f-sans), sans-serif; font-weight: 800; font-size: 25px; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .ev .tt.ad { font-family: var(--f-sans), sans-serif; font-size: 21px; }
 .theme-standby .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-standby .ev[data-st=next] i, .theme-standby .ev[data-st=now] i { background: var(--sb-acc); }
 .theme-standby .ev[data-st=next] .tt, .theme-standby .ev[data-st=now] .tt { color: var(--sb-acc); }
@@ -102,3 +102,12 @@
 
 /* 개정 기록 | 2026-11-11 | v1 | 시안 d4 이식, 라이트판·타이머 고리 진행·단축키 줄·상태 점 | DESIGN.md */
 /* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로, 우측 칸 폭 400~520 가변(3:2에서 시계와 겹침 방지) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
+
+/* 언어별: 영어 긴 날짜 줄이 "다음 일정"까지 보이게 글자를 줄임 */
+.theme-standby[lang=en] .dt { font-size: 28px; }
+/* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */
+.theme-standby[lang=en] .wx { gap: 12px; }
+.theme-standby[lang=en] .wx b { font-size: 68px; }
+.theme-standby[lang=en] .wx .side { font-size: 18px; }
+.theme-standby[lang=en] .flag { font-size: 15px; padding: 5px 10px 5px 8px; }
+.theme-standby[lang|=zh] { line-height: 1.3; }   /* Noto 기본 줄 높이가 높아 일정 칸이 넘치지 않게 */

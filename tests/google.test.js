@@ -37,7 +37,7 @@ test('일정 정규화: 시간·종일·취소·거절', () => {
   assert.equal(G.normalizeEvent({ status: 'cancelled', start: { date: '2026-11-12' } }), null);
   assert.equal(G.normalizeEvent({ summary: 'x', start: { date: '2026-11-12' }, attendees: [{ self: true, responseStatus: 'declined' }] }), null);
   assert.equal(G.normalizeEvent({ summary: 'x', start: {} }), null);
-  assert.equal(G.normalizeEvent({ start: { date: '2026-11-12' }, end: { date: '2026-11-13' } }).title, '(제목 없음)');
+  assert.equal(G.normalizeEvent({ start: { date: '2026-11-12' }, end: { date: '2026-11-13' } }).title, '');   // 빈 제목은 화면이 언어에 맞는 '(제목 없음)'으로 보임
   assert.equal(G.normalizeEvent({ summary: '어린이날', start: { date: '2026-05-05' } }, true).holiday, true);
 });
 

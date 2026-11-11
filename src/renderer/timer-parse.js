@@ -8,7 +8,7 @@
 
   // 형식 '분.초': 소수점 뒤는 초 그대로(1.3=1분 3초, 1.35=1분 35초, 1.03=1분 3초)
   function parse(input) {
-    const bad = { ok: false, ms: 0, hint: '' };
+    const bad = { ok: false, ms: 0 };
     const m = /^(\d*)(?:\.(\d*))?$/.exec(String(input || ''));
     if (!m) return bad;
     const minStr = m[1] || '0';
@@ -17,10 +17,10 @@
     const min = Number(minStr);
     const sec = Number(secStr || '0');
     if (sec >= 60 || min * 60 + sec === 0) return bad;
-    const hint = [min ? `${min}분` : '', sec ? `${sec}초` : ''].filter(Boolean).join(' ');
-    return { ok: true, ms: (min * 60 + sec) * 1000, hint };
+    return { ok: true, ms: (min * 60 + sec) * 1000 };   // 안내 글('1분 35초')은 언어별이라 model.timerHint가 만듦
   }
 
   return { parse, MAX_LEN };
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §5 해석 규칙
+// 개정 기록 | 2026-11-11 | v1.3 | hint 제거(언어별 형식은 i18n.fmtDuration) | docs/v1.3-i18n-brief.md

@@ -1,6 +1,6 @@
 /* 핵심 앱 크롬(스테이지 바깥). 테마 CSS는 .theme-<id> 아래에서만 정의합니다. */
 html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-body { cursor: none; font-family: 'Pretendard Variable', Pretendard, 'Malgun Gothic', system-ui, sans-serif; transition: background-color 2s; }
+body { cursor: none; font-family: var(--f-sans), Pretendard, 'Malgun Gothic', system-ui, sans-serif; transition: background-color 2s; }
 body.awake, body.drawer-open { cursor: default; }
 /* 높이 900·너비 가변(app.js fit이 --stage-w를 정함) 캔버스를 창 높이에 맞춰 확대·축소 */
 #stage { position: absolute; left: 50%; top: 50%; width: var(--stage-w, 1440px); height: 900px; transform-origin: 0 0; overflow: hidden; }

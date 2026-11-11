@@ -41,6 +41,10 @@ const POLL_MS = 200;
 const STABLE_MS = 1000;
 const CONFIRM_MS = 700;
 const SEND_TIMEOUT_MS = 10 * 1000;
+// 사용자 의도 [2026-11-11 요청]: 슬롯 실행 뒤 ChatGPT 창이 시계를 가리면, 키를 보낸 뒤(키가 없으면 앱 창이 안정된 뒤) 1.5초 지나 시계를 다시 앞으로 가져온다.
+// 개발 판단: 켠 슬롯(=== true)만 대상이라 누락·잘못된 값은 끔. 지연은 cancelWait가 함께 취소해 다른 슬롯을 누르면 돌아오기도 취소된다.
+const RETURN_DELAY_MS = 1500;
+const shouldReturn = (slot) => !!slot && slot.returnToClock === true;
 // samples: [{ t, hwnd, cls }] 시간순, selfHwnd: 시계 창 핸들(문자열), now: 현재 시각(ms)
 function shouldSend(samples, selfHwnd, now) {
   const last = samples[samples.length - 1];
@@ -57,9 +61,9 @@ function confirmSend(hwnd, info, selfHwnd) {
 }
 
 function createForeground(bringToFront) {
-  let iv = null, wait = null;
+  let iv = null, wait = null, back = null;
   const stop = () => { clearInterval(iv); iv = null; };
-  const cancelWait = () => { clearInterval(wait); wait = null; };
+  const cancelWait = () => { clearInterval(wait); wait = null; clearTimeout(back); back = null; };
   return {
     stop,
     cancelWait,
@@ -79,6 +83,8 @@ function createForeground(bringToFront) {
       };
       wait = setInterval(tick, POLL_MS);
     },
+    // 1.5초 뒤 시계를 앞으로(새 슬롯 실행·cancelWait 시 취소)
+    returnLater() { clearTimeout(back); back = setTimeout(() => { back = null; bringToFront(); }, RETURN_DELAY_MS); },
     watch() {
       stop();
       const until = Date.now() + WATCH_MS;
@@ -93,7 +99,8 @@ function createForeground(bringToFront) {
   };
 }
 
-module.exports = { createForeground, foregroundClass, foregroundInfo, shouldSend, confirmSend, DESKTOP, STABLE_MS, CONFIRM_MS };
+module.exports = { createForeground, foregroundClass, foregroundInfo, shouldSend, confirmSend, shouldReturn, RETURN_DELAY_MS, DESKTOP, STABLE_MS, CONFIRM_MS };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §6 복귀 보조 장치
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 맨 앞 창 핸들·표본 판정(shouldSend)·대기(waitStable) 추가
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 안정 창 시간 600→1000ms, 판정 뒤 700ms 재확인(confirmSend) 추가(첫 실행이 느린 앱 대비)
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: shouldReturn·returnLater 추가(키 보낸 뒤/앱 창 안정 뒤 1.5초 후 시계를 앞으로, cancelWait 로 함께 취소)

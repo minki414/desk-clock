@@ -27,7 +27,7 @@
   --sc-h1: #7a4624; --sc-h2: #5a3219; --sc-h3: #3d2210;
   position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; container-type: inline-size;
   background: radial-gradient(120% 90% at 30% 40%, var(--sc-w1), var(--sc-w2)); color: var(--sc-ink);
-  font-family: "Pretendard Variable", sans-serif;
+  font-family: var(--f-sans), sans-serif;
   transition: --sc-w1 2s, --sc-w2 2s, --sc-case 2s, --sc-base 2s, --sc-ring 2s, --sc-band 2s, --sc-center 2s, --sc-sdial 2s, --sc-ink 2s, --sc-sub 2s, --sc-rule 2s, --sc-past 2s, --sc-acc 2s, --sc-red 2s, --sc-ok 2s, --sc-lines 2s, --sc-shadow 2s, --sc-h1 2s, --sc-h2 2s, --sc-h3 2s;
 }
 /* 다크: 다이얼 #1d1c1a·띠 #2a2824, 숫자·눈금 #e9dfc8, 갈색 바늘은 밝은 구리색 #b8743f */
@@ -56,16 +56,16 @@
 .theme-sector .sdialBg { fill: var(--sc-sdial); }
 .theme-sector .ln { fill: none; stroke: var(--sc-ink); }
 .theme-sector .ctr { fill: none; stroke: var(--sc-lines); stroke-width: 1; }
-.theme-sector .n5 { font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 500; font-size: 20px; fill: var(--sc-sub); text-anchor: middle; }
-.theme-sector .n12 { font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 600; font-size: 54px; fill: var(--sc-ink); text-anchor: middle; }
+.theme-sector .n5 { font-family: "Barlow Condensed", var(--f-sans), sans-serif; font-weight: 500; font-size: 20px; fill: var(--sc-sub); text-anchor: middle; }
+.theme-sector .n12 { font-family: "Barlow Condensed", var(--f-sans), sans-serif; font-weight: 600; font-size: 54px; fill: var(--sc-ink); text-anchor: middle; }
 
 /* 타이머: 시계 바로 아래, 숨김이어도 자리 유지 */
 .theme-sector .tm { position: relative; margin-top: 14px; height: 64px; width: 100%; display: flex; justify-content: center; align-items: baseline; gap: 14px; font-family: "Barlow Condensed", sans-serif; }
 .theme-sector .tm.t-hidden { visibility: hidden; }
-.theme-sector .tm i { font-style: normal; font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 300; font-size: 22px; color: var(--sc-sub); }
+.theme-sector .tm i { font-style: normal; font-family: var(--f-serif), var(--f-sans), serif; font-weight: 300; font-size: 22px; color: var(--sc-sub); }
 .theme-sector .tm b { font-size: 58px; line-height: 64px; font-weight: 500; letter-spacing: .02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .theme-sector .tm em { font-style: normal; width: 10px; height: 10px; border-radius: 50%; background: var(--sc-red); align-self: center; }
-.theme-sector .tm .th { position: absolute; top: 62px; left: 0; right: 0; text-align: center; font-family: "Pretendard Variable", sans-serif; font-size: 18px; color: var(--sc-sub); }
+.theme-sector .tm .th { position: absolute; top: 62px; left: 0; right: 0; text-align: center; font-family: var(--f-sans), sans-serif; font-size: 18px; color: var(--sc-sub); }
 .theme-sector .t-paused b { opacity: .32; }
 .theme-sector .t-ringing b { animation: sc-blink 1s step-end infinite; }
 .theme-sector .tm b.shake { animation: sc-shake .4s; }
@@ -79,9 +79,9 @@
 
 /* 오른쪽 열 */
 .theme-sector .r { position: absolute; right: 60px; top: 60px; width: clamp(440px, calc(var(--stage-w) - 940px), 560px); }   /* 우측 고정: 넓은 화면은 간격이 늘고 3:2는 시계와 겹치기 전에 폭이 준다 */
-.theme-sector .date { font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 700; font-size: 58px; letter-spacing: -.02em; line-height: 1.05; }
+.theme-sector .date { font-family: var(--f-serif), var(--f-sans), serif; font-weight: 700; font-size: 58px; letter-spacing: -.02em; line-height: 1.05; }
 .theme-sector .date span { display: block; }
-.theme-sector .dsub { font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 300; font-size: 24px; color: var(--sc-sub); margin-top: 10px; display: flex; align-items: center; gap: 14px; min-height: 48px; white-space: nowrap; }
+.theme-sector .dsub { font-family: var(--f-serif), var(--f-sans), serif; font-weight: 300; font-size: 24px; color: var(--sc-sub); margin-top: 10px; display: flex; align-items: center; gap: 14px; min-height: 48px; white-space: nowrap; }
 .theme-sector .dsub b { font-family: "Barlow Condensed", sans-serif; font-weight: 500; font-size: 44px; color: var(--sc-ink); }
 .theme-sector .dsub .wl { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .theme-sector .dsub .wp { font-size: 17px; flex: none; }
@@ -91,8 +91,8 @@
 .theme-sector .dsub .none { font-size: 20px; }
 .theme-sector .wst { font-size: 15px; color: var(--sc-sub); margin-top: 4px; }
 
-.theme-sector h4 { display: flex; align-items: baseline; gap: 12px; font-family: "Barlow Condensed", "Pretendard Variable", sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .04em; color: var(--sc-sub); margin: 22px 0 6px; padding-bottom: 7px; border-bottom: 1px solid var(--sc-rule); white-space: nowrap; }
-.theme-sector h4 .st { font-family: "Pretendard Variable", sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.theme-sector h4 { display: flex; align-items: baseline; gap: 12px; font-family: "Barlow Condensed", var(--f-sans), sans-serif; font-weight: 600; font-size: 17px; letter-spacing: .04em; color: var(--sc-sub); margin: 22px 0 6px; padding-bottom: 7px; border-bottom: 1px solid var(--sc-rule); white-space: nowrap; }
+.theme-sector h4 .st { font-family: var(--f-sans), sans-serif; font-weight: 400; font-size: 14px; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .theme-sector .ev { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; align-items: baseline; padding: 5px 0; font-size: 27px; column-gap: 0; }
 .theme-sector .ev .t { font-family: "Barlow Condensed", sans-serif; font-size: 30px; font-weight: 500; white-space: nowrap; }
 .theme-sector .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -106,7 +106,7 @@
 
 .theme-sector .wk { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); font-size: 17px; }
 .theme-sector .wk .c { padding: 2px 4px 0 0; color: var(--sc-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.theme-sector .wk b { display: block; font-family: Hahmlet, "Pretendard Variable", serif; font-weight: 500; font-size: 22px; color: var(--sc-ink); margin-bottom: 4px; }
+.theme-sector .wk b { display: block; font-family: var(--f-serif), var(--f-sans), serif; font-weight: 500; font-size: 22px; color: var(--sc-ink); margin-bottom: 4px; }
 .theme-sector .wk .c[data-sun=true] b { color: var(--sc-red); }
 .theme-sector .wk .c i { font-style: normal; font-size: 13px; }
 .theme-sector .wk .c .x { display: block; overflow: hidden; text-overflow: ellipsis; min-height: 24px; }
@@ -126,3 +126,13 @@
 
 /* 개정 기록 | 2026-11-11 | v1 | 시안 a1 이식, 갈색 가는 바늘·다크 구리색·타이머 단계·단축키 줄·상태 점 | DESIGN.md */
 /* 개정 기록 | 2026-11-11 | v1.2 | 우측 덩어리를 right 기준으로 고정, 폭은 440~560 범위로 가변 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
+
+/* 언어별: 영어는 날씨 줄과 주간 칸 글자를 조금 줄여 말줄임·겹침을 막음 */
+.theme-sector[lang=en] .dsub { font-size: 18px; gap: 10px; }
+.theme-sector[lang=en] .dsub .wp { font-size: 14px; }
+.theme-sector[lang|=zh] .dsub { font-size: 21px; gap: 10px; }
+.theme-sector[lang|=zh] .dsub .wp { font-size: 14px; }
+.theme-sector[lang|=zh] { line-height: 1.3; }   /* Noto 기본 줄 높이가 높아 메모가 아래로 넘치지 않게 */
+.theme-sector[lang=en] .wk .c { font-size: 14px; padding-right: 6px; }
+.theme-sector[lang=en] .wk b { font-size: 20px; }
+/* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */

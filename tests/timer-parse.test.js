@@ -13,10 +13,11 @@ test('설계서 §5 유효 입력', () => {
   }
 });
 
-test('안내 문구', () => {
-  assert.equal(parse('1.35').hint, '1분 35초');
-  assert.equal(parse('10').hint, '10분');
-  assert.equal(parse('0.3').hint, '3초');
+test('안내 문구는 언어별 형식화(i18n.fmtDuration)가 만듦', () => {
+  const { fmtDuration } = require('../src/renderer/i18n.js');
+  assert.equal(fmtDuration('ko', parse('1.35').ms), '1분 35초');
+  assert.equal(fmtDuration('ko', parse('10').ms), '10분');
+  assert.equal(fmtDuration('ko', parse('0.3').ms), '3초');
 });
 
 test('무효 입력', () => {

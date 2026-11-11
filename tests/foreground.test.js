@@ -35,3 +35,11 @@ test('재확인: 같은 앱 창이 그대로일 때만 true', () => {
   assert.equal(confirmSend(SELF, { hwnd: SELF, cls: 'Chrome_WidgetWin_1' }, SELF), false);   // 시계 창
   assert.equal(confirmSend('5', null, SELF), false);
 });
+
+test('시계로 돌아오기: returnToClock === true 인 슬롯만 대상(누락·다른 값은 끔)', () => {
+  const { shouldReturn, RETURN_DELAY_MS } = require('../src/main/foreground.js');
+  assert.equal(RETURN_DELAY_MS, 1500);
+  assert.equal(shouldReturn({ returnToClock: true }), true);
+  for (const v of [{}, { returnToClock: false }, { returnToClock: 'true' }, { returnToClock: 1 }, null, undefined]) assert.equal(shouldReturn(v), false);
+});
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청

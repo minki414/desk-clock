@@ -21,7 +21,7 @@
   --fl-bg: #0e0e0e; --fl-t1: #232323; --fl-t2: #1d1d1d; --fl-b1: #151515; --fl-b2: #191919; --fl-ink: #e4e4e2; --fl-sub: #7d7d7a; --fl-acc: #f5a524;
   --fl-past: #4a4a48; --fl-line: #1e1e1e; --fl-hinge: #070707; --fl-shine: rgba(255,255,255,.035); --fl-dark: rgba(0,0,0,.18); --fl-shadow: rgba(0,0,0,.6);
   --fl-ok: #4d6b4a; --fl-tile1: #242424; --fl-tile2: #181818;
-  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--fl-bg); color: var(--fl-ink); font-family: "Pretendard Variable", sans-serif;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; background: var(--fl-bg); color: var(--fl-ink); font-family: var(--f-sans), sans-serif;
   transition: --fl-bg 2s, --fl-t1 2s, --fl-t2 2s, --fl-b1 2s, --fl-b2 2s, --fl-ink 2s, --fl-sub 2s, --fl-acc 2s, --fl-past 2s, --fl-line 2s, --fl-hinge 2s, --fl-shine 2s, --fl-dark 2s, --fl-shadow 2s, --fl-ok 2s, --fl-tile1 2s, --fl-tile2 2s;
 }
 /* 라이트: 바탕 #e9e8e4, 카드 #fbfbf9→#efeee9, 숫자 #1d1d1d, 강조 #d9822b */
@@ -41,7 +41,7 @@
 .theme-flip .h::after { content: ""; position: absolute; inset: 0; pointer-events: none; }
 .theme-flip .h.top::after { background: linear-gradient(180deg, var(--fl-shine), transparent); }
 .theme-flip .h.bot::after { background: linear-gradient(180deg, transparent, var(--fl-dark)); }
-.theme-flip .h .n { position: absolute; left: 0; width: 100%; height: 440px; display: grid; place-items: center; font-family: Archivo, "Pretendard Variable", sans-serif; font-weight: 800; font-size: 380px; line-height: 440px; letter-spacing: -.03em; color: var(--fl-ink); }
+.theme-flip .h .n { position: absolute; left: 0; width: 100%; height: 440px; display: grid; place-items: center; font-family: Archivo, var(--f-sans), sans-serif; font-weight: 800; font-size: 380px; line-height: 440px; letter-spacing: -.03em; color: var(--fl-ink); }
 .theme-flip .h .n span { transform: translateY(-6px); }
 .theme-flip .h.top .n { top: 0; }
 .theme-flip .h.bot .n { top: -220px; }
@@ -95,7 +95,7 @@
 .theme-flip .none { font-size: 19px; color: var(--fl-sub); padding: 6px 0; }
 .theme-flip .more { font-size: 16px; color: var(--fl-sub); padding: 4px 0 0; }
 .theme-flip .row { position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; padding: 4px 0; border-bottom: 1px solid var(--fl-line); font-size: 23px; }
-.theme-flip .row .t { font-family: Archivo, "Pretendard Variable", sans-serif; font-weight: 700; font-size: 23px; color: var(--fl-acc); white-space: nowrap; }
+.theme-flip .row .t { font-family: Archivo, var(--f-sans), sans-serif; font-weight: 700; font-size: 23px; color: var(--fl-acc); white-space: nowrap; }
 .theme-flip .row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-flip .row[data-st=past] { color: var(--fl-past); }
 .theme-flip .row[data-st=past] .t { color: var(--fl-past); }
@@ -119,3 +119,11 @@
 
 /* 개정 기록 | 2026-11-11 | v1 | 시안 d2 이식, 라이트판·분 바뀜 0.6초 접힘·타이머 단계·단축키 줄·상태 점 | DESIGN.md */
 /* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로(카드는 가운데, 아래 3단은 기존 grid가 폭을 흡수) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
+
+/* 언어별: 영어·중국어는 이번 주 한 줄에 다 들어가지 않아 줄바꿈으로 내려 보임 */
+.theme-flip[lang=en] .wk, .theme-flip[lang|=zh] .wk { flex-wrap: wrap; gap: 3px 8px; overflow: visible; font-size: 13px; }
+.theme-flip[lang=en] .wk span, .theme-flip[lang|=zh] .wk span { max-width: 82px; }
+.theme-flip[lang|=zh] { line-height: 1.3; }
+.theme-flip[lang=en] .board, .theme-flip[lang|=zh] .board { top: 602px; }
+.theme-flip[lang=en] .row, .theme-flip[lang|=zh] .row { padding: 3px 0; }
+/* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */

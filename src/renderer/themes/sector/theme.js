@@ -58,7 +58,7 @@
     var mh = layer(dial, 'hand m'); K.svg('path', { d: sword(250, 5) }, mh); R.m = mh;
     var cap = layer(dial, 'cap'); K.svg('circle', { cx: 300, cy: 300, r: 8, class: 'cap1' }, cap); K.svg('circle', { cx: 300, cy: 300, r: 3, class: 'cap2' }, cap);
 
-    R.tm = K.el('div', 'tm t-hidden', L); K.el('em', '', R.tm); K.el('i', '', R.tm, '타이머'); R.tn = K.el('b', '', R.tm); R.th = K.el('div', 'th', R.tm);
+    R.tm = K.el('div', 'tm t-hidden', L); K.el('em', '', R.tm); R.lTimer = K.el('i', '', R.tm); R.tn = K.el('b', '', R.tm); R.th = K.el('div', 'th', R.tm);
     R.legend = K.el('div', 'legend', stage);
 
     // 오른쪽 열
@@ -66,13 +66,13 @@
     var ds = K.el('div', 'dsub', Rt); R.wT = K.el('b', '', ds); R.wL = K.el('span', 'wl', ds);
     R.wP = K.el('span', 'wp', ds);
     var fl = K.el('div', 'fl', ds);
-    R.umb = K.el('span', '', fl); R.umb.innerHTML = I.umbrella; R.umb.title = '우산 챙기기';
-    R.msk = K.el('span', '', fl); R.msk.innerHTML = I.mask; R.msk.title = '마스크 챙기기';
-    R.wNone = K.el('span', 'none', ds, '날씨 정보 없음'); R.wst = K.el('div', 'wst', Rt);
-    var he = h4(Rt, '오늘'); R.stC = he.st; R.ev = K.el('div', '', Rt); R.eMore = K.el('div', 'more', Rt); R.eNone = K.el('div', 'none', Rt, '일정 없음');
-    h4(Rt, '이번 주'); R.wk = K.el('div', 'wk', Rt);
-    var hm = h4(Rt, '메모'); R.stM = hm.st; var mm = K.el('div', 'memo', Rt); R.mm = mm;
-    R.mMore = K.el('div', 'more', Rt); R.mNone = K.el('div', 'none', Rt, '메모 없음');
+    R.umb = K.el('span', '', fl); R.umb.innerHTML = I.umbrella; 
+    R.msk = K.el('span', '', fl); R.msk.innerHTML = I.mask; 
+    R.wNone = K.el('span', 'none', ds); R.wst = K.el('div', 'wst', Rt);
+    var he = h4(Rt, ''); R.lToday = he.root.firstChild; R.stC = he.st; R.ev = K.el('div', '', Rt); R.eMore = K.el('div', 'more', Rt); R.eNone = K.el('div', 'none', Rt);
+    R.lWeek = h4(Rt, '').root.firstChild; R.wk = K.el('div', 'wk', Rt);
+    var hm = h4(Rt, ''); R.lMemo = hm.root.firstChild; R.stM = hm.st; var mm = K.el('div', 'memo', Rt); R.mm = mm;
+    R.mMore = K.el('div', 'more', Rt); R.mNone = K.el('div', 'none', Rt);
     R.dot = K.el('i', 'dot', stage);
     // 주(week)는 항상 7칸
     R.wkCells = K.pool(R.wk, 7, function (par) { var c = K.el('div', 'c', par); return { root: c, b: K.el('b', '', c), x: K.el('span', 'x', c) }; });
@@ -85,14 +85,23 @@
     el.style.transform = 'rotate(' + deg + 'deg)';
   }
 
+  // 고정 문구는 모델(m.L)에서 받아 바뀐 때만 갱신(언어 전환 즉시 반영)
+  function labels(m) {
+    var L = m.L;
+    K.text(R.lTimer, L.timer); K.text(R.lToday, L.today); K.text(R.lWeek, L.week); K.text(R.lMemo, L.memo);
+    K.text(R.wNone, L.noWeather); K.text(R.eNone, L.noEvents); K.text(R.mNone, L.noMemos);
+    K.attr(R.umb, 'title', L.umbrellaTip); K.attr(R.msk, 'title', L.maskTip);
+  }
+
   function render(m) {
     if (!R) return;
+    labels(m);
     var p = K.parts(m.now), an = K.angles(m.now), w = m.weather;
-    K.text(R.d1, p.mon + '월 ' + p.day + '일'); K.text(R.d2, p.dow + '요일');
+    K.text(R.d1, m.dateMonthDay); K.text(R.d2, m.dateDow);
 
     K.hide(R.wT, !w); K.hide(R.wL, !w); K.hide(R.wP, !w); K.hide(R.wNone, !!w);
     if (w) {
-      K.text(R.wT, K.temp(w.tempC)); K.text(R.wL, w.label + ' · 최고 ' + K.temp(w.hiC) + ' 최저 ' + K.temp(w.loC)); K.text(R.wP, w.place);
+      K.text(R.wT, K.temp(w.tempC)); K.text(R.wL, w.label + ' · ' + m.L.high + ' ' + K.temp(w.hiC) + ' ' + m.L.low + ' ' + K.temp(w.loC)); K.text(R.wP, w.place);
     }
     K.hide(R.umb, !(w && w.umbrella)); K.hide(R.msk, !(w && w.mask)); K.hide(R.umb.parentNode, !(w && (w.umbrella || w.mask)));
     K.text(R.wst, m.status.weather || ''); K.hide(R.wst, !m.status.weather);
@@ -105,7 +114,7 @@
         var e = today[i]; if (!e) return;
         K.text(it.t, e.time); K.text(it.n, e.title); K.text(it.p, e.location || ''); K.hide(it.p, !e.location); K.attr(it.root, 'data-st', e.state);
       });
-    K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, '외 ' + m.todayMore + '건');
+    K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
       var it = R.wkCells[i], x = m.week[i]; K.hide(it.root, !x); if (!x) continue;
@@ -114,7 +123,7 @@
 
     var memos = m.memos.slice(0, 4);
     K.pool(R.mm, memos.length, function (par) { return { root: K.el('div', 'li', par) }; }).forEach(function (it, j) { if (memos[j] != null) K.text(it.root, memos[j]); });
-    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, '외 ' + m.memoMore + '건');
+    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, m.L.memoMore);
 
     K.timerState(R.tm, R.tn, m.timer, m.now);
     K.text(R.tn, K.timerText(m.timer)); K.text(R.th, K.timerHint(m.timer)); K.hide(R.th, !K.timerHint(m.timer));
@@ -130,6 +139,7 @@
   function unmount() { if (stage0) { stage0.classList.remove('theme-' + ID); stage0.textContent = ''; } R = null; stage0 = null; }
 
   window.ClockThemes = window.ClockThemes || {};
-  window.ClockThemes[ID] = { name: '섹터 다이얼', kind: 'analog', mount: mount, render: render, unmount: unmount };
+  window.ClockThemes[ID] = { kind: 'analog', mount: mount, render: render, unmount: unmount };
 })();
 // 개정 기록 | 2026-11-11 | v1 | 시안 a1 이식 | 시 7·분 5 가는 바늘, 갈색 #6b3e1f→#3d2210(다크 구리 #b8743f), 스몰 세컨즈 1초 이동
+// 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md

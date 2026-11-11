@@ -18,6 +18,9 @@
 </style>
 </head><body>
 <script src="../src/renderer/icons.js"></script>
+<script src="../src/renderer/i18n.js"></script>
+<script src="../src/renderer/timer-parse.js"></script>
+<script src="../src/renderer/model.js"></script>
 <script src="fixtures.js"></script>
 <script src="../src/renderer/themes/bauhaus/theme.js"></script>
 <script src="../src/renderer/themes/sector/theme.js"></script>
@@ -26,17 +29,17 @@
 <script src="../src/renderer/themes/flip/theme.js"></script>
 <script src="../src/renderer/themes/standby/theme.js"></script>
 <script>
-// 쓰는 법: theme-preview.html?theme=bauhaus&mode=dark&fx=timerRinging&w=1600  (w=스테이지 너비 1200~1800, live=1 이면 실제 시각으로 1초마다 갱신, adv=ms 는 그 뒤 1분 앞으로)
+// 쓰는 법: theme-preview.html?theme=bauhaus&mode=dark&fx=timerRinging&w=1600&lang=en  (lang=ko|zh|en, w=스테이지 너비 1200~1800, live=1 이면 실제 시각으로 1초마다 갱신, adv=ms 는 그 뒤 1분 앞으로)
 (function () {
   var q = new URLSearchParams(location.search), id = q.get('theme');
   var themes = window.ClockThemes || {}, fixtures = window.ClockFixtures;
   if (!id || !themes[id]) {
     var d = document.createElement('div'); d.className = 'idx';
-    var h = '<h1>테마 미리보기 (높이 900 고정, 너비는 w= 로 지정, 배율 없음)</h1>';
+    var h = '<h1>테마 미리보기 (높이 900 고정, 너비는 w= 로 지정, 언어는 lang=ko|zh|en, 배율 없음)</h1>';
     Object.keys(themes).forEach(function (t) {
-      h += '<div><b>' + t + '</b> ' + themes[t].name + ' · ';
+      h += '<div><b>' + t + '</b> · ';
       ['light', 'dark'].forEach(function (m) {
-        h += m + ': ' + Object.keys(fixtures).map(function (f) { return '<a href="?theme=' + t + '&mode=' + m + '&fx=' + f + '">' + f + '</a>'; }).join('');
+        h += m + ': ' + fixtures.names.map(function (f) { return '<a href="?theme=' + t + '&mode=' + m + '&fx=' + f + '">' + f + '</a>'; }).join('');
         h += ' &nbsp; ';
       });
       h += '</div>';
@@ -49,9 +52,11 @@
   stage.style.width = sw + 'px'; stage.style.setProperty('--stage-w', sw + 'px');
   var mode = q.get('mode') === 'dark' ? 'dark' : 'light';
   stage.setAttribute('data-mode', mode);
-  var model = JSON.parse(JSON.stringify(fixtures[q.get('fx') || 'morning'] || fixtures.morning));
-  var base = fixtures[q.get('fx') || 'morning'] || fixtures.morning;
-  model.now = new Date(base.now.getTime()); model.mode = mode;
+  // lang=<ko|zh|en>: 앱과 같이 stage·문서에 lang 속성을 붙여 서체(:lang)가 고르게 한다
+  var lang = ClockI18n.norm(q.get('lang') || 'ko'), hl = ClockI18n.htmlLang(lang);
+  document.documentElement.lang = hl; stage.lang = hl;
+  var model = fixtures.get(q.get('fx') || 'morning', lang);
+  model.mode = mode;
   var th = themes[id]; th.mount(stage); th.render(model);
   // adv=<ms>: 그만큼 뒤에 시각을 1분 앞으로 옮겨 다시 그린다(분 바뀜 연출 확인용)
   if (q.get('adv')) setTimeout(function () { model.now = new Date(model.now.getTime() + 60000); th.render(model); }, +q.get('adv'));

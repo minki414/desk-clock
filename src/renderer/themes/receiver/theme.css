@@ -20,7 +20,7 @@
   --rc-engrave: #958e84; --rc-k1: #3c3a37; --rc-k2: #272523; --rc-k3: #211f1d; --rc-ksh: #0b0a09; --rc-ktx: #d6cfc3; --rc-kin: rgba(255,255,255,.09);
   --rc-shadow: rgba(0,0,0,.7); --rc-ok: #5f7d4f;
   --amber: #ffb02a; --amber2: #d98a22; --ghost: rgba(255,176,42,.065);
-  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; container-type: inline-size; background: var(--rc-room); font-family: "Pretendard Variable", sans-serif;
+  position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden; container-type: inline-size; background: var(--rc-room); font-family: var(--f-sans), sans-serif;
   transition: --rc-room 2s, --rc-f1 2s, --rc-f2 2s, --rc-f3 2s, --rc-grain 2s, --rc-hl 2s, --rc-engrave 2s, --rc-k1 2s, --rc-k2 2s, --rc-k3 2s, --rc-ksh 2s, --rc-ktx 2s, --rc-kin 2s, --rc-shadow 2s, --rc-ok 2s;
 }
 /* 라이트: 은색 브러시드 전면판(#d9d9d6→#bdbdb9), 각인 글자 #4a4844, 버튼 은색 */
@@ -47,7 +47,7 @@
 .theme-receiver .time sup .g { position: absolute; }
 .theme-receiver .side { display: flex; flex-direction: column; justify-content: space-between; padding: 6px 0; min-width: 0; width: min(100%, 290px); justify-self: center; }   /* 넓은 화면에서 남는 폭을 시계와 정보 사이·오른쪽으로 나눔 */
 .theme-receiver .d { font-family: DSEG7, monospace; font-weight: 700; font-size: 44px; display: flex; align-items: center; gap: 14px; }
-.theme-receiver .d small { font-family: "Pretendard Variable", sans-serif; font-weight: 700; font-size: 32px; }
+.theme-receiver .d small { font-family: var(--f-sans), sans-serif; font-weight: 700; font-size: 32px; }
 .theme-receiver .w { font-size: 30px; font-weight: 600; display: flex; align-items: center; gap: 10px; white-space: nowrap; min-width: 0; }
 .theme-receiver .w .ic { display: flex; gap: 6px; flex: none; }
 .theme-receiver .w .ic span { width: 30px; height: 30px; color: var(--amber); }
@@ -73,7 +73,7 @@
 .theme-receiver .lab .st { font-weight: 400; letter-spacing: 0; font-size: 14px; color: var(--amber2); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .theme-receiver .ev { position: relative; display: grid; grid-template-columns: 118px minmax(0, 1fr); font-size: 26px; padding: 5px 0; align-items: baseline; }
 .theme-receiver .ev .t { font-family: DSEG7, monospace; font-weight: 700; font-size: 24px; white-space: nowrap; }
-.theme-receiver .ev .t.ad { font-family: "Pretendard Variable", sans-serif; font-size: 22px; }
+.theme-receiver .ev .t.ad { font-family: var(--f-sans), sans-serif; font-size: 22px; }
 .theme-receiver .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-receiver .ev[data-st=past] { color: #4a3618; text-shadow: none; }
 .theme-receiver .ev[data-st=later] { opacity: .8; }
@@ -112,3 +112,8 @@
 
 /* 개정 기록 | 2026-11-11 | v1 | 시안 d1 이식, 라이트(은색 브러시드)·프리셋 11키(슬롯 라벨+T 타이머)·눌림 표시·타이머 단계 | DESIGN.md */
 /* 개정 기록 | 2026-11-11 | v1.2 | 루트 폭을 --stage-w로, 3:2용 컨테이너 쿼리와 정보 칸 중앙 배치 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
+
+/* 언어별: 영어 날씨 줄(Overcast 8° 12° / 3°)이 한 줄에 들어가게 글자를 줄임 */
+.theme-receiver[lang=en] .w { font-size: 24px; gap: 8px; }
+.theme-receiver[lang=en] .w .sub { font-size: 17px; }
+/* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */

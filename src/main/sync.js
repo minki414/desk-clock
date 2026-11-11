@@ -28,7 +28,7 @@ function createScheduler(jobs) {
 }
 
 // 실제 작업 연결. data는 렌더러로 보내는 자료 묶음, push()는 변경 알림
-function createSync({ store, data, push, google }) {
+function createSync({ store, data, push, google, onSettings = () => {} }) {
   const cache = store.cache();
   const setStatus = (kind, state, at) => {
     const prev = data.sync[kind] || {};
@@ -60,12 +60,15 @@ function createSync({ store, data, push, google }) {
       every: 30 * MIN,
       run: () => wrap('weather', async () => {
         const loc = await weather.resolveLocation(store.settings(), store.cache(), store.saveCache);
+        // 직접 지정한 지명은 화면 언어로 다시 받은 이름을 설정에도 반영(설정창이 같은 이름을 보이게)
+        const set = store.settings().location;
+        if (set.mode === 'manual' && set.id && loc.name && set.name !== loc.name) { store.patch({ location: { name: loc.name } }); onSettings(); }
         data.weather = await weather.fetchWeather(loc, data.weather && data.weather.mask);
         store.saveCache({ weather: data.weather });
       }),
     },
     calendar: {
-      every: 5 * MIN,
+      every: 1 * MIN,
       run: () => wrap('calendar', async () => {
         const g = store.settings().google;
         data.events = await google.fetchEvents(g.calendarIds.length ? g.calendarIds : ['primary']);
@@ -73,7 +76,7 @@ function createSync({ store, data, push, google }) {
       }),
     },
     tasks: {
-      every: 5 * MIN,
+      every: 1 * MIN,
       run: () => wrap('tasks', async () => {
         data.tasks = await google.fetchTasks(store.settings().google.taskListId || '@default');
         store.saveCache({ tasks: data.tasks, tasksAt: Date.now() });
@@ -84,3 +87,5 @@ function createSync({ store, data, push, google }) {
 
 module.exports = { createScheduler, createSync, backoff };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §7 갱신 주기·백오프
+// 개정 기록 | 2026-11-11 | 일정·메모 1분 주기 | 사용자 결정: 5분→1분(백오프 최대 30분 그대로)
+// 개정 기록 | 2026-11-11 | v1.3 | 언어를 바꾸면 직접 지정 지명의 이름을 새 언어로 갱신 | docs/v1.3-i18n-brief.md

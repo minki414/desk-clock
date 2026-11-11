@@ -1,19 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { labelOf, needUmbrella, needMask } = require('../src/main/weather.js');
+const { needUmbrella, needMask } = require('../src/main/weather.js');
 
 const day = (prefix, hours) => hours.map((h) => `${prefix}T${String(h).padStart(2, '0')}:00`);
 const hrs = Array.from({ length: 24 }, (_, i) => i);
 const times = [...day('2026-11-11', hrs), ...day('2026-11-12', hrs)];
 const zeros = () => times.map(() => 0);
-
-test('날씨 코드 한국어 표기', () => {
-  assert.equal(labelOf(0), '맑음');
-  assert.equal(labelOf(3), '흐림');
-  assert.equal(labelOf(63), '비');
-  assert.equal(labelOf(95), '뇌우');
-  assert.equal(labelOf(12345), '정보 없음');
-});
 
 test('우산: 강수확률 60% 이상', () => {
   const base = { times, precip: zeros(), nowStr: '2026-11-11T16:30' };

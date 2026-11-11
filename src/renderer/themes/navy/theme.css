@@ -36,7 +36,7 @@
   --nv-hlume: rgba(214,240,217,.8); --nv-sec: #e9ecf2; --nv-pin: #121826; --nv-shadow: rgba(0,0,0,.6);
   position: relative; width: var(--stage-w, 1440px); height: 900px; overflow: hidden;
   background: radial-gradient(70% 90% at 32% 50%, var(--nv-bg1), var(--nv-bg2) 70%); color: var(--nv-ink);
-  font-family: "Pretendard Variable", sans-serif;
+  font-family: var(--f-sans), sans-serif;
   transition: --nv-bg1 2s, --nv-bg2 2s, --nv-ink 2s, --nv-sub 2s, --nv-silver 2s, --nv-acc 2s, --nv-past 2s, --nv-hr 2s, --nv-ok 2s, --nv-sbA 2s, --nv-sbB 2s, --nv-glow 2s, --nv-hi 2s, --nv-inset 2s, --nv-i1 2s, --nv-i2 2s, --nv-i3 2s, --nv-i4 2s, --nv-lume 2s, --nv-tick 2s, --nv-fl1 2s, --nv-fl2 2s, --nv-fr1 2s, --nv-fr2 2s, --nv-hlume 2s, --nv-sec 2s, --nv-pin 2s, --nv-shadow 2s;
 }
 /* 라이트: 바탕 #e4e6ea, 글자 #1a2233, 문자판 은색 오팔린(#e9ebee→#cfd3d9 선버스트), 인덱스·바늘 진청 #1b2a4a 광택 */
@@ -68,13 +68,13 @@
 .theme-navy .tick { stroke: var(--nv-tick); stroke-width: 1.2; }
 .theme-navy .pin { fill: var(--nv-pin); }
 .theme-navy .dwin { fill: #f4f2ec; stroke: url(#nv-steel); stroke-width: 3; }
-.theme-navy .dnum { font-family: "Pretendard Variable", sans-serif; font-weight: 600; font-size: 32px; fill: #121826; text-anchor: middle; }
+.theme-navy .dnum { font-family: var(--f-sans), sans-serif; font-weight: 600; font-size: 32px; fill: #121826; text-anchor: middle; }
 
 /* 타이머 */
 .theme-navy .tm { position: relative; margin-top: 22px; height: 56px; width: 100%; display: flex; justify-content: center; align-items: baseline; gap: 16px; }
 .theme-navy .tm.t-hidden { visibility: hidden; }
 .theme-navy .tm small { font-size: 18px; color: var(--nv-sub); letter-spacing: .08em; }
-.theme-navy .tm b { font-family: "Bodoni Moda", "Pretendard Variable", serif; font-weight: 400; font-size: 46px; line-height: 56px; color: var(--nv-silver); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.theme-navy .tm b { font-family: "Bodoni Moda", var(--f-sans), serif; font-weight: 400; font-size: 46px; line-height: 56px; color: var(--nv-silver); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .theme-navy .tm .th { position: absolute; top: 54px; left: 0; right: 0; text-align: center; font-size: 17px; color: var(--nv-sub); }
 .theme-navy .t-paused b { opacity: .32; }
 .theme-navy .t-ringing b { animation: nv-blink 1s step-end infinite; }
@@ -122,3 +122,7 @@
 /* 개정 기록 | 2026-11-11 | v1 | 시안 a4 이식, 라이트판(은색 오팔린·진청 인덱스)·연속 초침(CSS linear 60s)·타이머 단계·단축키 줄 | DESIGN.md */
 .theme-navy[data-mode=light] .case { box-shadow: 0 40px 70px var(--nv-shadow), 0 0 0 1px rgba(70, 82, 105, .3); }
 /* 개정 기록 | 2026-11-11 | v1.2 | 우측 덩어리를 right 기준으로 고정, 폭은 420~520 범위로 가변 | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
+
+/* 언어별: 영어 날씨 줄(Snow · 1° / −6° · Mapo-gu)이 한 줄에 들어가게 글자를 줄임 */
+.theme-navy[lang=en] .wx { font-size: 19px; gap: 12px; }
+.theme-navy[lang|=zh] { line-height: 1.3; }

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const M = require('../src/renderer/model.js');
-const L = require('../src/renderer/labels.js');
+const I = require('../src/renderer/i18n.js');
 
 // 2026-11-11(수) 14:00 기준 합성 자료. 실제 일정이 아님.
 const at = (d, h, m = 0) => new Date(2026, 10, d, h, m).getTime();
@@ -79,7 +79,8 @@ test('주간: 내일부터 7칸, 첫 일정·개수·일요일·공휴일', () =
   const week = M.buildWeek(events, NOW);
   assert.equal(week.length, 7);
   assert.deepEqual(week.map((c) => c.dow), ['목', '금', '토', '일', '월', '화', '수']);
-  assert.deepEqual(week[0], { dow: '목', isSunday: false, isHoliday: false, first: '수영', count: 2 });
+  assert.deepEqual(week[0], { dow: '목', isSunday: false, isHoliday: false, first: '수영', count: 2, tip: '수영 외 1건' });
+  assert.equal(week[1].tip, '연차');   // 하나뿐이면 제목만
   assert.equal(week[1].first, '연차');
   assert.equal(week[3].isSunday, true);
   assert.equal(week[3].isHoliday, true);
@@ -102,12 +103,13 @@ test('범례: 등록된 슬롯만, 0 시계·T 타이머는 항상', () => {
 
 test('상태 문구: 명사형, 마지막 성공 시각 표시', () => {
   const t = new Date(2026, 10, 11, 19, 20).getTime();
-  assert.equal(L.statusText('calendar', { state: 'ok', at: t }), null);
-  assert.equal(L.statusText('calendar', { state: 'pending' }), null);
-  assert.equal(L.statusText('calendar', { state: 'needAuth' }), '캘린더 연결 필요');
-  assert.equal(L.statusText('tasks', { state: 'needAuth' }), null);
-  assert.equal(L.statusText('calendar', { state: 'tokenUnavailable' }), '토큰 보관 불가');
-  assert.equal(L.statusText('calendar', { state: 'failed', at: t }), '일정 갱신 실패 · 19:20 기준');
-  assert.equal(L.statusText('tasks', { state: 'failed' }), '메모 갱신 실패');
-  assert.equal(L.statusText('weather', { state: 'failed', at: t }), '날씨 갱신 실패 · 19:20 기준');
+  const S = (kind, st) => I.statusText('ko', kind, st);
+  assert.equal(S('calendar', { state: 'ok', at: t }), null);
+  assert.equal(S('calendar', { state: 'pending' }), null);
+  assert.equal(S('calendar', { state: 'needAuth' }), '캘린더 연결 필요');
+  assert.equal(S('tasks', { state: 'needAuth' }), null);
+  assert.equal(S('calendar', { state: 'tokenUnavailable' }), '토큰 보관 불가');
+  assert.equal(S('calendar', { state: 'failed', at: t }), '일정 갱신 실패 · 19:20 기준');
+  assert.equal(S('tasks', { state: 'failed' }), '메모 갱신 실패');
+  assert.equal(S('weather', { state: 'failed', at: t }), '날씨 갱신 실패 · 19:20 기준');
 });

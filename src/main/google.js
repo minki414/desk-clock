@@ -4,6 +4,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
+const { t } = require('../renderer/i18n.js');
 
 const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks.readonly';
 const DAY = 24 * 3600 * 1000;
@@ -41,7 +42,8 @@ function normalizeEvent(item, holiday = false) {
   let end = allDay ? (e.date ? dateMs(e.date) : start + DAY) : Date.parse(e.dateTime);
   if (!Number.isFinite(start)) return null;
   if (!Number.isFinite(end) || end < start) end = start;
-  return { title: item.summary || '(제목 없음)', location: item.location || '', allDay, start, end, holiday };
+  return { title: item.summary || '',   // 제목이 없으면 비워 두고, 화면이 언어에 맞는 '(제목 없음)'을 보임
+     location: item.location || '', allDay, start, end, holiday };
 }
 const normalizeEvents = (items, holiday) => (items || []).map((i) => normalizeEvent(i, holiday)).filter(Boolean);
 
@@ -57,7 +59,7 @@ const isHolidayCalendar = (id) => String(id).includes('#holiday@');
 
 // ----- 연결 -----
 // safe: { available(): Promise<bool>, encrypt(str): Promise<Buffer>, decrypt(buf): Promise<str> }
-function createGoogle({ dir, safe, openUrl, now = Date.now }) {
+function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' }) {
   const clientFile = path.join(dir, 'google-client.json');
   const tokenFile = path.join(dir, 'google-token.bin');
   let access = null;   // { token, exp }
@@ -74,20 +76,20 @@ function createGoogle({ dir, safe, openUrl, now = Date.now }) {
   // 사용자가 고른 클라이언트 JSON을 검증해 userData로 복사(원본 경로는 저장하지 않음)
   function importClient(srcPath) {
     let j;
-    try { j = JSON.parse(fs.readFileSync(srcPath, 'utf8')); } catch { return { ok: false, error: '파일을 읽을 수 없음' }; }
-    if (!j.installed || !j.installed.client_id) return { ok: false, error: '데스크톱 앱용 클라이언트 JSON이 아님' };
+    try { j = JSON.parse(fs.readFileSync(srcPath, 'utf8')); } catch { return { ok: false, error: t(lang(), 'err.unreadable') }; }
+    if (!j.installed || !j.installed.client_id) return { ok: false, error: t(lang(), 'err.notDesktop') };
     fs.writeFileSync(clientFile, JSON.stringify({ installed: j.installed }));
     return { ok: true };
   }
 
   // refresh token은 DPAPI(safeStorage)로 암호화해서만 저장. 불가하면 평문으로 대신 저장하지 않음
   async function saveRefresh(token) {
-    if (!(await safe.available())) throw fail('tokenUnavailable', '토큰 보관 불가');
+    if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
     fs.writeFileSync(tokenFile, await safe.encrypt(token));
   }
   async function loadRefresh() {
     if (!fs.existsSync(tokenFile)) return null;
-    if (!(await safe.available())) throw fail('tokenUnavailable', '토큰 보관 불가');
+    if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
     return safe.decrypt(fs.readFileSync(tokenFile));
   }
   function dropToken() { access = null; try { fs.unlinkSync(tokenFile); } catch { /* 없음 */ } }
@@ -119,8 +121,8 @@ function createGoogle({ dir, safe, openUrl, now = Date.now }) {
 
   async function connect() {
     const c = client();
-    if (!c) throw fail('needAuth', '클라이언트 JSON 필요');
-    if (!(await safe.available())) throw fail('tokenUnavailable', '토큰 보관 불가');
+    if (!c) throw fail('needAuth', 'client JSON required');
+    if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
     const { verifier, challenge } = pkcePair();
     const state = b64url(crypto.randomBytes(16));
     const server = http.createServer();
@@ -128,20 +130,20 @@ function createGoogle({ dir, safe, openUrl, now = Date.now }) {
     const redirect = `http://127.0.0.1:${server.address().port}`;
     try {
       const code = await new Promise((resolve, reject) => {
-        const timer = setTimeout(() => reject(fail('failed', '연결 시간 초과')), 3 * 60 * 1000);
+        const timer = setTimeout(() => reject(fail('failed', 'connect timeout')), 3 * 60 * 1000);
         server.on('request', (req, res) => {
           const u = new URL(req.url, redirect);
           if (u.pathname !== '/') { res.writeHead(404).end(); return; }   // favicon 등은 무시
           const ok = u.searchParams.get('state') === state && u.searchParams.get('code');
           res.writeHead(ok ? 200 : 400, { 'content-type': 'text/html; charset=utf-8' });
-          res.end(`<meta charset="utf-8"><body style="font:18px sans-serif;padding:48px">${ok ? '연결되었습니다. 이 창을 닫아도 됩니다.' : '연결에 실패했습니다. 시계 설정에서 다시 시도해 주십시오.'}</body>`);
+          res.end(`<meta charset="utf-8"><body style="font:18px sans-serif;padding:48px">${t(lang(), ok ? 'oauth.ok' : 'oauth.fail')}</body>`);
           clearTimeout(timer);
-          ok ? resolve(u.searchParams.get('code')) : reject(fail('failed', u.searchParams.get('error') || '연결 거부'));
+          ok ? resolve(u.searchParams.get('code')) : reject(fail('failed', u.searchParams.get('error') || 'connect denied'));
         });
         Promise.resolve().then(() => openUrl(buildAuthUrl(c, { redirect, challenge, state }))).catch((e) => { clearTimeout(timer); reject(e); });
       });
       const j = await tokenRequest(c, { grant_type: 'authorization_code', code, code_verifier: verifier, redirect_uri: redirect });
-      if (!j.refresh_token) throw fail('failed', 'refresh token 없음');
+      if (!j.refresh_token) throw fail('failed', 'no refresh token');
       await saveRefresh(j.refresh_token);
       access = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
     } finally { server.close(); }
@@ -189,3 +191,4 @@ function createGoogle({ dir, safe, openUrl, now = Date.now }) {
 
 module.exports = { createGoogle, pkcePair, challengeOf, buildAuthUrl, normalizeEvent, normalizeEvents, normalizeTasks, isHolidayCalendar };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 구글 인증·토큰 보관, 읽기 전용 두 범위
+// 개정 기록 | 2026-11-11 | v1.3 | 화면 문구(가져오기 오류·연결 완료 페이지)를 lang()에 맞춰 생성, 제목 없는 일정은 빈 제목 | docs/v1.3-i18n-brief.md

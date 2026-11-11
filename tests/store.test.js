@@ -33,7 +33,7 @@ test('저장은 원자적이고 다시 열면 그대로 읽힘, 객체는 한 �
     assert.ok(!fs.existsSync(path.join(dir, 'settings.json.tmp')));
     const again = createStore(dir).settings();
     assert.equal(again.theme, 'flip');
-    assert.deepEqual(again.location, { mode: 'manual', name: '서초', lat: 1, lon: 2 });
+    assert.deepEqual(again.location, { mode: 'manual', name: '서초', lat: 1, lon: 2, id: null });
     st.patch({ 모르는키: 1 });
     assert.equal(createStore(dir).settings().모르는키, undefined);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
@@ -93,5 +93,32 @@ test('슬롯 sendKeys: 기본은 빈 값, 옛 설정(필드 없음)도 빈 값�
     assert.equal(slots[6].target, 'a.exe');
     assert.equal(slots[7].sendKeys, 'Ctrl+Alt+Shift+V');
     assert.ok(slots.every((x) => typeof x.sendKeys === 'string'));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('슬롯 returnToClock: 기본·옛 설정(필드 없음)은 false, 저장값은 유지', () => {
+  const dir = tmpDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ settingsVersion: 2, slots: [{ key: 7, name: 'x', kind: 'program', target: 'a.exe' }, { key: 8, returnToClock: true }] }));
+    const slots = createStore(dir).settings().slots;
+    assert.equal(slots[6].returnToClock, false);
+    assert.equal(slots[7].returnToClock, true);
+    assert.ok(slots.every((x, i) => i === 7 || x.returnToClock === false));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청
+
+test('언어(lang): 기본 ko, 옛 설정(필드 없음)도 ko, 저장값 유지, 지원하지 않는 값은 무시', () => {
+  const dir = tmpDir();
+  try {
+    assert.equal(createStore(dir).settings().lang, 'ko');
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ theme: 'flip', settingsVersion: 2 }));
+    const st = createStore(dir);
+    assert.equal(st.settings().lang, 'ko');
+    assert.equal(st.patch({ lang: 'zh' }).lang, 'zh');
+    assert.equal(st.patch({ lang: 'fr' }).lang, 'zh');   // 알 수 없는 언어는 무시
+    assert.equal(createStore(dir).settings().lang, 'zh');   // 다시 열어도 유지
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ lang: 'xx', settingsVersion: 2 }));
+    assert.equal(createStore(dir).settings().lang, 'ko');   // 깨진 저장값은 ko
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

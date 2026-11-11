@@ -1,8 +1,7 @@
 // 렌더러 진입점: 상태 모델 조립, 1초 렌더 루프, 테마 마운트, 키 연결, 알림음.
 (function () {
   const api = window.clockApi;
-  const { statusText } = window.ClockLabels;
-  const P = window.ClockTimerParse, K = window.ClockKeys, M = window.ClockModel;
+  const I = window.ClockI18n, K = window.ClockKeys, M = window.ClockModel;
   const stage = document.getElementById('stage');
   const $ = (id) => document.getElementById(id);
 
@@ -14,12 +13,12 @@
 
   // 테마 스크립트가 없을 때도 앱이 돌도록 하는 최소 글자 렌더러
   const plain = {
-    name: '기본', kind: 'digital',
+    kind: 'digital',
     mount(el) { el.className = 'theme-plain'; el.style.cssText = 'background:#111;color:#eee;font:28px sans-serif;padding:60px;white-space:pre-line'; },
     render(m) {
-      const w = m.weather ? `${m.weather.place} ${m.weather.tempC}° ${m.weather.label}` : '날씨 정보 없음';
-      const t = m.timer.phase === 'hidden' ? '' : `\n타이머 ${m.timer.input || Math.ceil(m.timer.remainingMs / 1000) + '초'}`;
-      stage.textContent = `${m.now.toLocaleTimeString('ko-KR')}\n${w}${t}\n${m.today.map((e) => `${e.time} ${e.title}`).join('\n') || '일정 없음'}\n${m.memos.join(' · ') || '메모 없음'}`;
+      const w = m.weather ? `${m.weather.place} ${m.weather.tempC}° ${m.weather.label}` : m.L.noWeather;
+      const t = m.timer.phase === 'hidden' ? '' : `\n${m.L.timer} ${m.timer.input || Math.ceil(m.timer.remainingMs / 1000) + ' s'}`;
+      stage.textContent = `${m.now.toLocaleTimeString(I.htmlLang(m.lang))}\n${w}${t}\n${m.today.map((e) => `${e.time} ${e.title}`).join('\n') || m.L.noEvents}\n${m.memos.join(' · ') || m.L.noMemos}`;
     },
     unmount() {},
   };
@@ -59,19 +58,30 @@
     if (T.phase === 'running') remainingMs = Math.max(0, T.endAt - Date.now());
     else if (T.phase === 'paused') remainingMs = T.remainingMs;
     return {
-      phase, input: phase === 'input' ? ks.input || '0.00' : '', hint: phase === 'input' ? P.parse(ks.input).hint : '',
+      phase, input: phase === 'input' ? ks.input || '0.00' : '',
       invalidAt, remainingMs, totalMs: T.totalMs,
     };
   }
 
+  // 사용자 의도 [docs/v1.3-i18n-brief.md]: 날짜·요일·타이머 안내·날씨 이름은 핵심 앱이 언어에 맞게 만든 글자로 테마에 넘긴다.
+  // 개발 판단: 형식화는 model.buildModel 한 곳(예시 모델과 공용). 여기서는 상태만 모아 넘긴다.
   function buildModel(now, mode) {
-    return {
-      now, mode, weather: D.weather,
-      ...M.buildToday(D.events, now), week: M.buildWeek(D.events, now), ...M.buildMemos(D.tasks),
-      timer: timerModel(), legend: M.buildLegend(S.slots), hotkeysOn: S.hotkeysOn, pressedKey: pressed,
-      status: { calendar: statusText('calendar', D.sync.calendar), tasks: statusText('tasks', D.sync.tasks), weather: statusText('weather', D.sync.weather) },
-      health: D.health,
-    };
+    return M.buildModel({
+      lang: S.lang, now, mode, weather: D.weather, events: D.events, tasks: D.tasks, slots: S.slots,
+      timer: timerModel(), hotkeysOn: S.hotkeysOn, pressedKey: pressed, sync: D.sync, health: D.health,
+    });
+  }
+
+  // 화면 언어: 스테이지·설정 서랍·문서 루트에 lang 속성을 붙이고(서체 선택에 쓰임), 문서 제목·접근성 이름을 바꿈
+  let appliedLang = null;
+  function applyLang() {
+    if (appliedLang === S.lang) return;
+    appliedLang = S.lang;
+    const hl = I.htmlLang(S.lang);
+    document.documentElement.lang = hl; stage.lang = hl; $('drawer').lang = hl;
+    document.title = I.t(S.lang, 'app.title');
+    $('gear').setAttribute('aria-label', I.t(S.lang, 'ui.title'));
+    $('drawer').setAttribute('aria-label', I.t(S.lang, 'ui.title'));
   }
 
   function render() {
@@ -161,6 +171,7 @@
 
   function applySettings(s) {
     S = s;
+    applyLang();
     ks = { ...ks, hotkeysOn: s.hotkeysOn };
     if (settings) settings.update(s, D);
     render();
@@ -184,3 +195,4 @@
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §2·§3·§9: 초 경계 정렬 렌더, 테마 계약 모델
 // 개정 기록 | 2026-11-11 | v1.2 | fit(): 스테이지 너비를 화면 비율로 가변(1200~1800) | docs/v1.2-brief.md §1
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 0번 수신 제거, volume 액션 실행
+// 개정 기록 | 2026-11-11 | v1.3 | 화면 언어: 모델 조립을 model.buildModel로, lang 속성·문서 제목·접근성 이름 갱신, 기본 렌더러 문구 사전화 | docs/v1.3-i18n-brief.md

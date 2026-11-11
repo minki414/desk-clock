@@ -4,13 +4,14 @@ const path = require('node:path');
 const { createStore } = require('./store');
 const { createTimer } = require('./timer');
 const { launchSlot } = require('./launcher');
-const { createForeground } = require('./foreground');
+const { createForeground, shouldReturn } = require('./foreground');
 const system = require('./system');
 const weather = require('./weather');
 const { createSync } = require('./sync');
 const { createGoogle } = require('./google');
 const autostart = require('./autostart');
 const { parseCombo } = require('../renderer/keycombo.js');
+const { t } = require('../renderer/i18n.js');
 
 let win = null;
 let store = null;
@@ -25,7 +26,8 @@ const data = { weather: null, events: [], tasks: [], sync: {}, health: 'ok', dim
 
 const send = (ch, v) => { if (win && !win.isDestroyed()) win.webContents.send(ch, v); };
 const pushData = () => send('data', data);
-const toast = (text) => send('toast', text);
+const lang = () => (store ? store.settings().lang : 'ko');
+const toast = (key, vars) => send('toast', t(lang(), key, vars));
 
 // 맨 앞으로: Windows가 포커스 훔치기를 막을 수 있어 최상위를 잠깐 켰다 끕니다.
 function bringToFront() {
@@ -54,7 +56,7 @@ function createWindow() {
     fullscreen: true,
     autoHideMenuBar: true,
     backgroundColor: '#000000',
-    title: '식탁 시계',
+    title: t(lang(), 'app.title'),
     webPreferences: {
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       contextIsolation: true,
@@ -76,6 +78,7 @@ function wireIpc() {
     if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
     dimmer.tick();
     if (patch && (patch.location || patch.google)) sync.refresh();
+    else if (patch && 'lang' in patch) sync.refresh(['weather']);   // 날씨 지명도 새 언어로
     if (patch && patch.servers) health.check();
     send('settings', s);
     return s;
@@ -97,11 +100,15 @@ function wireIpc() {
       const combo = parseCombo(slot.sendKeys);
       // 사용자 의도 [2026-11-11 요청]: 실행한 앱이 맨 앞에 뜬 뒤에만 키를 보내고, 시계 창에는 절대 보내지 않는다.
       // 개발 판단: 시계 창 핸들을 제외 대상으로 넘겨 foreground.waitStable이 판정한다. 시간 초과·전송 실패는 같은 문구로 알린다.
+      // 사용자 의도 [2026-11-11 요청]: 실행 후 시계로 돌아오기를 켠 슬롯은 키를 보낸 뒤(키가 없으면 앱 창이 안정된 뒤) 1.5초 지나 시계를 앞으로 가져온다.
+      // 개발 판단: 전송 실패·시간 초과면 앞으로 가져오지 않는다(실패 알림이 이미 뜸). 키 없는 슬롯은 시간 초과 시 조용히 포기한다. 다른 앱은 최소화·종료하지 않는다.
+      const back = shouldReturn(slot);
+      const self = String(win.getNativeWindowHandle().readBigUInt64LE());
       if (combo) {
-        const fail = () => toast(`${n}번 키 보내기 실패`);
-        foreground.waitStable(String(win.getNativeWindowHandle().readBigUInt64LE()), async () => { if (!(await system.sendCombo(combo))) fail(); }, fail);
-      }
-    } else toast(`${n}번 ${r.reason === 'empty' ? '미등록' : '실행 실패'}`);
+        const fail = () => toast('toast.sendFail', { n });
+        foreground.waitStable(self, async () => { if (!(await system.sendCombo(combo))) fail(); else if (back) foreground.returnLater(); }, fail);
+      } else if (back) foreground.waitStable(self, foreground.returnLater, () => {});
+    } else toast(r.reason === 'empty' ? 'toast.empty' : 'toast.fail', { n });
   });
   ipcMain.handle('google:pickClient', async () => {
     const r = await dialog.showOpenDialog(win, { filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
@@ -116,7 +123,7 @@ function wireIpc() {
       googleFlags();
       sync.refresh(['calendar', 'tasks']);
       return { ok: true };
-    } catch (e) { return { ok: false, error: e.code === 'tokenUnavailable' ? '토큰 보관 불가' : '연결 실패' }; }
+    } catch (e) { return { ok: false, error: t(lang(), e.code === 'tokenUnavailable' ? 'status.token' : 'err.connect') }; }
   });
   ipcMain.handle('google:disconnect', async () => {
     await google.disconnect();
@@ -130,10 +137,10 @@ function wireIpc() {
     try { return await google.lists(); } catch { return null; }   // null = 목록을 가져오지 못함
   });
   ipcMain.handle('weather:search', async (_e, q) => {
-    try { return typeof q === 'string' && q.trim() ? await weather.geocode(q.trim()) : []; } catch { return null; }   // null = 검색 실패
+    try { return typeof q === 'string' && q.trim() ? await weather.geocode(q.trim(), 5, lang()) : []; } catch { return null; }   // null = 검색 실패
   });
   ipcMain.handle('slot:pickProgram', async () => {
-    const r = await dialog.showOpenDialog(win, { filters: [{ name: '프로그램·바로가기', extensions: ['exe', 'lnk', 'bat', 'cmd'] }, { name: '모든 파일', extensions: ['*'] }], properties: ['openFile'] });
+    const r = await dialog.showOpenDialog(win, { filters: [{ name: t(lang(), 'dialog.programs'), extensions: ['exe', 'lnk', 'bat', 'cmd'] }, { name: t(lang(), 'dialog.all'), extensions: ['*'] }], properties: ['openFile'] });
     return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
   });
   ipcMain.handle('health:servers', () => system.serverStates(store.settings().servers));
@@ -162,9 +169,9 @@ if (!app.requestSingleInstanceLock()) {
       encrypt: (t) => safeStorage.encryptStringAsync(t),
       decrypt: async (b) => (await safeStorage.decryptStringAsync(b)).result,
     };
-    google = createGoogle({ dir: store.dir, safe, openUrl: (u) => shell.openExternal(u) });
+    google = createGoogle({ dir: store.dir, safe, openUrl: (u) => shell.openExternal(u), lang });
     store.patch({ google: { hasClient: google.hasClient(), connected: google.isConnected() } });
-    sync = createSync({ store, data, push: pushData, google });
+    sync = createSync({ store, data, push: pushData, google, onSettings: () => send('settings', store.settings()) });
     health = system.createHealth({ getServers: () => store.settings().servers, onChange: (h) => { data.health = h; pushData(); } });
     dimmer = system.createDimmer({
       getSettings: store.settings,
@@ -189,3 +196,5 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-11 | v1.2 | autoStart 적용·시작 때 재등록, 실행해 보기(force)·프로그램 찾아보기·서버별 상태·설정 폴더·버전 통로 | docs/v1.2-brief.md §2·§3
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 단축키·key 전달·ui:drawer 제거, 볼륨은 system:volume 통로로
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 실행 성공 뒤 sendKeys 가 있으면 맨 앞 창 안정 대기 후 전송, 다른 슬롯 실행 시 대기 취소
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: returnToClock 슬롯은 키 전송(또는 앱 창 안정) 뒤 1.5초 후 bringToFront
+// 개정 기록 | 2026-11-11 | v1.3 | 토스트·오류·대화상자 문구를 설정 언어로, 언어 변경 시 날씨 갱신, 지오코딩에 언어 전달 | docs/v1.3-i18n-brief.md

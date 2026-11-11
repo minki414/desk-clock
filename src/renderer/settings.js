@@ -2,13 +2,16 @@
 // 사용자 의도 [docs/v1.2-brief.md §2]: 식탁 위 시계와 같은 결의 조용한 설정 화면. 탭 4개, 바꾸는 즉시 저장, 저장되면 0.8초 '저장됨'.
 // 개발 판단: 컨트롤은 스스로 모양을 바꾸고(스위치·분절 버튼), 서랍 전체 다시 그리기는 탭 전환·열기·바깥 변경 때만 해서 키보드 포커스가 끊기지 않게 한다.
 (function () {
-  const L = window.ClockLabels;
-  const U = L.ui;
+  const I = window.ClockI18n;
   const M = window.ClockModel;
   const KC = window.ClockKeyCombo;
 
   function create({ api, root, scrim, onToggle }) {
     let S = null, isOpen = false, tab = 'screen', closeToken = 0;
+    // 문구는 설정의 lang을 따름(바꾸면 서랍을 다시 그려 곧바로 반영)
+    const U = (key, vars) => I.t(S ? S.lang : 'ko', `ui.${key}`, vars);
+    const TABS = ['screen', 'keys', 'links', 'about'];
+    const THEMES = ['bauhaus', 'sector', 'navy', 'receiver', 'flip', 'standby'];
     let lists = null;                  // { calendars, taskLists } | null
     const note = {};                   // 섹션별 짧은 안내(검색 결과 없음 등)
     let places = null;                 // 지명 검색 결과
@@ -42,6 +45,7 @@
     const set = (patch) => {
       ownAt = Date.now();
       S = { ...S, ...Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, isObj(S[k]) && isObj(v) ? { ...S[k], ...v } : v])) };
+      if ('lang' in patch) render();   // 언어를 바꾸면 서랍 글자를 저장 응답을 기다리지 않고 바로 바꿈
       return api.setSettings(patch).then((s) => { S = s; ownAt = Date.now(); paintThumbs(); return s; });
     };
 
@@ -60,8 +64,8 @@
       return b;
     }
     // 분절 버튼(라디오 그룹)
-    function seg(opts, value, onChange, label) {
-      const g = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': label });
+    function seg(opts, value, onChange, label, id) {
+      const g = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': label, 'data-seg': id });
       const paint = (v) => g.querySelectorAll('button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.v === v)));
       opts.forEach(([v, t]) => g.append(h('button', { type: 'button', role: 'radio', textContent: t, 'data-v': v, on: { click: () => { paint(v); onChange(v); } } })));
       paint(value);
@@ -78,7 +82,7 @@
 
     // 항목: 이름·설명·'저장됨' 표시. make(commit)이 컨트롤을 만들고, commit(patch)은 저장 뒤 0.8초 '저장됨'을 보임
     function field(title, desc, make, { inline = false, cls = '' } = {}) {
-      const tag = h('span', { class: 'saved', textContent: U.saved, role: 'status' });
+      const tag = h('span', { class: 'saved', textContent: U('saved'), role: 'status' });
       let t = null;
       const commit = (patch) => set(patch).then((s) => {
         tag.classList.add('on'); clearTimeout(t); t = setTimeout(() => tag.classList.remove('on'), 800);
@@ -92,12 +96,12 @@
     // ----- 탭: 화면 -----
     function themeCards(commit) {
       const wrap = h('div', { class: 'themes' });
-      const cards = L.themes.map(([id, name]) => {
+      const cards = THEMES.map((id) => {
         const img = h('img', { alt: '', draggable: false });
         const c = h('button', { type: 'button', class: 'tcard', 'aria-pressed': String(S.theme === id), 'data-id': id, on: { click: () => {
           cards.forEach((x) => x.setAttribute('aria-pressed', String(x === c)));
           commit({ theme: id });
-        } } }, h('span', { class: 'timg' }, img), h('span', { class: 'tname', textContent: name }));
+        } } }, h('span', { class: 'timg' }, img), h('span', { class: 'tname', textContent: I.t(S.lang, `theme.${id}`) }));
         return c;
       });
       paintThumbs = () => {
@@ -113,21 +117,26 @@
       const range = (commit) => {
         const n = Math.max(0, Math.min(30, Math.round(Number(S.minBrightness) || 0)));
         const out = h('output', { class: 'rv', textContent: `${n}%` });
-        const r = h('input', { type: 'range', min: 0, max: 30, step: 1, value: n, 'aria-label': U.minBrightness, on: {
+        const r = h('input', { type: 'range', min: 0, max: 30, step: 1, value: n, 'aria-label': U('minBrightness'), on: {
           input: () => { out.textContent = `${r.value}%`; },
           change: () => commit({ minBrightness: Number(r.value) }),
         } });
         return h('div', { class: 'rng' }, r, out);
       };
       return [
-        field(U.theme, '', (c) => themeCards(c), { cls: 'stack' }),
-        field(U.mode, '', (c) => seg(U.modes, S.mode, (v) => c({ mode: v }), U.mode), { cls: 'stack' }),
-        field(U.night, U.nightNote, (c) => h('div', { class: 'times' },
-          h('label', {}, h('span', { textContent: U.nightFrom }), h('input', { type: 'time', value: S.nightStart, on: { change: (e) => e.target.value && c({ nightStart: e.target.value }) } })),
-          h('label', {}, h('span', { textContent: U.nightTo }), h('input', { type: 'time', value: S.nightEnd, on: { change: (e) => e.target.value && c({ nightEnd: e.target.value }) } }))), { cls: 'stack' }),
-        field(U.nightDim, U.nightDimNote, (c) => toggle(S.nightDim, (v) => c({ nightDim: v }), U.nightDim), { inline: true }),
-        field(U.minBrightness, '', range, { cls: 'stack' }),
-        field(U.autoStart, avail === false ? U.autoStartOnly : U.autoStartNote, (c) => toggle(avail ? S.autoStart : false, (v) => c({ autoStart: v }), U.autoStart, !avail), { inline: true }),
+        field(U('lang'), '', (c) => {
+          const g = seg(I.langs, S.lang, (v) => c({ lang: v }), U('lang'), 'lang');
+          g.querySelectorAll('button').forEach((b) => { b.lang = I.htmlLang(b.dataset.v); });   // 각 이름을 자기 언어의 서체로
+          return g;
+        }, { cls: 'stack' }),
+        field(U('theme'), '', (c) => themeCards(c), { cls: 'stack' }),
+        field(U('mode'), '', (c) => seg(['light', 'dark', 'auto'].map((v) => [v, U(`mode.${v}`)]), S.mode, (v) => c({ mode: v }), U('mode')), { cls: 'stack' }),
+        field(U('night'), U('nightNote'), (c) => h('div', { class: 'times' },
+          h('label', {}, h('span', { textContent: U('nightFrom') }), h('input', { type: 'time', value: S.nightStart, on: { change: (e) => e.target.value && c({ nightStart: e.target.value }) } })),
+          h('label', {}, h('span', { textContent: U('nightTo') }), h('input', { type: 'time', value: S.nightEnd, on: { change: (e) => e.target.value && c({ nightEnd: e.target.value }) } }))), { cls: 'stack' }),
+        field(U('nightDim'), U('nightDimNote'), (c) => toggle(S.nightDim, (v) => c({ nightDim: v }), U('nightDim')), { inline: true }),
+        field(U('minBrightness'), '', range, { cls: 'stack' }),
+        field(U('autoStart'), avail === false ? U('autoStartOnly') : U('autoStartNote'), (c) => toggle(avail ? S.autoStart : false, (v) => c({ autoStart: v }), U('autoStart'), !avail), { inline: true }),
       ];
     }
 
@@ -136,27 +145,27 @@
     // 개발 판단: 녹화 중에는 document 캡처 단계에서 키를 가로채 app.js 의 키 라우팅(Esc 닫기·숫자패드 실행)에 닿지 않게 한다. 수정키만 눌린 것은 무시한다.
     function sendKeysRow(s, save) {
       let cur = KC.formatCombo(s.sendKeys), t = null;
-      const val = h('span', { class: 'kv', textContent: cur || U.sendNone });
-      const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === U.sendNone); };
-      const rec = btn(U.sendRec, () => (recording ? stopRec() : start()), 'sm');
-      const clear = btn(U.sendClear, () => { stopRec(); cur = ''; show(U.sendNone); save({ sendKeys: '' }); }, 'sm');
+      const val = h('span', { class: 'kv', textContent: cur || U('sendNone') });
+      const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === U('sendNone')); };
+      const rec = btn(U('sendRec'), () => (recording ? stopRec() : start()), 'sm');
+      const clear = btn(U('sendClear'), () => { stopRec(); cur = ''; show(U('sendNone')); save({ sendKeys: '' }); }, 'sm');
       let recording = false;
       const onKey = (e) => {
         e.preventDefault(); e.stopImmediatePropagation();
         if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
         if (e.key === 'Escape') return stopRec();
-        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U.sendNone); return save({ sendKeys: '' }); }
+        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U('sendNone')); return save({ sendKeys: '' }); }
         const combo = KC.comboFromEvent(e);
         stopRec();
-        if (!combo) { show(U.sendBad); clearTimeout(t); t = setTimeout(() => show(cur || U.sendNone), 1500); return; }
+        if (!combo) { show(U('sendBad')); clearTimeout(t); t = setTimeout(() => show(cur || U('sendNone')), 1500); return; }
         cur = combo; show(cur); save({ sendKeys: cur });
       };
       const end = () => {
         recording = false;
         document.removeEventListener('keydown', onKey, true);
         rec.removeEventListener('blur', end);
-        rec.setAttribute('aria-pressed', 'false'); rec.textContent = U.sendRec;
-        val.classList.remove('wait'); show(cur || U.sendNone);
+        rec.setAttribute('aria-pressed', 'false'); rec.textContent = U('sendRec');
+        val.classList.remove('wait'); show(cur || U('sendNone'));
         stopRec = () => {};
       };
       function start() {
@@ -164,142 +173,143 @@
         recording = true;
         stopRec = end;
         rec.setAttribute('aria-pressed', 'true'); rec.textContent = '…';
-        show(U.sendWait); val.classList.add('wait');
+        show(U('sendWait')); val.classList.add('wait');
         document.addEventListener('keydown', onKey, true);
         rec.addEventListener('blur', end);
       }
-      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U.sendKeys }), val, h('span', { class: 'grow' }), rec, clear);
+      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U('sendKeys') }), val, h('span', { class: 'grow' }), rec, clear);
     }
 
     function slotCard(s) {
-      const tag = h('span', { class: 'saved', textContent: U.saved, role: 'status' });
+      const tag = h('span', { class: 'saved', textContent: U('saved'), role: 'status' });
       let tt = null;
       const save = (patch) => set({ slots: S.slots.map((x) => (x.key === s.key ? { ...x, ...patch } : x)) }).then(() => {
         tag.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => tag.classList.remove('on'), 800);
       });
       const card = h('div', { class: 'slot', 'data-kind': s.kind });
-      const name = text(s.name, U.slotName, (v) => save({ name: v }), { 'aria-label': `${s.key}번 ${U.slotName}` });
-      const target = text(s.target, s.kind === 'web' ? U.slotWebTarget : U.slotProgramTarget, (v) => save({ target: v }), { 'aria-label': `${s.key}번 주소 또는 경로` });
+      const name = text(s.name, U('slotName'), (v) => save({ name: v }), { 'aria-label': U('slotNameAria', { key: s.key }) });
+      const target = text(s.target, s.kind === 'web' ? U('slotWebTarget') : U('slotProgramTarget'), (v) => save({ target: v }), { 'aria-label': U('slotTargetAria', { key: s.key }) });
       const dim = () => card.classList.toggle('empty', !name.value.trim() && !target.value.trim());
       name.addEventListener('input', dim); target.addEventListener('input', dim);
       dim();
-      const kind = seg([['web', U.slotWeb], ['program', U.slotProgram]], s.kind, (v) => {
+      const kind = seg([['web', U('slotWeb')], ['program', U('slotProgram')]], s.kind, (v) => {
         card.dataset.kind = v;
-        target.placeholder = v === 'web' ? U.slotWebTarget : U.slotProgramTarget;
+        target.placeholder = v === 'web' ? U('slotWebTarget') : U('slotProgramTarget');
         save({ kind: v });
-      }, `${s.key}번 종류`);
+      }, U('slotKindAria', { key: s.key }));
       card.append(
         h('span', { class: 'badge', textContent: s.key }),
         h('div', { class: 'sc' },
           h('div', { class: 'l1' }, name, kind),
-          h('div', { class: 'l2' }, target, h('button', { type: 'button', class: 'btn only-program', textContent: U.slotBrowse, on: { click: async () => {
+          h('div', { class: 'l2' }, target, h('button', { type: 'button', class: 'btn only-program', textContent: U('slotBrowse'), on: { click: async () => {
             const p = await api.pickProgram();
             if (p) { target.value = p; target.dispatchEvent(new Event('input')); target.dispatchEvent(new Event('change')); }
           } } })),
           sendKeysRow(s, save),
+          h('div', { class: 'l4' }, check(U('returnToClock'), s.returnToClock === true, (v) => save({ returnToClock: v }))),
           h('div', { class: 'l3' },
-            h('span', { class: 'only-web' }, check(U.slotApp, s.appWindow, (v) => save({ appWindow: v }))),
+            h('span', { class: 'only-web' }, check(U('slotApp'), s.appWindow, (v) => save({ appWindow: v }))),
             h('span', { class: 'grow' }), tag,
-            h('button', { type: 'button', class: 'btn sm', textContent: U.slotTest, on: { click: () => { target.dispatchEvent(new Event('change')); api.launch(s.key, true); } } }))));
+            h('button', { type: 'button', class: 'btn sm', textContent: U('slotTest'), on: { click: () => { target.dispatchEvent(new Event('change')); api.launch(s.key, true); } } }))));
       return card;
     }
 
     function keys() {
       return [
-        field(U.hotkeys, U.hotkeysNote, (c) => toggle(S.hotkeysOn, (v) => c({ hotkeysOn: v }), U.hotkeys), { inline: true }),
-        field(U.browser, '', (c) => seg(U.browsers, S.browser, (v) => c({ browser: v }), U.browser), { cls: 'stack' }),
-        h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U.slots }))), h('div', { class: 'slots' }, S.slots.map(slotCard))),
+        field(U('hotkeys'), U('hotkeysNote'), (c) => toggle(S.hotkeysOn, (v) => c({ hotkeysOn: v }), U('hotkeys')), { inline: true }),
+        field(U('browser'), '', (c) => seg([['brave', 'Brave'], ['chrome', 'Chrome'], ['edge', 'Edge'], ['default', U('browser.default')]], S.browser, (v) => c({ browser: v }), U('browser')), { cls: 'stack' }),
+        h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('slots') }))), h('div', { class: 'slots' }, S.slots.map(slotCard))),
       ];
     }
 
     // ----- 탭: 연결 -----
     async function loadLists() {
       lists = await api.googleLists();
-      note.google = lists ? '' : U.gListFail;
+      note.google = lists ? '' : U('gListFail');
       render();
     }
 
     function google() {
       const g = S.google;
-      return field(U.google, '', (commit) => {
-        const state = !g.hasClient ? U.gNoClient : g.connected ? U.gConnected : U.gDisconnected;
+      return field(U('google'), '', (commit) => {
+        const state = !g.hasClient ? U('gNoClient') : g.connected ? U('gConnected') : U('gDisconnected');
         const out = [h('p', { class: 'status' }, h('i', { class: `sdot ${g.connected ? 'ok' : ''}` }), state), hint(note.google)];
         const buttons = [];
         if (g.hasClient && !g.connected) {
-          buttons.push(btn(U.gConnect, async () => {
-            note.google = U.gWaiting; render();
+          buttons.push(btn(U('gConnect'), async () => {
+            note.google = U('gWaiting'); render();
             const r = await api.googleConnect();
             note.google = r.ok ? '' : r.error;
             if (r.ok) await loadLists(); else render();
           }, 'primary'));
         }
-        if (g.connected) buttons.push(btn(U.gDisconnect, async () => { await api.googleDisconnect(); lists = null; note.google = ''; render(); }, 'danger'));
-        buttons.push(btn(U.gPick, async () => { const r = await api.pickClient(); if (!r.ok && !r.canceled) note.google = r.error; render(); }));
+        if (g.connected) buttons.push(btn(U('gDisconnect'), async () => { await api.googleDisconnect(); lists = null; note.google = ''; render(); }, 'danger'));
+        buttons.push(btn(U('gPick'), async () => { const r = await api.pickClient(); if (!r.ok && !r.canceled) note.google = r.error; render(); }));
         out.push(h('div', { class: 'btns' }, buttons));
         if (g.connected && lists) {
           const ids = g.calendarIds;
           const boxes = lists.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: ids.includes(c.id) || (!ids.length && c.primary) }));
-          out.push(h('p', { class: 'sub', textContent: U.gCalendars }));
+          out.push(h('p', { class: 'sub', textContent: U('gCalendars') }));
           lists.calendars.forEach((c, i) => out.push(h('label', { class: 'check' }, boxes[i], h('span', { textContent: c.name }))));
           boxes.forEach((b) => b.addEventListener('change', () => commit({ google: { calendarIds: boxes.filter((x) => x.checked).map((x) => x.value) } })));
-          out.push(h('p', { class: 'sub', textContent: U.gTaskList }));
-          const sel = h('select', { 'aria-label': U.gTaskList, on: { change: (e) => commit({ google: { taskListId: e.target.value } }) } },
-            [['', U.gDefaultList], ...lists.taskLists.map((t) => [t.id, t.name])].map(([v, t]) => h('option', { value: v, textContent: t, selected: v === g.taskListId })));
+          out.push(h('p', { class: 'sub', textContent: U('gTaskList') }));
+          const sel = h('select', { 'aria-label': U('gTaskList'), on: { change: (e) => commit({ google: { taskListId: e.target.value } }) } },
+            [['', U('gDefaultList')], ...lists.taskLists.map((t) => [t.id, t.name])].map(([v, t]) => h('option', { value: v, textContent: t, selected: v === g.taskListId })));
           out.push(sel);
         } else if (g.connected) {
-          out.push(h('div', { class: 'btns' }, btn(U.gLists, loadLists)));
+          out.push(h('div', { class: 'btns' }, btn(U('gLists'), loadLists)));
         }
         return h('div', { class: 'blk' }, out);
       }, { cls: 'stack' });
     }
 
     function weather() {
-      return field(U.weather, '', (commit) => {
+      return field(U('weather'), '', (commit) => {
         const manual = S.location.mode === 'manual';
-        const q = h('input', { type: 'text', placeholder: U.locSearch, spellcheck: false });
+        const q = h('input', { type: 'text', placeholder: U('locSearch'), spellcheck: false });
         const go = async () => {
           const r = await api.searchPlace(q.value);
           places = r || [];
-          note.weather = r === null ? U.locFail : r.length ? '' : U.locNone;
+          note.weather = r === null ? U('locFail') : r.length ? '' : U('locNone');
           render();
         };
         q.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
         return h('div', { class: 'blk' },
-          h('p', { class: 'status' }, h('i', { class: 'sdot ok' }), manual ? `${S.location.name} (${U.locManual})` : U.locAuto),
-          manual ? h('div', { class: 'btns' }, btn(U.locReset, () => commit({ location: { mode: 'auto' } }).then(render))) : null,
-          h('div', { class: 'srch' }, q, btn(U.locGo, go)),
+          h('p', { class: 'status' }, h('i', { class: 'sdot ok' }), manual ? `${S.location.name} (${U('locManual')})` : U('locAuto')),
+          manual ? h('div', { class: 'btns' }, btn(U('locReset'), () => commit({ location: { mode: 'auto' } }).then(render))) : null,
+          h('div', { class: 'srch' }, q, btn(U('locGo'), go)),
           hint(note.weather),
           (places || []).length ? h('div', { class: 'places' }, places.map((p) => h('button', { type: 'button', class: 'place', textContent: [p.name, p.admin].filter(Boolean).join(' · '), on: { click: () => {
             places = null; note.weather = '';
-            commit({ location: { mode: 'manual', name: p.name, lat: p.lat, lon: p.lon } }).then(render);
+            commit({ location: { mode: 'manual', name: p.name, lat: p.lat, lon: p.lon, id: p.id } }).then(render);
           } } }))) : null);
       }, { cls: 'stack' });
     }
 
     function servers() {
-      return field(U.servers, '', (commit) => {
+      return field(U('servers'), '', (commit) => {
         const save = (i, patch) => commit({ servers: S.servers.map((s, j) => (j === i ? { ...s, ...patch } : s)) }).then(refreshServers);
         const dots = [];
         const rows = S.servers.map((s, i) => {
           const dot = h('i', { class: 'sdot', role: 'img' });
           dots[i] = dot;
           return h('div', { class: 'srv' }, dot,
-            text(s.name, U.serverName, (v) => save(i, { name: v }), { class: 'sname', 'aria-label': `${U.serverName} ${i + 1}` }),
-            text(s.url, U.serverUrl, (v) => save(i, { url: v }), { 'aria-label': `${U.serverUrl} ${i + 1}` }),
-            h('button', { type: 'button', class: 'icon', 'aria-label': `${U.serverDel} ${i + 1}`, title: U.serverDel, on: { click: () => commit({ servers: S.servers.filter((_, j) => j !== i) }).then(() => { svStates = []; render(); refreshServers(); }) } }, svg('M6 6l12 12M18 6L6 18')));
+            text(s.name, U('serverName'), (v) => save(i, { name: v }), { class: 'sname', 'aria-label': `${U('serverName')} ${i + 1}` }),
+            text(s.url, U('serverUrl'), (v) => save(i, { url: v }), { 'aria-label': `${U('serverUrl')} ${i + 1}` }),
+            h('button', { type: 'button', class: 'icon', 'aria-label': `${U('serverDel')} ${i + 1}`, title: U('serverDel'), on: { click: () => commit({ servers: S.servers.filter((_, j) => j !== i) }).then(() => { svStates = []; render(); refreshServers(); }) } }, svg('M6 6l12 12M18 6L6 18')));
         });
         paintDots = () => dots.forEach((d, i) => {
           const v = svStates[i];
           const st = v === true ? 'up' : v === false ? 'down' : '';
           d.className = `sdot ${st}`;
-          d.setAttribute('aria-label', v === true ? U.serverUp : v === false ? U.serverDown : U.serverWait);
+          d.setAttribute('aria-label', v === true ? U('serverUp') : v === false ? U('serverDown') : U('serverWait'));
           d.title = d.getAttribute('aria-label');
         });
         paintDots();
         return h('div', { class: 'blk' },
-          S.servers.length ? null : hint(U.serverNone),
+          S.servers.length ? null : hint(U('serverNone')),
           rows,
-          h('div', { class: 'btns' }, btn(U.serverAdd, () => commit({ servers: [...S.servers, { name: '', url: '' }] }).then(render))));
+          h('div', { class: 'btns' }, btn(U('serverAdd'), () => commit({ servers: [...S.servers, { name: '', url: '' }] }).then(render))));
       }, { cls: 'stack' });
     }
     let paintDots = () => {};
@@ -320,17 +330,17 @@
 
     // ----- 탭: 정보 -----
     function about() {
-      const q = h('button', { type: 'button', class: 'btn danger wide', textContent: U.quit, on: { click: () => {
+      const q = h('button', { type: 'button', class: 'btn danger wide', textContent: U('quit'), on: { click: () => {
         if (!quitArmed) {
-          quitArmed = true; q.textContent = U.quitSure; q.classList.add('armed');
+          quitArmed = true; q.textContent = U('quitSure'); q.classList.add('armed');
           clearTimeout(quitTimer);
-          quitTimer = setTimeout(() => { quitArmed = false; q.textContent = U.quit; q.classList.remove('armed'); }, 4000);
+          quitTimer = setTimeout(() => { quitArmed = false; q.textContent = U('quit'); q.classList.remove('armed'); }, 4000);
         } else api.quit();
       } } });
       return [
-        h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U.version }))), h('span', { class: 'val', textContent: version || '—' })),
-        h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U.folder }))), btn(U.folderOpen, () => api.openFolder())),
-        h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('p', { class: 'fd', textContent: U.quitNote })), q),
+        h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('version') }))), h('span', { class: 'val', textContent: version || '—' })),
+        h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('folder') }))), btn(U('folderOpen'), () => api.openFolder())),
+        h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('p', { class: 'fd', textContent: U('quitNote') })), q),
       ];
     }
 
@@ -345,22 +355,24 @@
     function render(resetScroll = false) {
       if (!isOpen || !S) return;
       stopRec();
+      const inLang = document.activeElement && document.activeElement.closest && document.activeElement.closest('[data-seg=lang]');
       const old = root.querySelector('.body');
       const top = old && !resetScroll ? old.scrollTop : 0;
       const body = h('div', { class: 'body', role: 'tabpanel', 'aria-labelledby': `tab-${tab}` },
         ...({ screen, keys, links: () => [google(), weather(), servers()], about }[tab]()).flat(Infinity).filter(Boolean));
-      const tabs = h('div', { class: 'tabs', role: 'tablist' }, U.tabs.map(([id, t]) => h('button', { type: 'button', role: 'tab', id: `tab-${id}`, class: 'tab', textContent: t, 'aria-selected': String(id === tab), tabIndex: id === tab ? 0 : -1, on: {
+      const tabs = h('div', { class: 'tabs', role: 'tablist' }, TABS.map((id) => h('button', { type: 'button', role: 'tab', id: `tab-${id}`, class: 'tab', textContent: U(`tab.${id}`), 'aria-selected': String(id === tab), tabIndex: id === tab ? 0 : -1, on: {
         click: () => selectTab(id, true),
         keydown: (e) => {
-          const i = U.tabs.findIndex(([x]) => x === id);
+          const i = TABS.indexOf(id);
           const n = e.key === 'ArrowRight' ? i + 1 : e.key === 'ArrowLeft' ? i - 1 : null;
-          if (n !== null) { e.preventDefault(); selectTab(U.tabs[(n + U.tabs.length) % U.tabs.length][0], true); }
+          if (n !== null) { e.preventDefault(); selectTab(TABS[(n + TABS.length) % TABS.length], true); }
         },
       } })));
       root.replaceChildren(
-        h('header', { class: 'head' }, h('h2', { textContent: U.title }), h('button', { type: 'button', class: 'x', 'aria-label': U.close, title: U.close, on: { click: close } }, svg('M6 6l12 12M18 6L6 18'))),
+        h('header', { class: 'head' }, h('h2', { textContent: U('title') }), h('button', { type: 'button', class: 'x', 'aria-label': U('close'), title: U('close'), on: { click: close } }, svg('M6 6l12 12M18 6L6 18'))),
         tabs, body);
       body.scrollTop = top;
+      if (inLang) { const b = root.querySelector('[data-seg=lang] [aria-checked=true]'); if (b) b.focus({ preventScroll: true }); }   // 언어를 고른 직후에도 키보드 위치 유지
     }
 
     function open() {
@@ -407,3 +419,5 @@
 // 개정 기록 | 2026-11-11 | v1.2 | 전면 재작성: 탭 4개·테마 카드·스위치/분절 버튼·저장됨 표시·자동 실행·서버 상태 점 | docs/v1.2-brief.md §2
 // 개정 기록 | 2026-11-11 | v1.2.1 | 바깥 눌러 닫기: 닫는 클릭이 아래 시계로 전달되지 않게 차단 | 대표 지시
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 행에 '실행 후 보낼 키' 읽기 전용 값·녹화·지우기 추가
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: 슬롯 행에 실행 후 시계로 돌아오기 체크 추가
+// 개정 기록 | 2026-11-11 | v1.3 | 화면 탭 맨 위에 언어 선택(한국어·中文·English), 모든 문구를 사전(ClockI18n)에서 읽고 언어를 바꾸면 즉시 다시 그림 | docs/v1.3-i18n-brief.md

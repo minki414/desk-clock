@@ -16,7 +16,6 @@
   };
 
   var NS = 'http://www.w3.org/2000/svg';
-  var DOW = ['일', '월', '화', '수', '목', '금', '토'];
   function pad(n) { return n < 10 ? '0' + n : String(n); }
 
   window.ClockKit = {
@@ -48,10 +47,9 @@
       return a;
     },
     two: pad,
-    dow: DOW,
     parts: function (d) {
       return { hh: pad(d.getHours()), mm: pad(d.getMinutes()), ss: pad(d.getSeconds()),
-        mon: d.getMonth() + 1, day: d.getDate(), dow: DOW[d.getDay()] };
+        mon: d.getMonth() + 1, day: d.getDate() };   // 요일·날짜 글자는 언어별이라 model.date* 가 줌
     },
     // 시·분 바늘 각도(분침은 초 단위로 미세 이동)
     angles: function (d) {
@@ -59,15 +57,6 @@
       return { h: Math.round((h * 30 + m / 2 + s / 120) * 100) / 100, m: Math.round((m * 6 + s / 10) * 100) / 100, s: s, ms: d.getMilliseconds() };
     },
     temp: function (n) { return (n < 0 ? '−' + (-n) : String(n)) + '°'; },
-    // 날씨 문구 → 아이콘 키
-    wxIcon: function (label) {
-      label = label || '';
-      if (/눈/.test(label)) return 'snow';
-      if (/비|소나기|우천/.test(label)) return 'rain';
-      if (/안개|박무|연무|황사|먼지/.test(label)) return 'fog';
-      if (/맑|청명/.test(label)) return 'sun';
-      return 'cloud';
-    },
     // 타이머에 보일 글자(입력 중엔 입력값, 진행 중엔 남은 시간)
     timerText: function (t) {
       if (t.phase === 'input') return t.input || '0.00';
@@ -75,12 +64,8 @@
       var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), ss = s % 60;
       return h ? h + ':' + pad(m) + ':' + pad(ss) : m + ':' + pad(ss);
     },
-    timerHint: function (t) {
-      if (t.phase === 'input') return t.hint || '';
-      if (t.phase === 'paused') return '일시정지';
-      if (t.phase === 'ringing') return '시간 종료';
-      return '';
-    },
+    // 안내 글(입력 해석·일시정지·시간 종료)은 핵심 앱이 언어에 맞춰 model.timer.hint 로 줌
+    timerHint: function (t) { return t.hint || ''; },
     // 타이머 상태 클래스(t-hidden/input/running/paused/ringing)와 무효 입력 흔들림(0.4초)
     timerState: function (box, shakeEl, t, now) {
       var K = window.ClockKit, ph = ['hidden', 'input', 'running', 'paused', 'ringing'];
@@ -120,3 +105,4 @@
   };
 })();
 // 개정 기록 | 2026-11-11 | v1 | 아이콘 7종 + 테마 공용 도우미(ClockKit) 신설 | 테마가 서로 불러 쓸 수 없어 먼저 불러오는 이 파일에 모음
+// 개정 기록 | 2026-11-11 | v1.3 | 요일 배열·날씨 문구 정규식 제거, timerHint 는 model.timer.hint 사용 | docs/v1.3-i18n-brief.md

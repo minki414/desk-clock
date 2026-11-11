@@ -14,8 +14,8 @@
 | 화면 꺼짐 방지 | `powerSaveBlocker.start('prevent-display-sleep')` | 앱 실행 중에만 유지되고, 끄면 원래 전원 설정으로 돌아감 |
 | 웹 링크 | 기본 Brave `--app=<URL>`(사용자의 기존 프로필), 설정에서 Brave/Chrome/Edge/기본 브라우저 선택 | 광고 차단·로그인 유지(사용자 답변) |
 | 날씨 | IP 위치(ipwho.is, 하루 1회) → Open-Meteo `models=kma_seamless`, 30분 주기 | 키 없음·개인용 무료 / 설정에서 지명 검색(Open-Meteo geocoding `language=ko`)으로 변경 |
-| 일정 | Google Calendar API `calendar.readonly`, 5분 주기 | 휴대폰 입력이 바로 반영 |
-| 메모 | Google Tasks API `tasks.readonly`, 5분 주기 | Keep은 개인 계정 공식 API 없음(조사), 사용자 선택 |
+| 일정 | Google Calendar API `calendar.readonly`, 1분 주기 | 휴대폰 입력이 바로 반영 |
+| 메모 | Google Tasks API `tasks.readonly`, 1분 주기 | Keep은 개인 계정 공식 API 없음(조사), 사용자 선택 |
 | 구글 인증 | LP Lounge의 Google Cloud 프로젝트 재사용, 데스크톱 OAuth(루프백+PKCE), 게시 상태 '프로덕션' | 테스트 상태 refresh token 7일 만료 회피(사용자 선택) |
 | 볼륨 | 시계 창 포커스 + 단축키 켜짐일 때 렌더러가 `NumpadAdd`/`NumpadSubtract` → IPC `system:volume` → koffi `keybd_event(VK_VOLUME_UP/DOWN)` 1회 누름당 2번(약 4%) | Windows 기본 볼륨 표시가 뜸. 다른 창이 앞이면 동작하지 않음 |
 | 야간 감광 | 야간 시간대 시작 시 현재 패널 밝기를 저장하고 WMI `WmiSetBrightness`로 최소(설정값, 기본 0%)로, 끝나면 저장값 복구. WMI 실패 시 화면 위 검은 막(불투명도 0.6) | 하드웨어 밝기가 눈부심·전력에 실제로 효과. 전환은 하루 두 번뿐이라 PowerShell 호출 비용 무시 가능 |
@@ -44,7 +44,7 @@ clock/
     index.html, app.js    상태 모델·1초 렌더 루프·테마 전환·다크모드
     keys.js               키 라우팅 상태 기계(순수 함수 + 얇은 DOM 연결)
     timer-parse.js        타이머 입력 해석(순수 함수)
-    labels.js             화면 문구 사전(합니다체·명사형 상태)
+    i18n.js               화면 언어 사전(ko·zh·en)과 날짜·타이머·날씨 형식화(렌더러·메인 공용, v1.3)
     settings.js/.css      설정 서랍
     themes/<id>/          theme.css + theme.js (테마마다 배치까지 다름, docs/theme-contract.md)
   assets/fonts/           오프라인용 woff2(OFL 등 재배포 가능한 것만)
@@ -104,11 +104,11 @@ clock/
 - 프로그램 슬롯: `.exe`·`.lnk`·폴더를 `shell.openPath`.
 - 실행 실패·빈 슬롯: 아무 창도 띄우지 않고 상태 줄에 3초간 '2번 실행 실패' 표시.
 - 복귀: 실행 직전 대시보드가 맨 앞이므로, 실행 창을 닫거나 최소화하면 Windows가 다음 창인 대시보드를 활성화합니다. 보조 장치로, 실행 후 10분 동안만 `foreground.js`가 1초마다 확인해 맨 앞이 바탕화면·작업표시줄(`Progman`/`WorkerW`/`Shell_TrayWnd`)이면 대시보드를 앞으로 가져옵니다.
-- 실행 후 키 보내기: 슬롯의 선택 항목 `sendKeys`(예: `Ctrl+Alt+Shift+V`, 빈 값=끔)가 올바르면(`keycombo.js` `parseCombo`) 실행 성공 뒤 `foreground.waitStable`이 200ms마다 맨 앞 창을 읽어, 시계 창·`Progman`/`WorkerW`/`Shell_TrayWnd`가 아닌 같은 창이 1000ms 이어지면(`shouldSend`) 700ms를 더 기다려 같은 창이 아직 맨 앞인지 다시 확인(`confirmSend`, 첫 실행이 느린 앱 대비)한 뒤 `system.sendCombo`가 koffi `keybd_event`로 수정키 누름→주 키 누름·뗌→수정키 뗌을 15ms 간격으로 보냅니다. 재확인 대기를 포함해 10초 안에 조건이 안 되면 보내지 않고 '7번 키 보내기 실패'를 3초 표시하며, 다른 슬롯을 실행하면 대기는 취소됩니다. 시계 창에는 절대 보내지 않습니다.
+- 실행 후 키 보내기: 슬롯의 선택 항목 `sendKeys`(예: `Ctrl+Alt+Shift+V`, 빈 값=끔)가 올바르면(`keycombo.js` `parseCombo`) 실행 성공 뒤 `foreground.waitStable`이 200ms마다 맨 앞 창을 읽어, 시계 창·`Progman`/`WorkerW`/`Shell_TrayWnd`가 아닌 같은 창이 1000ms 이어지면(`shouldSend`) 700ms를 더 기다려 같은 창이 아직 맨 앞인지 다시 확인(`confirmSend`, 첫 실행이 느린 앱 대비)한 뒤 `system.sendCombo`가 koffi `keybd_event`로 수정키 누름→주 키 누름·뗌→수정키 뗌을 15ms 간격으로 보냅니다. 재확인 대기를 포함해 10초 안에 조건이 안 되면 보내지 않고 '7번 키 보내기 실패'를 3초 표시하며, 다른 슬롯을 실행하면 대기는 취소됩니다. 시계 창에는 절대 보내지 않습니다. 슬롯의 `returnToClock`(기본 끔)이 true이면 키 전송 성공 1500ms 뒤(`sendKeys`가 없으면 같은 안정 판정 뒤, 10초 안에 안 되면 조용히 포기) `bringToFront`로 시계를 앞으로 가져오며, 전송 실패 때는 가져오지 않고 다른 슬롯 실행 시 `cancelWait`로 함께 취소됩니다. 다른 앱은 최소화·종료하지 않습니다.
 
 ## 7. 갱신·오류
 
-- 갱신 주기: 일정·메모 5분, 날씨 30분, IP 위치 24시간. 메인 `sync.js`가 담당하고 시작 직후 1회 실행.
+- 갱신 주기: 일정·메모 1분(선택한 캘린더 수+메모 1건의 요청, 캘린더 목록은 설정에서 불러올 때만 가져옴), 날씨 30분, IP 위치 24시간. 메인 `sync.js`가 담당하고 시작 직후 1회 실행.
 - 실패하면 마지막 값을 유지하고 지수 백오프(최대 30분)로 재시도합니다. 상태는 테마 문법 안의 한 줄 안내로만 표시하며 오류 창은 띄우지 않습니다.
 - 자정·절전 복귀(`powerMonitor` `resume`) 때 즉시 재갱신합니다.
 
@@ -161,3 +161,5 @@ clock/
 // 개정 기록 | 2026-11-11 | 기본 라이트 | 사용자 결정: 색 모드 기본 라이트(§8)
 // 개정 기록 | 2026-11-11 | v1.2 | §10 설정 서랍 재설계·화면 크기, §12 자동 실행 구현·음력 제외 | docs/v1.2-brief.md
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: §6 실행 후 키 보내기 단락 추가(안정 1000ms·재확인 700ms)
+// 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: §6 실행 후 시계로 돌아오기 문장 추가
+// 개정 기록 | 2026-11-11 | 일정·메모 1분 주기 | 사용자 결정: 5분→1분(실패 백오프는 그대로, 최대 30분)
