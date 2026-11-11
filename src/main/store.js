@@ -11,11 +11,12 @@ const defaultSlots = () => {
 };
 
 const defaults = () => ({
+  settingsVersion: 2,         // 기본값 바뀜을 한 번만 옛 설정에 적용하는 표식
   theme: 'bauhaus',
-  mode: 'auto',               // light | dark | auto
+  mode: 'light',              // light | dark | auto — 사용자 결정(2026-11-11): 기본 라이트
   nightStart: '19:00',
   nightEnd: '07:00',
-  nightDim: true,
+  nightDim: false,            // 사용자 결정(2026-11-11): 기본 끔, 필요할 때만 설정에서 켬
   minBrightness: 0,
   browser: 'brave',           // brave | chrome | edge | default
   hotkeysOn: true,
@@ -57,7 +58,13 @@ function createStore(dir) {
   fs.mkdirSync(dir, { recursive: true });
   const sFile = path.join(dir, 'settings.json');
   const cFile = path.join(dir, 'cache.json');
-  let settings = withDefaults(defaults(), readJson(sFile, null));
+  const saved = readJson(sFile, null);
+  let settings = withDefaults(defaults(), saved);
+  // 1회 이관: 버전 2 이전 설정은 야간 감광을 끄고 색 모드를 라이트로(옛 기본이 켬·자동이라 저장돼 있음). 감광 중이던 밝기는 dimmer.tick()이 복구
+  if (isObj(saved) && !(saved.settingsVersion >= 2)) {
+    settings = { ...settings, nightDim: false, mode: 'light', settingsVersion: 2 };
+    writeAtomic(sFile, settings);
+  }
   let cache = readJson(cFile, {});
   if (!isObj(cache)) cache = {};
   return {
@@ -85,3 +92,5 @@ function createStore(dir) {
 module.exports = { createStore, defaults, withDefaults, writeAtomic };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 설정·캐시 행
 // 개정 기록 | 2026-11-11 | v1.2 | autoStart 기본값 추가 | docs/v1.2-brief.md §3
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: nightDim 기본 끔 + settingsVersion 2 이관(옛 설정의 nightDim 끔)
+// 개정 기록 | 2026-11-11 | 기본 라이트 | 사용자 결정: mode 기본 light, 같은 이관에서 옛 설정 mode 를 light 로

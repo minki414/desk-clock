@@ -17,7 +17,7 @@
     night: '야간 시간', nightFrom: '시작', nightTo: '끝', nightNote: '자동 색 모드는 이 시간에 다크로 바뀝니다.',
     nightDim: '야간 감광', nightDimNote: '야간 시간에 화면 밝기를 최소 밝기까지 낮춥니다.', minBrightness: '최소 밝기',
     autoStart: 'Windows 시작 시 자동 실행', autoStartNote: '로그인하면 시계가 자동으로 열립니다.', autoStartOnly: '설치본에서만 쓸 수 있습니다',
-    hotkeys: '숫자패드 단축키', hotkeysNote: '0·+·−·1~9를 함께 켜고 끕니다',
+    hotkeys: '숫자패드 단축키', hotkeysNote: '시계 화면이 맨 앞에 있을 때만 0~9·+/−가 동작합니다',
     browser: '웹 링크 브라우저', browsers: [['brave', 'Brave'], ['chrome', 'Chrome'], ['edge', 'Edge'], ['default', '기본 브라우저']],
     slots: '슬롯 1~9', slotName: '이름', slotWeb: '웹', slotProgram: '프로그램', slotWebTarget: '주소(https://…)', slotProgramTarget: '프로그램·폴더 경로', slotApp: '주소창 없는 창', slotBrowse: '찾아보기', slotTest: '실행해 보기',
     google: '구글', gNoClient: '클라이언트 파일 선택 필요', gDisconnected: '연결 전', gConnected: '연결됨', gPick: '클라이언트 파일 고르기', gConnect: '구글 로그인', gDisconnect: '연결 해제',
@@ -44,3 +44,4 @@
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 상태 문구 사전
 // 개정 기록 | 2026-11-11 | v1.2 | 설정창 문구 재편(탭·저장됨·자동 실행·실행해 보기·서버 상태 등) | docs/v1.2-brief.md §2
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 단축키 설명 문구 변경

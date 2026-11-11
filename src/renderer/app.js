@@ -117,6 +117,7 @@
     else if (a.type === 'timer.resume') api.timerResume();
     else if (a.type === 'timer.cancel') api.timerCancel();
     else if (a.type === 'timer.invalid') invalidAt = Date.now();
+    else if (a.type === 'volume') api.volume(a.up);
     else if (a.type === 'launch') {
       pressed = String(a.slot);
       setTimeout(() => { pressed = null; render(); }, 200);   // 0.2초 눌림 표시
@@ -134,7 +135,6 @@
   document.addEventListener('keydown', (e) => {
     if (handleKey({ code: e.code, repeat: e.repeat, ctrl: e.ctrlKey, alt: e.altKey, meta: e.metaKey, t: Date.now() })) e.preventDefault();
   });
-  api.onKey((code) => handleKey({ code, t: Date.now() }));   // 전역 0번(메인이 전달)
 
   // ----- 마우스: 커서와 톱니를 3초만 보임 -----
   let awakeT = null;
@@ -173,7 +173,7 @@
     if (window.ClockSettings) {
       settings = window.ClockSettings.create({
         api, root: $('drawer'), scrim: $('scrim'),
-        onToggle: (open) => { ks = { ...ks, settingsOpen: open }; api.drawer(open); document.body.classList.toggle('drawer-open', open); },
+        onToggle: (open) => { ks = { ...ks, settingsOpen: open }; document.body.classList.toggle('drawer-open', open); },
       });
       $('gear').addEventListener('click', () => settings.open());
     }
@@ -183,3 +183,4 @@
 })();
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §2·§3·§9: 초 경계 정렬 렌더, 테마 계약 모델
 // 개정 기록 | 2026-11-11 | v1.2 | fit(): 스테이지 너비를 화면 비율로 가변(1200~1800) | docs/v1.2-brief.md §1
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 0번 수신 제거, volume 액션 실행

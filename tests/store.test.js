@@ -10,12 +10,12 @@ function tmpDir() {
   return fs.mkdtempSync(path.join(base, 'store-'));
 }
 
-test('기본값: 바우하우스·자동 모드·슬롯 1·2만 등록', () => {
+test('기본값: 바우하우스·라이트 모드·슬롯 1·2만 등록', () => {
   const dir = tmpDir();
   try {
     const s = createStore(dir).settings();
     assert.equal(s.theme, 'bauhaus');
-    assert.equal(s.mode, 'auto');
+    assert.equal(s.mode, 'light');
     assert.equal(s.hotkeysOn, true);
     assert.equal(s.slots.length, 9);
     assert.deepEqual([s.slots[0].name, s.slots[0].target], ['유튜브', 'https://www.youtube.com']);
@@ -60,5 +60,26 @@ test('캐시 저장', () => {
     st.saveCache({ tasks: ['a'] });
     st.saveCache({ eventsAt: 5 });
     assert.deepEqual(createStore(dir).cache(), { tasks: ['a'], eventsAt: 5 });
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('야간 감광 꺼짐·색 모드 라이트: 새 설정 기본값, 옛 설정(버전 없음/1)은 한 번만 이관하고 저장', () => {
+  const dir = tmpDir();
+  try {
+    assert.equal(createStore(dir).settings().nightDim, false);
+    assert.equal(createStore(dir).settings().mode, 'light');
+    const file = path.join(dir, 'settings.json');
+    fs.writeFileSync(file, JSON.stringify({ nightDim: true, mode: 'auto', theme: 'flip', dim: { active: true, mode: 'wmi', original: 40 } }));
+    const s = createStore(dir).settings();
+    assert.equal(s.nightDim, false);
+    assert.equal(s.mode, 'light');
+    assert.equal(s.settingsVersion, 2);
+    assert.equal(s.theme, 'flip');
+    assert.equal(s.dim.active, true);   // 복구는 dimmer.tick()이 기존 경로로 수행
+    assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).nightDim, false);
+    // 이관 뒤 사용자가 다시 켜면 유지
+    const st = createStore(dir); st.patch({ nightDim: true, mode: 'auto' });
+    assert.equal(createStore(dir).settings().nightDim, true);
+    assert.equal(createStore(dir).settings().mode, 'auto');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });

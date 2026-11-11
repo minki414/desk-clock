@@ -8,7 +8,7 @@ contextBridge.exposeInMainWorld('clockApi', {
   init: invoke('app:init'),
   setSettings: invoke('settings:set'),
   launch: invoke('launch'),
-  drawer: invoke('ui:drawer'),
+  volume: invoke('system:volume'),
   timerStart: invoke('timer:start'),
   timerPause: invoke('timer:pause'),
   timerResume: invoke('timer:resume'),
@@ -26,7 +26,7 @@ contextBridge.exposeInMainWorld('clockApi', {
   quit: invoke('app:quit'),
   onData: on('data'),
   onTimer: on('timer'),
-  onKey: on('key'),
   onToast: on('toast'),
   onSettings: on('settings'),
 });
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: onKey·drawer 통로 제거, volume 추가

@@ -1,5 +1,5 @@
 // 창·전원·IPC 배선만 담당합니다. 실제 일은 각 모듈이 합니다.
-const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, globalShortcut, shell, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, shell, dialog, safeStorage } = require('electron');
 const path = require('node:path');
 const { createStore } = require('./store');
 const { createTimer } = require('./timer');
@@ -19,7 +19,6 @@ let sync = null;
 let google = null;
 let health = null;
 let dimmer = null;
-let drawerOpen = false;
 // 렌더러로 보내는 최신 자료 묶음(캐시에서 시작해 갱신 때마다 덮어씀)
 const data = { weather: null, events: [], tasks: [], sync: {}, health: 'ok', dimOverlay: 0 };
 
@@ -40,16 +39,6 @@ function bringToFront() {
 // 설정에 연결 상태(클라이언트 JSON 유무·토큰 유무)를 반영하고 화면에 알림
 function googleFlags() {
   send('settings', store.patch({ google: { hasClient: google.hasClient(), connected: google.isConnected() } }));
-}
-
-// 전역 단축키: 단축키 끔이거나 설정 서랍이 열려 있으면 전부 해제(숫자를 입력할 수 있어야 함)
-function applyHotkeys() {
-  for (const k of ['num0', 'numadd', 'numsub']) globalShortcut.unregister(k);
-  if (!store.settings().hotkeysOn || drawerOpen) return;
-  // 대시보드가 포커스면 렌더러의 키 라우팅(타이머 숫자 0·알림 끄기)으로, 아니면 대시보드 복귀
-  globalShortcut.register('num0', () => (win && win.isFocused() ? send('key', 'Numpad0') : bringToFront()));
-  globalShortcut.register('numadd', () => system.volume(true));
-  globalShortcut.register('numsub', () => system.volume(false));
 }
 
 // 자정에 일정 범위(오늘~7일 뒤)가 하루 밀리므로 바로 다시 가져옴
@@ -83,7 +72,6 @@ function wireIpc() {
   ipcMain.handle('app:init', () => ({ settings: store.settings(), data, timer: timer.snapshot() }));
   ipcMain.handle('settings:set', (_e, patch) => {
     const s = store.patch(patch && typeof patch === 'object' ? patch : {});
-    applyHotkeys();
     if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
     dimmer.tick();
     if (patch && (patch.location || patch.google)) sync.refresh();
@@ -95,7 +83,8 @@ function wireIpc() {
   ipcMain.handle('timer:pause', () => timer.pause());
   ipcMain.handle('timer:resume', () => timer.resume());
   ipcMain.handle('timer:cancel', () => timer.cancel());
-  ipcMain.handle('ui:drawer', (_e, open) => { drawerOpen = !!open; applyHotkeys(); });
+  // 볼륨: 시계 창이 포커스일 때 렌더러 키 라우팅이 보냄(전역 단축키 없음)
+  ipcMain.handle('system:volume', (_e, up) => system.volume(!!up));
   ipcMain.handle('launch', async (_e, n, force) => {
     const st = store.settings();
     if (!st.hotkeysOn && !force) return;   // force: 설정창의 '실행해 보기'는 단축키가 꺼져 있어도 동작
@@ -174,7 +163,6 @@ if (!app.requestSingleInstanceLock()) {
     // exe를 다른 폴더로 옮기면 등록 경로가 낡으므로, 켜져 있으면 시작 때 현재 경로로 다시 등록
     if (store.settings().autoStart) autostart.apply(app, true);
     powerSaveBlocker.start('prevent-display-sleep');
-    applyHotkeys();
     createWindow();
     sync.start();
     health.start();
@@ -184,8 +172,8 @@ if (!app.requestSingleInstanceLock()) {
     powerMonitor.on('resume', () => { sync.refresh(); health.check(); dimmer.tick(); timer.check(); });
   });
   app.on('before-quit', () => { dimmer && dimmer.restoreSync(); });
-  app.on('will-quit', () => globalShortcut.unregisterAll());
   app.on('window-all-closed', () => app.quit());
 }
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §2 main.js: 창·전원·IPC 배선
 // 개정 기록 | 2026-11-11 | v1.2 | autoStart 적용·시작 때 재등록, 실행해 보기(force)·프로그램 찾아보기·서버별 상태·설정 폴더·버전 통로 | docs/v1.2-brief.md §2·§3
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 단축키·key 전달·ui:drawer 제거, 볼륨은 system:volume 통로로

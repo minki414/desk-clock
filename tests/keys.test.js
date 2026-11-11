@@ -127,3 +127,31 @@ test('같은 슬롯은 다른 슬롯이 끼어들어도 1.5초 내 재실행 안
   }
   assert.deepEqual(launches, [1, 2, 1]);
 });
+
+test('볼륨 +/−: 단축키 켜짐이면 volume 액션, 꾹 누름(repeat)도 허용', () => {
+  for (const phase of ['hidden', 'input', 'running', 'ringing']) {
+    const s = { ...initial(), phase };
+    const up = route(s, key('NumpadAdd', { repeat: true }));
+    assert.deepEqual(up.actions, [{ type: 'volume', up: true }]);
+    assert.equal(up.state, s);
+    assert.deepEqual(route(s, key('NumpadSubtract')).actions, [{ type: 'volume', up: false }]);
+  }
+});
+
+test('볼륨: 단축키 끔·설정 서랍 열림·수정키면 아무 일도 없음', () => {
+  for (const s of [{ ...initial(), hotkeysOn: false }, { ...initial(), settingsOpen: true }]) {
+    for (const c of ['NumpadAdd', 'NumpadSubtract']) assert.deepEqual(route(s, key(c)).actions, []);
+  }
+  assert.deepEqual(route(initial(), key('NumpadAdd', { ctrl: true })).actions, []);
+});
+
+test('Numpad0은 실행을 일으키지 않음(숨김 상태 무동작, 입력 중 숫자)', () => {
+  const r = route(initial(), key('Numpad0'));
+  assert.equal(r.state.phase, "hidden");
+  assert.deepEqual(r.actions, []);
+  assert.equal(route({ ...initial(), phase: 'input' }, key('Numpad0')).state.input, '0');
+});
+
+test('슬롯 실행은 repeat 차단(볼륨과 달리)', () => {
+  assert.deepEqual(route(initial(), key('Numpad1', { repeat: true })).actions, []);
+});

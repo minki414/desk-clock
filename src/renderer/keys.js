@@ -19,6 +19,11 @@
     // 1. 설정 서랍이 열려 있으면 Esc만 처리
     if (state.settingsOpen) return code === 'Escape' ? out({ settingsOpen: false }, { type: 'settings.close' }) : same;
 
+    // 1-1. 볼륨(+/−): 창이 포커스일 때만 도착하는 키. 꾹 누르면 계속 오르도록 repeat 허용
+    if (state.hotkeysOn && (code === 'NumpadAdd' || code === 'NumpadSubtract')) {
+      return { state, actions: [{ type: 'volume', up: code === 'NumpadAdd' }] };
+    }
+
     // 2. 알림 울림: 끄기 키 외에는 무시
     if (state.phase === 'ringing') {
       return STOP.includes(code) ? out({ phase: 'hidden', input: '' }, { type: 'timer.cancel' }) : same;
@@ -70,3 +75,4 @@
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §4 키 라우팅
 // 개정 기록 | 2026-11-11 | 중복 실행 차단을 슬롯별로 | Codex 감사 FAIL(1→2→1 재실행) 수정
+// 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: NumpadAdd/Subtract -> volume 액션(전역 단축키 대체)
