@@ -83,3 +83,15 @@ test('야간 감광 꺼짐·색 모드 라이트: 새 설정 기본값, 옛 설�
     assert.equal(createStore(dir).settings().mode, 'auto');
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
+
+test('슬롯 sendKeys: 기본은 빈 값, 옛 설정(필드 없음)도 빈 값으로 동작하고 저장값은 유지', () => {
+  const dir = tmpDir();
+  try {
+    fs.writeFileSync(path.join(dir, 'settings.json'), JSON.stringify({ settingsVersion: 2, slots: [{ key: 7, name: 'x', kind: 'program', target: 'a.exe' }, { key: 8, sendKeys: 'Ctrl+Alt+Shift+V' }] }));
+    const slots = createStore(dir).settings().slots;
+    assert.equal(slots[6].sendKeys, '');
+    assert.equal(slots[6].target, 'a.exe');
+    assert.equal(slots[7].sendKeys, 'Ctrl+Alt+Shift+V');
+    assert.ok(slots.every((x) => typeof x.sendKeys === 'string'));
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});

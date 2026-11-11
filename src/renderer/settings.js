@@ -5,6 +5,7 @@
   const L = window.ClockLabels;
   const U = L.ui;
   const M = window.ClockModel;
+  const KC = window.ClockKeyCombo;
 
   function create({ api, root, scrim, onToggle }) {
     let S = null, isOpen = false, tab = 'screen', closeToken = 0;
@@ -15,6 +16,7 @@
     let version = '';
     let svStates = [];                 // 감시 서버별 상태(true/false/null)
     let svTimer = null, quitTimer = null, quitArmed = false, svSeq = 0;
+    let stopRec = () => {};            // 진행 중인 '실행 후 보낼 키' 녹화를 끝냄(없으면 아무 일도 안 함)
     let paintThumbs = () => {};        // 테마 카드 썸네일을 현재 색 모드에 맞춰 다시 칠함
 
     // 작은 DOM 도우미: 속성은 가능하면 프로퍼티로, 이벤트는 on:{}로
@@ -130,6 +132,45 @@
     }
 
     // ----- 탭: 단축키 -----
+    // 사용자 의도 [2026-11-11 요청]: 보낼 키를 글로 적지 않고 실제로 눌러서 정한다. 녹화 중 Esc 는 서랍을 닫지 않고 녹화만 취소한다.
+    // 개발 판단: 녹화 중에는 document 캡처 단계에서 키를 가로채 app.js 의 키 라우팅(Esc 닫기·숫자패드 실행)에 닿지 않게 한다. 수정키만 눌린 것은 무시한다.
+    function sendKeysRow(s, save) {
+      let cur = KC.formatCombo(s.sendKeys), t = null;
+      const val = h('span', { class: 'kv', textContent: cur || U.sendNone });
+      const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === U.sendNone); };
+      const rec = btn(U.sendRec, () => (recording ? stopRec() : start()), 'sm');
+      const clear = btn(U.sendClear, () => { stopRec(); cur = ''; show(U.sendNone); save({ sendKeys: '' }); }, 'sm');
+      let recording = false;
+      const onKey = (e) => {
+        e.preventDefault(); e.stopImmediatePropagation();
+        if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
+        if (e.key === 'Escape') return stopRec();
+        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U.sendNone); return save({ sendKeys: '' }); }
+        const combo = KC.comboFromEvent(e);
+        stopRec();
+        if (!combo) { show(U.sendBad); clearTimeout(t); t = setTimeout(() => show(cur || U.sendNone), 1500); return; }
+        cur = combo; show(cur); save({ sendKeys: cur });
+      };
+      const end = () => {
+        recording = false;
+        document.removeEventListener('keydown', onKey, true);
+        rec.removeEventListener('blur', end);
+        rec.setAttribute('aria-pressed', 'false'); rec.textContent = U.sendRec;
+        val.classList.remove('wait'); show(cur || U.sendNone);
+        stopRec = () => {};
+      };
+      function start() {
+        stopRec();
+        recording = true;
+        stopRec = end;
+        rec.setAttribute('aria-pressed', 'true'); rec.textContent = '…';
+        show(U.sendWait); val.classList.add('wait');
+        document.addEventListener('keydown', onKey, true);
+        rec.addEventListener('blur', end);
+      }
+      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U.sendKeys }), val, h('span', { class: 'grow' }), rec, clear);
+    }
+
     function slotCard(s) {
       const tag = h('span', { class: 'saved', textContent: U.saved, role: 'status' });
       let tt = null;
@@ -155,6 +196,7 @@
             const p = await api.pickProgram();
             if (p) { target.value = p; target.dispatchEvent(new Event('input')); target.dispatchEvent(new Event('change')); }
           } } })),
+          sendKeysRow(s, save),
           h('div', { class: 'l3' },
             h('span', { class: 'only-web' }, check(U.slotApp, s.appWindow, (v) => save({ appWindow: v }))),
             h('span', { class: 'grow' }), tag,
@@ -302,6 +344,7 @@
 
     function render(resetScroll = false) {
       if (!isOpen || !S) return;
+      stopRec();
       const old = root.querySelector('.body');
       const top = old && !resetScroll ? old.scrollTop : 0;
       const body = h('div', { class: 'body', role: 'tabpanel', 'aria-labelledby': `tab-${tab}` },
@@ -336,6 +379,7 @@
     }
     function close() {
       if (!isOpen) return;
+      stopRec();
       if (document.activeElement && root.contains(document.activeElement)) document.activeElement.blur();   // 입력 중인 글을 먼저 저장
       isOpen = false;
       clearInterval(svTimer); clearTimeout(quitTimer);
@@ -362,3 +406,4 @@
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §10 설정 서랍
 // 개정 기록 | 2026-11-11 | v1.2 | 전면 재작성: 탭 4개·테마 카드·스위치/분절 버튼·저장됨 표시·자동 실행·서버 상태 점 | docs/v1.2-brief.md §2
 // 개정 기록 | 2026-11-11 | v1.2.1 | 바깥 눌러 닫기: 닫는 클릭이 아래 시계로 전달되지 않게 차단 | 대표 지시
+// 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 행에 '실행 후 보낼 키' 읽기 전용 값·녹화·지우기 추가

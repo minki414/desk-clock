@@ -105,6 +105,12 @@
 #drawer .badge { width: 28px; height: 28px; margin-top: 5px; display: grid; place-items: center; border-radius: 8px; background: #26262b; color: var(--sub); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums; }
 #drawer .sc { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 #drawer .l1, #drawer .l2 { display: flex; gap: 8px; align-items: center; }
+#drawer .l4 { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+#drawer .l4 .kl { flex: none; font-size: 13px; color: var(--sub); }
+#drawer .l4 .kv { min-width: 0; padding: 3px 9px; border: 1px solid var(--edge); border-radius: 6px; background: var(--field); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#drawer .l4 .kv.none { border-color: transparent; background: transparent; color: var(--sub); padding-left: 0; }
+#drawer .l4 .kv.wait { border-color: var(--acc); color: var(--acc); }
+#drawer .l4 .btn[aria-pressed=true] { border-color: var(--acc); color: var(--acc); }
 #drawer .l3 { display: flex; align-items: center; gap: 10px; min-height: 28px; }
 #drawer .l3 .check { margin: 0; font-size: 13px; color: var(--sub); }
 #drawer .grow { flex: 1; }
@@ -126,3 +132,4 @@
 #drawer .srv { display: flex; align-items: center; gap: 8px; }
 #drawer .srv .sdot { margin: 0 6px 0 2px; }
 #drawer .srv .sname { flex: 0 0 110px; width: 110px; }
+/* 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 행 '실행 후 보낼 키' 줄(.l4) */

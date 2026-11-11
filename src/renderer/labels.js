@@ -20,6 +20,7 @@
     hotkeys: '숫자패드 단축키', hotkeysNote: '시계 화면이 맨 앞에 있을 때만 0~9·+/−가 동작합니다',
     browser: '웹 링크 브라우저', browsers: [['brave', 'Brave'], ['chrome', 'Chrome'], ['edge', 'Edge'], ['default', '기본 브라우저']],
     slots: '슬롯 1~9', slotName: '이름', slotWeb: '웹', slotProgram: '프로그램', slotWebTarget: '주소(https://…)', slotProgramTarget: '프로그램·폴더 경로', slotApp: '주소창 없는 창', slotBrowse: '찾아보기', slotTest: '실행해 보기',
+    sendKeys: '실행 후 보낼 키', sendNone: '없음', sendRec: '녹화', sendWait: '키를 눌러 주십시오', sendClear: '지우기', sendBad: '지원하지 않는 키',
     google: '구글', gNoClient: '클라이언트 파일 선택 필요', gDisconnected: '연결 전', gConnected: '연결됨', gPick: '클라이언트 파일 고르기', gConnect: '구글 로그인', gDisconnect: '연결 해제',
     gWaiting: '브라우저에서 승인해 주십시오', gLists: '목록 불러오기', gListFail: '목록 갱신 실패', gCalendars: '표시할 캘린더', gTaskList: '메모 목록', gDefaultList: '기본 목록',
     weather: '날씨 위치', locAuto: '자동(IP 추정)', locManual: '직접 지정', locReset: '자동으로 되돌리기', locSearch: '지명 검색', locGo: '검색', locNone: '검색 결과 없음', locFail: '검색 실패',
@@ -45,3 +46,4 @@
 // 개정 기록 | 2026-11-11 | 최초 작성 | 상태 문구 사전
 // 개정 기록 | 2026-11-11 | v1.2 | 설정창 문구 재편(탭·저장됨·자동 실행·실행해 보기·서버 상태 등) | docs/v1.2-brief.md §2
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 단축키 설명 문구 변경
+// 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 실행 후 보낼 키 문구

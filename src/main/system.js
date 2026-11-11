@@ -5,15 +5,36 @@ const { isNight } = require('../renderer/model.js');
 // ----- 볼륨 -----
 const VK_VOLUME_DOWN = 0xae, VK_VOLUME_UP = 0xaf, KEYUP = 2;
 
-let keybd = null;
-function press(vk) {
+let keybd = null, mapVk = null;
+function loadKeybd() {
   if (keybd === null) {
-    try { keybd = require('koffi').load('user32.dll').func('void __stdcall keybd_event(uint8_t bVk, uint8_t bScan, uint32_t dwFlags, uintptr_t dwExtraInfo)'); }
-    catch { keybd = false; }
+    try {
+      const user32 = require('koffi').load('user32.dll');
+      keybd = user32.func('void __stdcall keybd_event(uint8_t bVk, uint8_t bScan, uint32_t dwFlags, uintptr_t dwExtraInfo)');
+      mapVk = user32.func('uint32_t __stdcall MapVirtualKeyW(uint32_t code, uint32_t mapType)');
+    } catch { keybd = false; }
   }
-  if (!keybd) return;
+  return keybd;
+}
+function press(vk) {
+  if (!loadKeybd()) return;
   keybd(vk, 0, 0, 0);
   keybd(vk, 0, KEYUP, 0);
+}
+
+// 사용자 의도 [2026-11-11 요청]: 실행한 앱에 단축키(예: Ctrl+Alt+Shift+V)를 사람이 누른 것처럼 보낸다.
+// 개발 판단: 수정키 순서대로 누르고, 주 키를 눌렀다 떼고, 수정키를 거꾸로 뗀다. 이벤트 사이 15ms를 둬 앱이 수정키 상태를 먼저 인식하게 한다.
+// 스캔 코드를 채워(MapVirtualKeyW) DOM code 로 키를 판별하는 앱에서도 인식되게 하고, Win 키는 확장 키 표시를 붙인다.
+const EXTENDED = 1, KEY_GAP_MS = 15, VK_LWIN = 0x5b;
+const gap = () => new Promise((r) => setTimeout(r, KEY_GAP_MS));
+async function sendCombo(combo) {
+  if (!combo || !loadKeybd()) return false;
+  const ev = (vk, up) => keybd(vk, mapVk(vk, 0), (vk === VK_LWIN ? EXTENDED : 0) | (up ? KEYUP : 0), 0);
+  const steps = [...combo.mods.map((v) => [v, false]), [combo.key, false], [combo.key, true], ...[...combo.mods].reverse().map((v) => [v, true])];
+  try {
+    for (const [vk, up] of steps) { ev(vk, up); await gap(); }
+    return true;
+  } catch { return false; }
 }
 
 // 1회 누름당 볼륨 키 2번(약 4%) — 설계서 §1
@@ -104,6 +125,7 @@ function createDimmer({ getSettings, setDim, onOverlay }) {
   return { tick, restoreSync, start() { tick(); iv = setInterval(tick, 60 * 1000); }, stop() { clearInterval(iv); } };
 }
 
-module.exports = { volume, createHealth, checkHealth, serverStates, createDimmer, readBrightness };
+module.exports = { volume, sendCombo, createHealth, checkHealth, serverStates, createDimmer, readBrightness };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 볼륨·상태 점, §8 야간 감광
 // 개정 기록 | 2026-11-11 | v1.2 | serverStates 추가 | 설정창 감시 서버 행별 상태 점
+// 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: sendCombo(키 조합 전송) 추가

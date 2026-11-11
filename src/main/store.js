@@ -4,9 +4,9 @@ const path = require('node:path');
 
 const defaultSlots = () => {
   const s = [];
-  for (let key = 1; key <= 9; key++) s.push({ key, name: '', kind: 'web', target: '', appWindow: true });
-  s[0] = { key: 1, name: '유튜브', kind: 'web', target: 'https://www.youtube.com', appWindow: true };
-  s[1] = { key: 2, name: 'LP Lounge', kind: 'web', target: 'http://127.0.0.1:4320/', appWindow: true };
+  for (let key = 1; key <= 9; key++) s.push({ key, name: '', kind: 'web', target: '', appWindow: true, sendKeys: '' });
+  s[0] = { key: 1, name: '유튜브', kind: 'web', target: 'https://www.youtube.com', appWindow: true, sendKeys: '' };
+  s[1] = { key: 2, name: 'LP Lounge', kind: 'web', target: 'http://127.0.0.1:4320/', appWindow: true, sendKeys: '' };
   return s;
 };
 
@@ -94,3 +94,4 @@ module.exports = { createStore, defaults, withDefaults, writeAtomic };
 // 개정 기록 | 2026-11-11 | v1.2 | autoStart 기본값 추가 | docs/v1.2-brief.md §3
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: nightDim 기본 끔 + settingsVersion 2 이관(옛 설정의 nightDim 끔)
 // 개정 기록 | 2026-11-11 | 기본 라이트 | 사용자 결정: mode 기본 light, 같은 이관에서 옛 설정 mode 를 light 로
+// 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 sendKeys(빈 값=끔) 추가, 옛 설정은 기본값 병합으로 그대로 동작

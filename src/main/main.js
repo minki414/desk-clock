@@ -10,6 +10,7 @@ const weather = require('./weather');
 const { createSync } = require('./sync');
 const { createGoogle } = require('./google');
 const autostart = require('./autostart');
+const { parseCombo } = require('../renderer/keycombo.js');
 
 let win = null;
 let store = null;
@@ -88,9 +89,19 @@ function wireIpc() {
   ipcMain.handle('launch', async (_e, n, force) => {
     const st = store.settings();
     if (!st.hotkeysOn && !force) return;   // force: 설정창의 '실행해 보기'는 단축키가 꺼져 있어도 동작
-    const r = await launchSlot(st.slots.find((x) => x.key === n), st.browser, shell);
-    if (r.ok) foreground.watch();
-    else toast(`${n}번 ${r.reason === 'empty' ? '미등록' : '실행 실패'}`);
+    foreground.cancelWait();   // 다른 슬롯을 누르면 앞 슬롯의 키 보내기 대기는 취소
+    const slot = st.slots.find((x) => x.key === n);
+    const r = await launchSlot(slot, st.browser, shell);
+    if (r.ok) {
+      foreground.watch();
+      const combo = parseCombo(slot.sendKeys);
+      // 사용자 의도 [2026-11-11 요청]: 실행한 앱이 맨 앞에 뜬 뒤에만 키를 보내고, 시계 창에는 절대 보내지 않는다.
+      // 개발 판단: 시계 창 핸들을 제외 대상으로 넘겨 foreground.waitStable이 판정한다. 시간 초과·전송 실패는 같은 문구로 알린다.
+      if (combo) {
+        const fail = () => toast(`${n}번 키 보내기 실패`);
+        foreground.waitStable(String(win.getNativeWindowHandle().readBigUInt64LE()), async () => { if (!(await system.sendCombo(combo))) fail(); }, fail);
+      }
+    } else toast(`${n}번 ${r.reason === 'empty' ? '미등록' : '실행 실패'}`);
   });
   ipcMain.handle('google:pickClient', async () => {
     const r = await dialog.showOpenDialog(win, { filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
@@ -177,3 +188,4 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §2 main.js: 창·전원·IPC 배선
 // 개정 기록 | 2026-11-11 | v1.2 | autoStart 적용·시작 때 재등록, 실행해 보기(force)·프로그램 찾아보기·서버별 상태·설정 폴더·버전 통로 | docs/v1.2-brief.md §2·§3
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 단축키·key 전달·ui:drawer 제거, 볼륨은 system:volume 통로로
+// 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 실행 성공 뒤 sendKeys 가 있으면 맨 앞 창 안정 대기 후 전송, 다른 슬롯 실행 시 대기 취소
