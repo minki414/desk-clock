@@ -24,7 +24,7 @@ function buildAuthUrl(client, { redirect, challenge, state }) {
   u.search = new URLSearchParams({
     client_id: client.client_id, redirect_uri: redirect, response_type: 'code', scope: SCOPES,
     code_challenge: challenge, code_challenge_method: 'S256', state,
-    access_type: 'offline', prompt: 'consent',   // 매번 consent여야 refresh token이 확실히 옴
+    access_type: 'offline', prompt: 'select_account consent',   // consent: refresh token이 확실히 옴 / select_account: 이미 로그인한 계정이 있어도 다른 계정(두 번째 사람)을 고를 수 있음
   }).toString();
   return u.toString();
 }
@@ -59,10 +59,17 @@ const isHolidayCalendar = (id) => String(id).includes('#holiday@');
 
 // ----- 연결 -----
 // safe: { available(): Promise<bool>, encrypt(str): Promise<Buffer>, decrypt(buf): Promise<str> }
+// 사용자 의도 [docs/v1.4-people-brief.md §1]: 구글 연결은 사람마다 따로. refresh token 은 사람 id별 암호화 파일(google-token-<id>.bin)에만 둔다.
+// 개발 판단: id 는 'p<숫자>' 형식만 받아(설정창이 보낸 값이라도) 파일 경로로 새어 나가지 않게 한다. 액세스 토큰은 메모리에만 사람별로 캐시.
+const ID = /^p\d{1,3}$/;
+const LEGACY_OWNER = 'p1';   // v1.3까지의 단일 연결(google-token.bin)은 사람 1의 것
 function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' }) {
   const clientFile = path.join(dir, 'google-client.json');
-  const tokenFile = path.join(dir, 'google-token.bin');
-  let access = null;   // { token, exp }
+  const legacyFile = path.join(dir, 'google-token.bin');
+  const access = {};   // 사람 id → { token, exp }
+  const own = (id) => { if (!ID.test(String(id))) throw fail('badPerson', 'bad person id'); return path.join(dir, `google-token-${id}.bin`); };
+  // 옮기기 전(또는 옮기기가 실패한 뒤)에는 사람 1이 옛 파일을 그대로 읽어 재로그인이 필요 없다
+  const tokenFile = (id) => { const f = own(id); return id === LEGACY_OWNER && !fs.existsSync(f) && fs.existsSync(legacyFile) ? legacyFile : f; };
 
   function client() {
     try {
@@ -71,7 +78,26 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
     } catch { return null; }
   }
   const hasClient = () => !!client();
-  const isConnected = () => fs.existsSync(tokenFile);
+  const isConnected = (id) => fs.existsSync(tokenFile(id));
+
+  // 옛 단일 토큰 파일을 사람 1의 파일로 옮김(시작 때 한 번). 복사→같은 폴더 안에서 이름 바꾸기(원자적)→내용 확인→옛 파일 삭제 순서라
+  // 어느 단계에서 꺼져도 토큰은 한쪽에 남고, 실패하면 옛 파일을 건드리지 않아 tokenFile() 폴백으로 계속 동작한다(되돌릴 길).
+  function migrateLegacy() {
+    if (!fs.existsSync(legacyFile)) return 'none';
+    const dest = own(LEGACY_OWNER), tmp = dest + '.tmp';
+    try {
+      if (!fs.existsSync(dest)) {
+        fs.copyFileSync(legacyFile, tmp);
+        fs.renameSync(tmp, dest);
+        if (!fs.readFileSync(dest).equals(fs.readFileSync(legacyFile))) { fs.unlinkSync(dest); return 'failed'; }
+      }
+      fs.unlinkSync(legacyFile);   // 새 파일이 이미 있으면(재로그인했거나 이전에 옮기다 꺼짐) 옛 파일은 남은 복사본일 뿐
+      return 'moved';
+    } catch {
+      try { fs.unlinkSync(tmp); } catch { /* 없음 */ }
+      return 'failed';
+    }
+  }
 
   // 사용자가 고른 클라이언트 JSON을 검증해 userData로 복사(원본 경로는 저장하지 않음)
   function importClient(srcPath) {
@@ -83,16 +109,21 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
   }
 
   // refresh token은 DPAPI(safeStorage)로 암호화해서만 저장. 불가하면 평문으로 대신 저장하지 않음
-  async function saveRefresh(token) {
+  async function saveRefresh(id, token) {
     if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
-    fs.writeFileSync(tokenFile, await safe.encrypt(token));
+    fs.writeFileSync(own(id), await safe.encrypt(token));
+    if (id === LEGACY_OWNER) try { fs.unlinkSync(legacyFile); } catch { /* 없음 */ }
   }
-  async function loadRefresh() {
-    if (!fs.existsSync(tokenFile)) return null;
+  async function loadRefresh(id) {
+    const f = tokenFile(id);
+    if (!fs.existsSync(f)) return null;
     if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
-    return safe.decrypt(fs.readFileSync(tokenFile));
+    return safe.decrypt(fs.readFileSync(f));
   }
-  function dropToken() { access = null; try { fs.unlinkSync(tokenFile); } catch { /* 없음 */ } }
+  function dropToken(id) {
+    delete access[id];
+    for (const f of [own(id), ...(id === LEGACY_OWNER ? [legacyFile] : [])]) try { fs.unlinkSync(f); } catch { /* 없음 */ }
+  }
 
   async function tokenRequest(c, params) {
     const body = new URLSearchParams({ client_id: c.client_id, ...(c.client_secret ? { client_secret: c.client_secret } : {}), ...params });
@@ -104,22 +135,24 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
     return j;
   }
 
-  async function accessToken() {
-    if (access && access.exp > now() + 60000) return access.token;
-    const refresh = await loadRefresh();
+  async function accessToken(id) {
+    const a = access[id];
+    if (a && a.exp > now() + 60000) return a.token;
+    const refresh = await loadRefresh(id);
     const c = client();
     if (!refresh || !c) throw fail('needAuth');
     try {
       const j = await tokenRequest(c, { grant_type: 'refresh_token', refresh_token: refresh });
-      access = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
+      access[id] = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
     } catch (e) {
-      if (e.code === 'needAuth') dropToken();   // 취소·만료된 토큰이면 다시 연결하도록
+      if (e.code === 'needAuth') dropToken(id);   // 취소·만료된 토큰이면 다시 연결하도록
       throw e;
     }
-    return access.token;
+    return access[id].token;
   }
 
-  async function connect() {
+  async function connect(id) {
+    own(id);   // id 형식 확인
     const c = client();
     if (!c) throw fail('needAuth', 'client JSON required');
     if (!(await safe.available())) throw fail('tokenUnavailable', 'token storage unavailable');
@@ -144,41 +177,41 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
       });
       const j = await tokenRequest(c, { grant_type: 'authorization_code', code, code_verifier: verifier, redirect_uri: redirect });
       if (!j.refresh_token) throw fail('failed', 'no refresh token');
-      await saveRefresh(j.refresh_token);
-      access = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
+      await saveRefresh(id, j.refresh_token);
+      access[id] = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
     } finally { server.close(); }
   }
 
-  async function disconnect() {
+  async function disconnect(id) {
     try {
-      const t = await loadRefresh();
+      const t = await loadRefresh(id);
       if (t) await fetch('https://oauth2.googleapis.com/revoke', { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ token: t }), signal: AbortSignal.timeout(8000) });
     } catch { /* 폐기 요청 실패는 무시하고 로컬 토큰만 지움 */ }
-    dropToken();
+    dropToken(id);
   }
 
   // ----- API -----
-  async function api(url, retry = true) {
-    const res = await fetch(url, { headers: { authorization: `Bearer ${await accessToken()}` }, signal: AbortSignal.timeout(15000) });
-    if (res.status === 401 && retry) { access = null; return api(url, false); }
+  async function api(id, url, retry = true) {
+    const res = await fetch(url, { headers: { authorization: `Bearer ${await accessToken(id)}` }, signal: AbortSignal.timeout(15000) });
+    if (res.status === 401 && retry) { delete access[id]; return api(id, url, false); }
     if (!res.ok) throw fail('failed', `HTTP ${res.status}`);
     return res.json();
   }
 
   // 오늘 0시부터 8일 치(오늘 + 내일부터 7일)
-  async function fetchEvents(calendarIds) {
+  async function fetchEvents(id, calendarIds) {
     const from = new Date(); from.setHours(0, 0, 0, 0);
     const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: new Date(from.getTime() + 8 * DAY).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '100' });
-    const lists = await Promise.all(calendarIds.map(async (id) => normalizeEvents((await api(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(id)}/events?${q}`)).items, isHolidayCalendar(id))));
+    const lists = await Promise.all(calendarIds.map(async (cal) => normalizeEvents((await api(id, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal)}/events?${q}`)).items, isHolidayCalendar(cal))));
     return lists.flat();
   }
-  async function fetchTasks(listId) {
-    return normalizeTasks(await api(`https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId).replace('%40', '@')}/tasks?showCompleted=false&maxResults=100`));
+  async function fetchTasks(id, listId) {
+    return normalizeTasks(await api(id, `https://tasks.googleapis.com/tasks/v1/lists/${encodeURIComponent(listId).replace('%40', '@')}/tasks?showCompleted=false&maxResults=100`));
   }
-  async function lists() {
+  async function lists(id) {
     const [c, t] = await Promise.all([
-      api('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250'),
-      api('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100'),
+      api(id, 'https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader&maxResults=250'),
+      api(id, 'https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100'),
     ]);
     return {
       calendars: (c.items || []).map((x) => ({ id: x.id, name: x.summaryOverride || x.summary || x.id, primary: !!x.primary })),
@@ -186,9 +219,10 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
     };
   }
 
-  return { hasClient, isConnected, importClient, connect, disconnect, fetchEvents, fetchTasks, lists };
+  return { hasClient, isConnected, importClient, connect, disconnect, fetchEvents, fetchTasks, lists, migrateLegacy };
 }
 
 module.exports = { createGoogle, pkcePair, challengeOf, buildAuthUrl, normalizeEvent, normalizeEvents, normalizeTasks, isHolidayCalendar };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 구글 인증·토큰 보관, 읽기 전용 두 범위
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 문구(가져오기 오류·연결 완료 페이지)를 lang()에 맞춰 생성, 제목 없는 일정은 빈 제목 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 토큰·연결·가져오기를 사람 id별로, prompt=select_account consent, 옛 단일 토큰 파일 이관(migrateLegacy)

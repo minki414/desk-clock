@@ -96,6 +96,36 @@
       }
       K.cls(host, 'off', !model.hotkeysOn);
     },
+    // 일정 제목 칸 = [제목(말줄임)][출처 who]. 사용자 의도 [docs/v1.4-people-brief.md]: who 는 제목 뒤 보조색 작은 글자이고, 길면 제목이 먼저 줄고 who 는 유지한다.
+    // 개발 판단: 칸(.n)을 flex 로 두고 제목(.nt)만 줄어들게 해(min-width:0) 테마 CSS 가 칸 모양만 정하면 되게 한다. who 가 없으면 .w 는 숨겨져 한 사람 화면과 같다.
+    nameCell: function (parent) {
+      var K = window.ClockKit, n = K.el('span', 'n', parent);
+      return { root: n, t: K.el('span', 'nt', n), w: K.el('span', 'w', n) };
+    },
+    setName: function (cell, title, who) {
+      var K = window.ClockKit;
+      K.text(cell.t, title); K.text(cell.w, who || ''); K.hide(cell.w, !who);
+    },
+    // 메모 묶음 [{ name|null, items, more, moreText }] 그리기: 묶음(.mg) = 이름표 줄(.gh: 이름 .gn + 2명 이상일 때의 '외 n건' .gp) + 목록(.gl) + 이름 없는 묶음의 '외 n건'(.gm).
+    // host 의 data-g(묶음 수)·data-c(3개 이상이면 1)로 CSS 가 쌓는 방식(2명)과 왼쪽 이름표 칸 방식(3명 이상)을 고른다.
+    // opt.cls: 메모 한 줄의 클래스(기본 'li'), opt.span: 글자를 안쪽 span 에 넣을지(스탠바이)
+    memoGroups: function (host, groups, opt) {
+      var K = window.ClockKit; opt = opt || {};
+      K.attr(host, 'data-g', groups.length); K.attr(host, 'data-c', groups.length >= 3 ? 1 : 0);
+      K.pool(host, groups.length, function (par) {
+        var g = K.el('div', 'mg', par), h = K.el('div', 'gh', g);
+        return { root: g, h: h, n: K.el('span', 'gn', h), p: K.el('span', 'gp', h), l: K.el('div', 'gl', g), m: K.el('div', 'gm', g) };
+      }).forEach(function (g, i) {
+        var d = groups[i]; if (!d) return;
+        K.text(g.n, d.name || ''); K.hide(g.h, !d.name);
+        K.text(g.p, d.moreText); K.hide(g.p, !(d.name && d.more));
+        K.pool(g.l, d.items.length, function (par) {
+          var li = K.el('div', opt.cls || 'li', par);
+          return { root: li, s: opt.span ? K.el('span', '', li) : li };
+        }).forEach(function (it, j) { if (d.items[j] != null) K.text(it.s, d.items[j]); });
+        K.text(g.m, d.moreText); K.hide(g.m, !(d.more && !d.name));
+      });
+    },
     // 초침 누적 각도(뒤로 감기지 않게)
     accum: function (obj, key, deg) {
       var cur = obj[key] || 0, delta = (((deg - cur) % 360) + 360) % 360;
@@ -106,3 +136,4 @@
 })();
 // 개정 기록 | 2026-11-11 | v1 | 아이콘 7종 + 테마 공용 도우미(ClockKit) 신설 | 테마가 서로 불러 쓸 수 없어 먼저 불러오는 이 파일에 모음
 // 개정 기록 | 2026-11-11 | v1.3 | 요일 배열·날씨 문구 정규식 제거, timerHint 는 model.timer.hint 사용 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 테마 공용 도우미 nameCell·setName(일정 제목+who)·memoGroups(메모 묶음) 추가

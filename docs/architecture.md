@@ -16,12 +16,13 @@
 | 날씨 | IP 위치(ipwho.is, 하루 1회) → Open-Meteo `models=kma_seamless`, 30분 주기 | 키 없음·개인용 무료 / 설정에서 지명 검색(Open-Meteo geocoding `language=ko`)으로 변경 |
 | 일정 | Google Calendar API `calendar.readonly`, 1분 주기 | 휴대폰 입력이 바로 반영 |
 | 메모 | Google Tasks API `tasks.readonly`, 1분 주기 | Keep은 개인 계정 공식 API 없음(조사), 사용자 선택 |
-| 구글 인증 | LP Lounge의 Google Cloud 프로젝트 재사용, 데스크톱 OAuth(루프백+PKCE), 게시 상태 '프로덕션' | 테스트 상태 refresh token 7일 만료 회피(사용자 선택) |
+| 구글 인증 | LP Lounge의 Google Cloud 프로젝트 재사용, 데스크톱 OAuth(루프백+PKCE, `prompt=select_account consent`), 게시 상태 '프로덕션' | 테스트 상태 refresh token 7일 만료 회피(사용자 선택). 사람마다 따로 로그인하고 `select_account`로 다른 구글 계정을 고름(v1.4) |
 | 볼륨 | 시계 창 포커스 + 단축키 켜짐일 때 렌더러가 `NumpadAdd`/`NumpadSubtract` → IPC `system:volume` → koffi `keybd_event(VK_VOLUME_UP/DOWN)` 1회 누름당 2번(약 4%) | Windows 기본 볼륨 표시가 뜸. 다른 창이 앞이면 동작하지 않음 |
 | 야간 감광 | 야간 시간대 시작 시 현재 패널 밝기를 저장하고 WMI `WmiSetBrightness`로 최소(설정값, 기본 0%)로, 끝나면 저장값 복구. WMI 실패 시 화면 위 검은 막(불투명도 0.6) | 하드웨어 밝기가 눈부심·전력에 실제로 효과. 전환은 하루 두 번뿐이라 PowerShell 호출 비용 무시 가능 |
 | 우산·마스크 | Open-Meteo 일 강수확률 최대 ≥60% 또는 남은 시간 강수량 ≥1mm → 우산 / Open-Meteo Air Quality 앞으로 12시간 PM10 최대 ≥81 또는 PM2.5 ≥36㎍/㎥(환경부 '나쁨') → 마스크 | 키 없음. 수치는 표시하지 않음 |
 | 상태 점 | 60초마다 네트워크(`https://www.google.com/generate_204`)와 설정에 등록한 서버 주소(HTTP 3초 안 응답=정상) 확인 | 기본 목록은 비어 있고 네트워크만 감시. 설정에서 이름·주소 추가(예: `http://127.0.0.1:4410`) |
-| 토큰 보관 | refresh token을 `safeStorage`(Windows DPAPI)로 암호화해 userData에 저장, 평문 저장 금지 | LP Lounge와 같은 원칙 |
+| 토큰 보관 | refresh token을 `safeStorage`(Windows DPAPI)로 암호화해 userData에 **사람 id별 파일**(`google-token-<id>.bin`)로 저장, 평문 저장 금지, 연결 해제·사람 삭제 때 그 파일 삭제 | LP Lounge와 같은 원칙 |
+| 사람 | 설정 `people`(1~4명, `{id,name,google:{connected},calendar:{on,ids},tasks:{on,listId}}`). 일정은 켠 사람의 것을 합쳐 중복 제거·출처 표시, 메모는 사람별 묶음 | 사용자 결정(2026-11-12): 같이 사는 사람과 구글 공유 캘린더는 쓰지만 Tasks는 계정 간 공유가 안 됨 |
 | 설정·캐시 | `app.getPath('userData')/settings.json`, `cache.json` | 혼자 쓰는 노트북 내부 저장(기본값 가정). 재시작·오프라인 때 마지막 정보 표시 |
 
 ## 2. 폴더 구조
@@ -38,7 +39,7 @@ clock/
     google.js             OAuth·Calendar·Tasks
     weather.js            IP 위치·Open-Meteo·대기질·WMO 코드·우산/마스크 판정
     system.js             볼륨 키 전송, 패널 밝기 읽기·쓰기(WMI), 상태 점 감시
-    sync.js               주기 갱신 스케줄러, 실패 시 마지막 값 유지
+    sync.js               주기 갱신 스케줄러(사람별 일정·메모), 실패 시 마지막 값 유지
   src/preload/preload.js  contextBridge로 좁은 API만 노출
   src/renderer/
     index.html, app.js    상태 모델·1초 렌더 루프·테마 전환·다크모드
@@ -66,7 +67,7 @@ clock/
   dimOverlay: 0..1,                // WMI 실패 시 막 불투명도
   today: [{ start, end, allDay, title, location, state: 'past'|'now'|'next'|'later' }],
   week:  [{ date, dow, isHoliday, items: [title...], more }],   // 내일부터 6일
-  memos: [{ title }], memoMore,
+  memoGroups: [{ name, items, more, moreText }],                 // v1.4: 사람별 메모 묶음
   timer: { phase: 'hidden'|'input'|'running'|'paused'|'ringing', input, remainingMs, invalidFlash },
   slots: [{ key: 1..9, name }],                                 // 이름만, 경로 비노출
   status: [{ kind: 'calendar'|'tasks'|'weather', text }]         // 예: '캘린더 연결 필요', '일정 갱신 실패 · 19:20 기준'
@@ -108,8 +109,9 @@ clock/
 
 ## 7. 갱신·오류
 
-- 갱신 주기: 일정·메모 1분(선택한 캘린더 수+메모 1건의 요청, 캘린더 목록은 설정에서 불러올 때만 가져옴), 날씨 30분, IP 위치 24시간. 메인 `sync.js`가 담당하고 시작 직후 1회 실행.
-- 실패하면 마지막 값을 유지하고 지수 백오프(최대 30분)로 재시도합니다. 상태는 테마 문법 안의 한 줄 안내로만 표시하며 오류 창은 띄우지 않습니다.
+- 갱신 주기: 일정·메모 1분(**캘린더·메모를 켠 사람마다** 선택한 캘린더 수+메모 1건의 요청, 캘린더 목록은 설정에서 불러올 때만 가져옴), 날씨 30분, IP 위치 24시간. 메인 `sync.js`가 담당하고 시작 직후 1회 실행. 자료는 `data.people[id] = { events, tasks, sync }`, 캐시는 `cache.people[id]`(v1.3 이하의 단일 캐시는 사람 1이 이어받음).
+- 실패하면 마지막 값을 유지하고 지수 백오프(최대 30분)로 재시도합니다. **사람 단위로 격리**: 한 사람이 실패하면 그 사람 것만 마지막 값을 유지하고 상태 문장에 이름이 붙으며(`지수 메모 갱신 실패 · 19:20 기준`), 스케줄러 백오프는 켠 사람 전원이 실패했을 때만 걸려 한 사람의 문제가 다른 사람의 1분 갱신을 늦추지 않습니다. 상태는 테마 문법 안의 한 줄 안내로만 표시하며 오류 창은 띄우지 않습니다.
+- **v1.3→v1.4 이관(사람 1)**: `settingsVersion` 3으로 올라갈 때 옛 단일 구글 연결의 캘린더 선택·메모 목록을 `people[0]`(이름 = 현재 언어의 '사용자 1')으로 옮기고 옛 설정은 `settings.json.v2.bak`으로 한 번 남깁니다. 토큰은 시작 때 `google-token.bin`을 복사→같은 폴더에서 이름 바꾸기(원자적)→내용 비교→옛 파일 삭제 순서로 `google-token-p1.bin`에 옮기며, 실패하면 옛 파일을 건드리지 않고 사람 1이 그 파일을 계속 읽어(재로그인 불필요) 다음 시작에 다시 시도합니다.
 - 자정·절전 복귀(`powerMonitor` `resume`) 때 즉시 재갱신합니다.
 
 ## 8. 다크모드·야간 감광
@@ -130,7 +132,7 @@ clock/
 탭 4개(밑줄형, 방향키로 이동):
 - **화면**: 테마 6종(실제 화면 축소 이미지 카드 2열, 현재 색 모드에 맞는 `thumbs/<id>-<light|dark>.webp`) / 색 모드(라이트·다크·자동) / 야간 시간 / 야간 감광 / 최소 밝기(0~30%) / Windows 시작 시 자동 실행.
 - **단축키**: 숫자패드 단축키(0·+·−·1~9 일괄) / 웹 링크 브라우저 / 슬롯 1~9(이름·웹/프로그램·주소 또는 경로·찾아보기·주소창 없는 창·실행해 보기, 빈 슬롯은 흐리게).
-- **연결**: 구글(상태·로그인/해제·클라이언트 파일·표시할 캘린더·메모 목록) / 날씨 위치(자동·지명 검색) / 감시할 서버(행마다 상태 점, 연결 탭이 열려 있는 동안 15초마다 확인).
+- **연결**: 구글(클라이언트 파일 상태·고르기) / 사람(카드 목록, 최대 4명: 이름 입력·구글 상태와 로그인/해제·캘린더 켜기+표시할 캘린더·메모 켜기+메모 목록·사람 삭제(한 번 더 눌러 확인, 한 명뿐이면 불가), 하단 '사람 추가'는 4명이면 비활성) / 날씨 위치(자동·지명 검색) / 감시할 서버(행마다 상태 점, 연결 탭이 열려 있는 동안 15초마다 확인).
 - **정보**: 버전 / 설정 폴더 열기 / 앱 종료(붉은 외곽선, 한 번 더 눌러 확인).
 썸네일은 `docs/theme-shots/<id>-<mode>.png`(1600) 가운데 w=1440으로 찍은 화면을 ffmpeg로 320×200으로 줄여 만듭니다.
 
@@ -163,3 +165,4 @@ clock/
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: §6 실행 후 키 보내기 단락 추가(안정 1000ms·재확인 700ms)
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: §6 실행 후 시계로 돌아오기 문장 추가
 // 개정 기록 | 2026-11-11 | 일정·메모 1분 주기 | 사용자 결정: 5분→1분(실패 백오프는 그대로, 최대 30분)
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: §1 구글 인증·토큰·사람 행, §7 사람별 갱신·실패 격리·이관, §10 연결 탭 사람 카드 | docs/v1.4-people-brief.md

@@ -135,3 +135,16 @@
 #drawer .srv .sname { flex: 0 0 110px; width: 110px; }
 /* 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 행 '실행 후 보낼 키' 줄(.l4) */
 /* 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: 슬롯 행 .l4 안 체크 글자 크기 */
+
+/* 사람 카드(연결 탭): 슬롯 행·테마 카드와 같은 결(1px 테두리·반경 12·어두운 중성) */
+#drawer .person { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--edge); border-radius: 12px; }
+#drawer .person p { margin: 0; }
+#drawer .prow { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; }
+#drawer .prow > span { font-size: 14px; }
+#drawer .prow .status { font-size: 14px; color: var(--sub); min-width: 0; }
+#drawer .prow .btns { flex: none; flex-wrap: nowrap; }
+#drawer .plist { display: flex; flex-direction: column; gap: 2px; padding-left: 2px; }
+#drawer .plist .sub { margin: 0 0 2px; }
+#drawer .pfoot { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--line); }
+#drawer .btn:disabled { opacity: .4; cursor: default; }
+/* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭 사람 카드 모양 */

@@ -20,6 +20,22 @@
   const overlaps = (e, from, to) => e.start < to && Math.max(e.end, e.start + 1) > from;
   const byTime = (a, b) => (b.allDay - a.allDay) || (a.start - b.start) || a.title.localeCompare(b.title);
 
+  // 사람별 일정 합치기. 사용자 의도 [docs/v1.4-people-brief.md §2]: 시작 시각(종일이면 날짜)과 앞뒤 공백 뺀 제목이 같으면 같은 일정 → 한 번만.
+  // 출처 표시(who)는 캘린더를 켠 사람이 2명 이상일 때만: 2명 이상에게서 온 일정은 '우리', 한 사람뿐이면 그 사람 이름, 1명뿐이면 표시 없음.
+  // 개발 판단: 종일 일정의 start 는 그날 0시(현지) 밀리초라 같은 키 하나로 시각·날짜 비교가 모두 된다. 공휴일은 사람 일정이 아니므로(두 사람 모두 구독하면 '우리'로 보임) 항상 who 없음.
+  // p: [{ id, name, calendarOn, events }]
+  function mergeEvents(people, lang = 'ko') {
+    const on = people.filter((p) => p.calendarOn);
+    const names = on.length >= 2;
+    const seen = new Map();
+    on.forEach((p) => (p.events || []).forEach((e) => {
+      const key = `${e.start}|${String(e.title || '').trim()}`;   // 시작은 숫자뿐이라 첫 '|' 앞뒤가 섞일 수 없음
+      const g = seen.get(key) || seen.set(key, { e, by: [] }).get(key);
+      if (!g.by.includes(p)) g.by.push(p);
+    }));
+    return [...seen.values()].map(({ e, by }) => ({ ...e, who: !names || e.holiday ? null : by.length >= 2 ? I18N.t(lang, 'person.us') : by[0].name }));
+  }
+
   function buildToday(events, now, max = 4, lang = 'ko') {
     const t = now.getTime();
     const list = events.filter((e) => overlaps(e, dayStart(now), dayStart(now, 1))).sort(byTime);
@@ -31,7 +47,7 @@
         else if (e.start <= t) state = 'now';
         else if (!nextDone) { state = 'next'; nextDone = true; }
       }
-      return { time: e.allDay ? I18N.t(lang, 'stage.allDay') : hhmm(e.start), title: e.title || I18N.t(lang, 'stage.untitled'), location: e.location || '', state };
+      return { time: e.allDay ? I18N.t(lang, 'stage.allDay') : hhmm(e.start), title: e.title || I18N.t(lang, 'stage.untitled'), location: e.location || '', who: e.who || null, state };
     });
     // 넘치면 지난 일정부터 덜어 내서 앞으로 일을 우선 보여 줌
     let shown = rows;
@@ -55,8 +71,29 @@
     return cells;
   }
 
-  function buildMemos(tasks, max = 4) {
-    return { memos: tasks.slice(0, max), memoMore: Math.max(0, tasks.length - max) };
+  // 메모 묶음. 사용자 의도 [docs/v1.4-people-brief.md §3]: 메모를 켠 사람 순서대로 묶음. 이름 라벨은 켠 사람이 2명 이상일 때만(1명이면 이름 없이 최대 4개).
+  // 묶음당 상한은 3개, 보이는 묶음이 3개 이상이면 2개(메모 칸 높이를 넘지 않게). 넘친 개수는 moreText('외 n건')로 묶음마다 따로.
+  // 개발 판단: 메모가 하나도 없는 사람은 묶음을 만들지 않는다(빈 이름표가 자리만 차지하므로). 이름을 보일지는 켠 사람 수 기준이라 그대로다.
+  // p: [{ name, tasksOn, memos }]
+  function buildMemoGroups(people, lang = 'ko') {
+    const on = people.filter((p) => p.tasksOn);
+    const names = on.length >= 2;
+    const filled = on.filter((p) => (p.memos || []).length);
+    const cap = !names ? 4 : filled.length >= 3 ? 2 : 3;
+    return filled.map((p) => {
+      const items = p.memos.slice(0, cap), more = p.memos.length - items.length;
+      return { name: names ? p.name : null, items, more, moreText: more ? I18N.t(lang, 'stage.more', { n: more }) : '' };
+    });
+  }
+
+  // 동기화 상태 한 줄. 사람이 2명 이상이면 문장 앞에 그 사람 이름을 붙임('지수 메모 갱신 실패 · 19:20 기준'). 여러 건이면 ' / '로 이음
+  function buildStatus(lang, kind, people) {
+    const flag = kind === 'calendar' ? 'calendarOn' : 'tasksOn';
+    const list = people.filter((p) => p[flag]).map((p) => {
+      const text = I18N.statusText(lang, kind, (p.sync || {})[kind]);
+      return text && people.length >= 2 ? I18N.t(lang, 'status.withWho', { who: p.name, text }) : text;
+    }).filter(Boolean);
+    return list.length ? list.join(' / ') : null;
   }
 
   function buildLegend(slots, lang = 'ko') {
@@ -73,13 +110,13 @@
   }
 
   // 원자료(o) → 테마 계약 모델(docs/theme-contract.md). 앱과 예시 모델(tools/fixtures.js)이 같은 함수를 써서 형식이 어긋나지 않게 한다.
-  // o: { lang, now, mode, weather(원자료: place·tempC·code·hiC·loC·umbrella·mask)|null, events, tasks, slots, timer(phase·input·invalidAt·remainingMs·totalMs), hotkeysOn, pressedKey, sync, health }
+  // o: { lang, now, mode, weather(원자료: place·tempC·code·hiC·loC·umbrella·mask)|null, people:[{ id, name, calendarOn, tasksOn, events, memos, sync:{calendar,tasks} }], slots, timer(phase·input·invalidAt·remainingMs·totalMs), hotkeysOn, pressedKey, sync(날씨), health }
   function buildModel(o) {
     const lang = I18N.norm(o.lang), now = o.now;
-    const today = buildToday(o.events, now, 4, lang), memos = buildMemos(o.tasks);
+    const events = mergeEvents(o.people, lang);
+    const today = buildToday(events, now, 4, lang);
     const L = I18N.stageLabels(lang);
     L.todayMore = today.todayMore ? I18N.t(lang, 'stage.more', { n: today.todayMore }) : '';
-    L.memoMore = memos.memoMore ? I18N.t(lang, 'stage.more', { n: memos.memoMore }) : '';
     const w = o.weather;
     const sync = o.sync || {};
     return {
@@ -87,15 +124,16 @@
       dateLong: I18N.fmtDate(lang, now, 'long'), dateShort: I18N.fmtDate(lang, now, 'short'), dateMonthDay: I18N.fmtDate(lang, now, 'monthDay'),
       dateMonth: I18N.fmtDate(lang, now, 'month'), dateDow: I18N.fmtDate(lang, now, 'dow'), dateNum: I18N.fmtDate(lang, now, 'num'), dateDowShort: I18N.fmtDate(lang, now, 'dowShort'),
       weather: w ? { ...w, label: I18N.weatherLabel(lang, w.code), icon: I18N.weatherIcon(w.code) } : null,
-      ...today, week: buildWeek(o.events, now, lang), ...memos,
+      ...today, week: buildWeek(events, now, lang), memoGroups: buildMemoGroups(o.people, lang),
       timer: { ...o.timer, hint: timerHint(lang, o.timer) },
       legend: buildLegend(o.slots, lang), hotkeysOn: o.hotkeysOn, pressedKey: o.pressedKey || null,
-      status: { calendar: I18N.statusText(lang, 'calendar', sync.calendar), tasks: I18N.statusText(lang, 'tasks', sync.tasks), weather: I18N.statusText(lang, 'weather', sync.weather) },
+      status: { calendar: buildStatus(lang, 'calendar', o.people), tasks: buildStatus(lang, 'tasks', o.people), weather: I18N.statusText(lang, 'weather', sync.weather) },
       health: o.health || 'ok',
     };
   }
 
-  return { isNight, effectiveMode, buildToday, buildWeek, buildMemos, buildLegend, buildModel, timerHint, hhmm };
+  return { isNight, effectiveMode, mergeEvents, buildToday, buildWeek, buildMemoGroups, buildStatus, buildLegend, buildModel, timerHint, hhmm };
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 테마 계약 모델(오늘 4건·7칸 주간·메모 4건)
 // 개정 기록 | 2026-11-11 | v1.3 | 언어(lang) 인자, 요일·'종일'·범례를 사전으로, buildModel 신설(앱·예시 모델 공용), 주간 칸 tip | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 합치기·중복 제거·출처(who), 메모 묶음(memoGroups), 상태 문장에 이름, buildModel 입력을 people 로

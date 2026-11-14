@@ -52,7 +52,7 @@ window.ClockThemes['bauhaus'] = {
   L: {                                    // v1.3: 현재 언어로 이미 번역된 고정 문구
     today, schedule, week, memo, timer, weather, clock,        // 소제목·'시계'·'타이머'
     noEvents, noMemos, noWeather,                              // 빈 상태
-    todayMore, memoMore,                                       // '외 3건'/'另有 3 项'/'+3 more' 결과 문장(0건이면 '')
+    todayMore,                                                 // '외 3건'/'另有 3 项'/'+3 more' 결과 문장(0건이면 ''). 메모의 '외 n건'은 묶음마다 memoGroups[i].moreText
     umbrella, umbrellaTip, mask, maskTip, high, low, now, next, allDay, untitled, paused, timeUp
   },
   dateLong: '11월 11일 수요일',            // 한 줄 긴 날짜. zh '11月11日 星期三', en 'Wednesday, November 11'
@@ -61,10 +61,10 @@ window.ClockThemes['bauhaus'] = {
   dateNum: '11.11', dateDowShort: '수',                            // 숫자·짧은 요일을 따로 꾸미는 테마용
   weather: { place:'마포구', tempC:8, code:3, label:'흐림', icon:'cloud', hiC:12, loC:3, umbrella:true, mask:false } | null,
                                           // label 은 언어별 날씨 이름, icon 은 'sun'|'cloud'|'rain'|'snow'|'fog'(언어 무관)
-  today: [{ time:'12:30'|'종일', title, location, state:'past'|'now'|'next'|'later' }],  // 최대 4, '종일' 자리는 L.allDay
+  today: [{ time:'12:30'|'종일', title, location, who:'우리'|'지수'|null, state:'past'|'now'|'next'|'later' }],  // 최대 4, '종일' 자리는 L.allDay. who 는 v1.4(아래)
   todayMore: 0,
   week: [{ dow:'목', isSunday:false, isHoliday:false, first:'수영'|null, count:1, tip:'수영 외 1건' }],  // 내일부터 7칸, dow 는 짧은 요일(zh '周四', en 'Thu'), tip 은 말풍선 글
-  memos: ['우유·달걀 사기'],  memoMore: 0,                                               // 최대 4
+  memoGroups: [{ name:'지수'|null, items:['우유·달걀 사기'], more:2, moreText:'외 2건'|'' }],   // v1.4: 메모를 켠 사람 순서대로 묶음(메모 없는 사람은 묶음 없음). 아래 '사람 여러 명'
   timer: { phase:'hidden'|'input'|'running'|'paused'|'ringing',
            input:'1.35', hint:'1분 35초'|'일시정지'|'시간 종료'|'', invalidAt: 0|ms타임스탬프,   // hint 는 입력 중엔 해석, 일시정지·울림엔 상태 이름(언어별)
            remainingMs, totalMs },
@@ -91,4 +91,14 @@ window.ClockThemes['bauhaus'] = {
 각 테마의 정본 시안과 변경점은 `DESIGN.md`. 예시 모델은 `tools/fixtures.js`(`ClockFixtures.get(이름, 언어)`, 이름: `morning`·`evening`·`empty`·`timerInput`·`timerRinging`·`offline`).
 
 // 개정 기록 | 2026-11-11 | v1.2 | 스테이지를 1440 고정에서 가변 너비(--stage-w)로 변경, 테마 배치 규칙 추가 | docs/v1.2-brief.md §1
+## 사람 여러 명 (v1.4)
+한 집에서 최대 4명이 구글 캘린더·메모를 각자 연결합니다. 모델의 변화는 아래 둘뿐이고, 테마는 **하위 호환 없이** 이 형식만 읽습니다(`memos`·`memoMore`·`L.memoMore` 폐기).
+- `today[i].who: string|null` — 일정의 출처 표시. 캘린더를 켠 사람이 2명 이상일 때만 값이 있습니다: 2명 이상에게서 온 같은 일정(시작 시각 또는 종일이면 날짜 + 앞뒤 공백 뺀 제목이 완전히 같음)은 `'우리'`(zh `我们`, en `Us`), 한 사람에게서만 온 일정은 그 사람 이름. 1명뿐이면 늘 `null`이라 한 사람 화면은 v1.3과 같습니다. 공휴일은 늘 `null`. `week[i]`의 개수·첫 일정도 같은 중복 제거 뒤 기준이고 `who`는 없습니다.
+- `memoGroups: [{ name, items, more, moreText }]` — `name`은 메모를 켠 사람이 2명 이상일 때만(1명이면 `null`, 한 묶음에 최대 4개). 묶음당 `items` 상한은 3개(보이는 묶음이 3개 이상이면 2개), 넘친 개수는 `more`·`moreText`('외 n건' 3언어 문장). 목록이 비면 `[]` → `L.noMemos`.
+- 테마가 그리는 방법(`ClockKit`, `icons.js`): 일정 줄은 `K.nameCell(row)`로 제목 칸을 만들고 `K.setName(cell, title, who)`로 채웁니다(`.n` = flex, 제목 `.nt`만 말줄임, `who`는 `.w`). 메모는 `K.memoGroups(host, m.memoGroups, opt)`가 묶음 `.mg` = 이름표 줄 `.gh`(이름 `.gn` + 이름 있는 묶음의 '외 n건' `.gp`) + 목록 `.gl` + 이름 없는 묶음의 '외 n건' `.gm`을 만들고, 호스트에 `data-g`(묶음 수)·`data-c`(3개 이상이면 1)를 붙입니다.
+- 모양 규칙: `who`는 제목 뒤 보조색·본문의 0.6~0.7배 글자(굵기 400, 지난 일정은 지난 일정 색, 플립은 행 오른쪽 끝, 리시버는 표시관 안 빛나지 않는 호박색 작은 글자, 스탠바이는 요일 칩과 같은 알약). 제목이 길면 제목이 먼저 줄고 `who`는 유지합니다. 이름표는 소제목보다 한 단계 작은 보조색이고 묶음 사이는 그 테마의 기존 hairline 색 1px 선입니다. 메모 칸 높이를 넘지 않도록 테마마다 묶음 수에 따라 줄 크기를 줄이고, 높이가 빠듯한 칸은 2열 격자(섹터·스탠바이) 또는 왼쪽 이름표 칸+2줄 목록(3명 이상: 바우하우스·네이비·리시버·플립)으로 배치합니다.
+- 상태 문장(`status.calendar`·`status.tasks`): 사람이 2명 이상이면 사람 이름이 앞에 붙고(`지수 메모 갱신 실패 · 19:20 기준`) 여러 건이면 ` / `로 이어집니다.
+- 예시 모델: `ClockFixtures.get('couple'|'trio'|'quad', lang)`(2·3·4명 예시. 공유 일정 '우리', 개인 일정 이름, 메모 묶음마다 '외 n건'). `buildModel`의 입력은 `people: [{ id, name, calendarOn, tasksOn, events, memos, sync }]`입니다.
+
 // 개정 기록 | 2026-11-11 | v1.3 | 모델에 lang·L·사전 형식화 문자열(dateLong 등, week.tip, weather.icon, timer.hint 전 단계) 추가, 테마 name 폐기, 언어별 서체 변수 | docs/v1.3-i18n-brief.md(설계자 승인)
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 모델의 memos·memoMore 를 memoGroups 로, today[i].who 추가(설계자 승인, 하위 호환 없음) | docs/v1.4-people-brief.md

@@ -1,7 +1,7 @@
 {
   "name": "desk-clock",
   "productName": "DeskClock",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "식탁 시계 - 전체화면 탁상시계",
   "private": true,
   "main": "src/main/main.js",

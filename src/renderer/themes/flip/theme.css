@@ -96,10 +96,14 @@
 .theme-flip .more { font-size: 16px; color: var(--fl-sub); padding: 4px 0 0; }
 .theme-flip .row { position: relative; display: grid; grid-template-columns: 100px minmax(0, 1fr); align-items: center; padding: 4px 0; border-bottom: 1px solid var(--fl-line); font-size: 23px; }
 .theme-flip .row .t { font-family: Archivo, var(--f-sans), sans-serif; font-weight: 700; font-size: 23px; color: var(--fl-acc); white-space: nowrap; }
-.theme-flip .row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-flip .row .n { display: flex; align-items: baseline; min-width: 0; }
+.theme-flip .row .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* 출처는 행 오른쪽 끝에 보조색 작은 글자로(제목이 길면 제목이 먼저 줄어듦) */
+.theme-flip .row .w { flex: none; margin-left: auto; padding-left: 12px; font-size: 14px; font-weight: 600; letter-spacing: .06em; color: var(--fl-sub); white-space: nowrap; }
+.theme-flip .row[data-st=past] .w { color: var(--fl-past); }
 .theme-flip .row[data-st=past] { color: var(--fl-past); }
 .theme-flip .row[data-st=past] .t { color: var(--fl-past); }
-.theme-flip .row[data-st=next] .n, .theme-flip .row[data-st=now] .n { font-weight: 700; }
+.theme-flip .row[data-st=next] .nt, .theme-flip .row[data-st=now] .nt { font-weight: 700; }
 .theme-flip .row[data-st=next]::before, .theme-flip .row[data-st=now]::before { content: ""; position: absolute; left: -14px; top: 8px; bottom: 8px; width: 4px; border-radius: 2px; background: var(--fl-acc); }
 .theme-flip .wk { display: flex; gap: 12px; margin-top: 8px; font-size: 15px; color: var(--fl-sub); white-space: nowrap; overflow: hidden; }
 .theme-flip .wk span { flex: 0 1 auto; max-width: 120px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
@@ -127,3 +131,20 @@
 .theme-flip[lang=en] .board, .theme-flip[lang|=zh] .board { top: 602px; }
 .theme-flip[lang=en] .row, .theme-flip[lang|=zh] .row { padding: 3px 0; }
 /* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */
+
+/* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록. 2명은 쌓고, 3명 이상(data-c)은 왼쪽 이름표 칸 + 오른쪽 2줄 목록으로 줄여 메모 칸 높이 안에 둠 */
+.theme-flip .gh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.theme-flip .gn { font-size: 13px; font-weight: 600; letter-spacing: .12em; color: var(--fl-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-flip .gp { font-size: 13px; color: var(--fl-sub); flex: none; white-space: nowrap; }
+.theme-flip .gm { font-size: 16px; color: var(--fl-sub); padding: 4px 0 0; }
+.theme-flip .gl { min-width: 0; }
+.theme-flip .mg + .mg { margin-top: 6px; padding-top: 5px; border-top: 1px solid var(--fl-line); }
+.theme-flip .mm[data-c="1"] .mg { display: grid; grid-template-columns: 58px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.theme-flip [data-c="1"] .gh { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; padding-top: 3px; min-width: 0; }
+.theme-flip [data-c="1"] .gn { max-width: 100%; }
+/* 이 칸은 아래 여백이 가장 좁아 2명부터 줄을 줄임. 쌓인 묶음은 맨 아랫줄 선을 빼고 묶음 사이 선만 둠 */
+.theme-flip .mm:not([data-g="1"]) .li { font-size: 18px; padding: 2px 0; }
+.theme-flip .mm:not([data-g="1"]) .gl .li:last-child { border-bottom: 0; }
+.theme-flip .mm[data-c="1"] .li { font-size: 16px; padding: 1px 0; }
+.theme-flip .mm[data-c="1"] .mg + .mg { margin-top: 4px; padding-top: 3px; }
+/* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */

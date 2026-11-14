@@ -17,6 +17,8 @@ contextBridge.exposeInMainWorld('clockApi', {
   googleConnect: invoke('google:connect'),
   googleDisconnect: invoke('google:disconnect'),
   googleLists: invoke('google:lists'),
+  addPerson: invoke('people:add'),
+  removePerson: invoke('people:remove'),
   searchPlace: invoke('weather:search'),
   pickProgram: invoke('slot:pickProgram'),
   serverStates: invoke('health:servers'),
@@ -30,3 +32,4 @@ contextBridge.exposeInMainWorld('clockApi', {
   onSettings: on('settings'),
 });
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: onKey·drawer 통로 제거, volume 추가
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: addPerson·removePerson 통로 추가(연결·해제·목록은 사람 id를 인자로)

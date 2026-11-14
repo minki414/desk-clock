@@ -72,7 +72,7 @@
     var he = h4(Rt, ''); R.lToday = he.root.firstChild; R.stC = he.st; R.ev = K.el('div', '', Rt); R.eMore = K.el('div', 'more', Rt); R.eNone = K.el('div', 'none', Rt);
     R.lWeek = h4(Rt, '').root.firstChild; R.wk = K.el('div', 'wk', Rt);
     var hm = h4(Rt, ''); R.lMemo = hm.root.firstChild; R.stM = hm.st; var mm = K.el('div', 'memo', Rt); R.mm = mm;
-    R.mMore = K.el('div', 'more', Rt); R.mNone = K.el('div', 'none', Rt);
+    R.mNone = K.el('div', 'none', Rt);
     R.dot = K.el('i', 'dot', stage);
     // 주(week)는 항상 7칸
     R.wkCells = K.pool(R.wk, 7, function (par) { var c = K.el('div', 'c', par); return { root: c, b: K.el('b', '', c), x: K.el('span', 'x', c) }; });
@@ -109,10 +109,10 @@
     K.text(R.stM, m.status.tasks || ''); K.hide(R.stM, !m.status.tasks);
 
     var today = m.today.slice(0, 4);
-    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.el('span', 'n', r), p: K.el('span', 'p', r) }; })
+    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r), p: K.el('span', 'p', r) }; })
       .forEach(function (it, i) {
         var e = today[i]; if (!e) return;
-        K.text(it.t, e.time); K.text(it.n, e.title); K.text(it.p, e.location || ''); K.hide(it.p, !e.location); K.attr(it.root, 'data-st', e.state);
+        K.text(it.t, e.time); K.setName(it.n, e.title, e.who); K.text(it.p, e.location || ''); K.hide(it.p, !e.location); K.attr(it.root, 'data-st', e.state);
       });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
@@ -121,9 +121,8 @@
       K.text(it.b, x.dow); K.text(it.x, x.first ? x.first + (x.count > 1 ? ' +' + (x.count - 1) : '') : ''); K.attr(it.root, 'data-sun', x.isSunday || x.isHoliday);
     }
 
-    var memos = m.memos.slice(0, 4);
-    K.pool(R.mm, memos.length, function (par) { return { root: K.el('div', 'li', par) }; }).forEach(function (it, j) { if (memos[j] != null) K.text(it.root, memos[j]); });
-    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, m.L.memoMore);
+    K.memoGroups(R.mm, m.memoGroups);
+    K.hide(R.mNone, m.memoGroups.length > 0);
 
     K.timerState(R.tm, R.tn, m.timer, m.now);
     K.text(R.tn, K.timerText(m.timer)); K.text(R.th, K.timerHint(m.timer)); K.hide(R.th, !K.timerHint(m.timer));
@@ -143,3 +142,4 @@
 })();
 // 개정 기록 | 2026-11-11 | v1 | 시안 a1 이식 | 시 7·분 5 가는 바늘, 갈색 #6b3e1f→#3d2210(다크 구리 #b8743f), 스몰 세컨즈 1초 이동
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md

@@ -12,7 +12,9 @@
     const U = (key, vars) => I.t(S ? S.lang : 'ko', `ui.${key}`, vars);
     const TABS = ['screen', 'keys', 'links', 'about'];
     const THEMES = ['bauhaus', 'sector', 'navy', 'receiver', 'flip', 'standby'];
-    let lists = null;                  // { calendars, taskLists } | null
+    let lists = {};                    // 사람 id → { calendars, taskLists } | null(불러오기 실패) | 없음(아직 안 불러옴)
+    const loading = {};                // 사람 id → 불러오는 중
+    let delArmed = null, delTimer = null;   // '사람 삭제'를 한 번 눌러 확인 대기 중인 사람 id
     const note = {};                   // 섹션별 짧은 안내(검색 결과 없음 등)
     let places = null;                 // 지명 검색 결과
     let avail = null;                  // 자동 실행 가능 여부(설치본에서만 true)
@@ -223,43 +225,88 @@
     }
 
     // ----- 탭: 연결 -----
-    async function loadLists() {
-      lists = await api.googleLists();
-      note.google = lists ? '' : U('gListFail');
+    // 사용자 의도 [docs/v1.4-people-brief.md §설정창]: 사람 카드 목록(이름·구글 연결/해제·캘린더 켜기+선택·메모 켜기+목록·삭제)과 하단 '사람 추가'(최대 4명).
+    // 개발 판단: 클라이언트 파일은 모든 사람이 함께 쓰므로 카드 위 '구글' 항목에 한 번만 둔다. 캘린더·메모 목록은 연결된 사람마다 연결 탭을 열 때 한 번 불러온다.
+    async function loadLists(id) {
+      if (loading[id]) return;
+      loading[id] = true;
+      const r = await api.googleLists(id);
+      loading[id] = false;
+      lists[id] = r;   // 실패(null) 문구는 카드가 그릴 때 현재 언어로 만든다
       render();
     }
+    function ensureLists() {
+      if (!isOpen || tab !== 'links' || !S) return;
+      S.people.forEach((p) => { if (p.google.connected && lists[p.id] === undefined && !loading[p.id]) loadLists(p.id); });
+    }
 
-    function google() {
-      const g = S.google;
-      return field(U('google'), '', (commit) => {
-        const state = !g.hasClient ? U('gNoClient') : g.connected ? U('gConnected') : U('gDisconnected');
-        const out = [h('p', { class: 'status' }, h('i', { class: `sdot ${g.connected ? 'ok' : ''}` }), state), hint(note.google)];
-        const buttons = [];
-        if (g.hasClient && !g.connected) {
-          buttons.push(btn(U('gConnect'), async () => {
-            note.google = U('gWaiting'); render();
-            const r = await api.googleConnect();
-            note.google = r.ok ? '' : r.error;
-            if (r.ok) await loadLists(); else render();
-          }, 'primary'));
+    function googleClient() {
+      return field(U('google'), '', () => h('div', { class: 'blk' },
+        h('p', { class: 'status' }, h('i', { class: `sdot ${S.google.hasClient ? 'ok' : ''}` }), S.google.hasClient ? U('gClientOk') : U('gNoClient')),
+        hint(note.client),
+        h('div', { class: 'btns' }, btn(U('gPick'), async () => { const r = await api.pickClient(); note.client = !r.ok && !r.canceled ? r.error : ''; render(); }))), { cls: 'stack' });
+    }
+
+    function personCard(p, i, save) {
+      const conn = p.google.connected, k = `g${p.id}`, L = lists[p.id];
+      const state = !S.google.hasClient ? U('gNoClient') : conn ? U('gConnected') : U('gDisconnected');
+      const name = text(p.name, U('personName'), (v) => save(p.id, (x) => ({ ...x, name: v })), { 'aria-label': U('personNameAria', { n: i + 1 }), maxLength: 20 });
+      const btns = [];
+      if (S.google.hasClient && !conn) {
+        btns.push(btn(U('gConnect'), async () => {
+          note[k] = U('gWaiting'); render();
+          const r = await api.googleConnect(p.id);
+          note[k] = r.ok ? '' : r.error;
+          delete lists[p.id];
+          render();
+        }, 'primary sm'));
+      }
+      if (conn) btns.push(btn(U('gDisconnect'), async () => { await api.googleDisconnect(p.id); delete lists[p.id]; note[k] = ''; render(); }, 'danger sm'));
+      const rows = [];
+      // 캘린더: 켜기 + (연결됨·목록을 불러왔을 때) 체크 목록
+      rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('calOn') }), toggle(p.calendar.on, (v) => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, on: v } })).then(render), `${p.name} ${U('calOn')}`)));
+      if (p.calendar.on && conn && L) {
+        const ids = p.calendar.ids;
+        const boxes = L.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: ids.includes(c.id) || (!ids.length && c.primary) }));
+        boxes.forEach((b) => b.addEventListener('change', () => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, ids: boxes.filter((y) => y.checked).map((y) => y.value) } }))));
+        rows.push(h('div', { class: 'plist' }, h('p', { class: 'sub', textContent: U('gCalendars') }), L.calendars.map((c, j) => h('label', { class: 'check' }, boxes[j], h('span', { textContent: c.name })))));
+      }
+      // 메모: 켜기 + 메모 목록 고르기
+      rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('memoOn') }), toggle(p.tasks.on, (v) => save(p.id, (x) => ({ ...x, tasks: { ...x.tasks, on: v } })).then(render), `${p.name} ${U('memoOn')}`)));
+      if (p.tasks.on && conn && L) {
+        rows.push(h('div', { class: 'plist' }, h('select', { 'aria-label': U('gTaskList'), on: { change: (e) => save(p.id, (x) => ({ ...x, tasks: { ...x.tasks, listId: e.target.value } })) } },
+          [['', U('gDefaultList')], ...L.taskLists.map((t) => [t.id, t.name])].map(([v, t]) => h('option', { value: v, textContent: t, selected: v === p.tasks.listId })))));
+      }
+      if (conn && L === null) rows.push(h('div', { class: 'btns' }, btn(U('gLists'), () => { delete lists[p.id]; loadLists(p.id); }, 'sm')));
+      // 삭제: 한 번 더 눌러야 지움, 한 명뿐이면 삭제 불가
+      const only = S.people.length < 2;
+      const del = h('button', { type: 'button', class: `btn danger sm${delArmed === p.id ? ' armed' : ''}`, textContent: delArmed === p.id ? U('personDelSure') : U('personDel'), disabled: only, title: only ? U('personLast') : '', on: { click: async () => {
+        if (delArmed !== p.id) {
+          delArmed = p.id; del.textContent = U('personDelSure'); del.classList.add('armed');
+          clearTimeout(delTimer);
+          delTimer = setTimeout(() => { delArmed = null; del.textContent = U('personDel'); del.classList.remove('armed'); }, 4000);
+          return;
         }
-        if (g.connected) buttons.push(btn(U('gDisconnect'), async () => { await api.googleDisconnect(); lists = null; note.google = ''; render(); }, 'danger'));
-        buttons.push(btn(U('gPick'), async () => { const r = await api.pickClient(); if (!r.ok && !r.canceled) note.google = r.error; render(); }));
-        out.push(h('div', { class: 'btns' }, buttons));
-        if (g.connected && lists) {
-          const ids = g.calendarIds;
-          const boxes = lists.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: ids.includes(c.id) || (!ids.length && c.primary) }));
-          out.push(h('p', { class: 'sub', textContent: U('gCalendars') }));
-          lists.calendars.forEach((c, i) => out.push(h('label', { class: 'check' }, boxes[i], h('span', { textContent: c.name }))));
-          boxes.forEach((b) => b.addEventListener('change', () => commit({ google: { calendarIds: boxes.filter((x) => x.checked).map((x) => x.value) } })));
-          out.push(h('p', { class: 'sub', textContent: U('gTaskList') }));
-          const sel = h('select', { 'aria-label': U('gTaskList'), on: { change: (e) => commit({ google: { taskListId: e.target.value } }) } },
-            [['', U('gDefaultList')], ...lists.taskLists.map((t) => [t.id, t.name])].map(([v, t]) => h('option', { value: v, textContent: t, selected: v === g.taskListId })));
-          out.push(sel);
-        } else if (g.connected) {
-          out.push(h('div', { class: 'btns' }, btn(U('gLists'), loadLists)));
-        }
-        return h('div', { class: 'blk' }, out);
+        delArmed = null; clearTimeout(delTimer);
+        S = await api.removePerson(p.id); ownAt = Date.now();
+        delete lists[p.id]; delete note[k];
+        render();
+      } } });
+      return h('div', { class: 'person', 'data-id': p.id },
+        name,
+        h('div', { class: 'prow' }, h('p', { class: 'status' }, h('i', { class: `sdot ${conn ? 'ok' : ''}` }), state), h('div', { class: 'btns' }, btns)),
+        hint(note[k] || (L === null ? U('gListFail') : '')),
+        rows,
+        h('div', { class: 'pfoot' }, del));
+    }
+
+    function people() {
+      return field(U('people'), U('peopleNote'), (commit) => {
+        const save = (id, fn) => commit({ people: S.people.map((p) => (p.id === id ? fn(p) : p)) });
+        const full = S.people.length >= 4;
+        const add = btn(U('personAdd'), async () => { S = await api.addPerson(); ownAt = Date.now(); render(); });
+        add.disabled = full;
+        return h('div', { class: 'blk' }, S.people.map((p, i) => personCard(p, i, save)), h('div', { class: 'btns' }, add), full ? hint(U('personMax')) : null);
       }, { cls: 'stack' });
     }
 
@@ -346,7 +393,7 @@
 
     // ----- 뼈대 -----
     function selectTab(id, focus) {
-      tab = id; quitArmed = false; places = null;
+      tab = id; quitArmed = false; places = null; delArmed = null;
       render(true);
       watchServers();
       if (focus) root.querySelector('[role=tab][aria-selected=true]').focus();
@@ -359,7 +406,7 @@
       const old = root.querySelector('.body');
       const top = old && !resetScroll ? old.scrollTop : 0;
       const body = h('div', { class: 'body', role: 'tabpanel', 'aria-labelledby': `tab-${tab}` },
-        ...({ screen, keys, links: () => [google(), weather(), servers()], about }[tab]()).flat(Infinity).filter(Boolean));
+        ...({ screen, keys, links: () => [googleClient(), people(), weather(), servers()], about }[tab]()).flat(Infinity).filter(Boolean));
       const tabs = h('div', { class: 'tabs', role: 'tablist' }, TABS.map((id) => h('button', { type: 'button', role: 'tab', id: `tab-${id}`, class: 'tab', textContent: U(`tab.${id}`), 'aria-selected': String(id === tab), tabIndex: id === tab ? 0 : -1, on: {
         click: () => selectTab(id, true),
         keydown: (e) => {
@@ -373,18 +420,18 @@
         tabs, body);
       body.scrollTop = top;
       if (inLang) { const b = root.querySelector('[data-seg=lang] [aria-checked=true]'); if (b) b.focus({ preventScroll: true }); }   // 언어를 고른 직후에도 키보드 위치 유지
+      ensureLists();
     }
 
     function open() {
       if (isOpen || !S) return;
-      isOpen = true; places = null; quitArmed = false; closeToken++;
+      isOpen = true; places = null; quitArmed = false; delArmed = null; closeToken++;
       root.hidden = false; scrim.hidden = false;
       onToggle(true);
       render(true);
       void root.offsetWidth;                  // 숨김 해제 직후 시작 위치를 확정해야 슬라이드 전환이 보임
       root.classList.add('open'); scrim.classList.add('open');
       root.querySelector('[role=tab][aria-selected=true]').focus({ preventScroll: true });
-      if (S.google.connected && !lists) loadLists();
       if (avail === null) api.autoStartAvailable().then((v) => { avail = !!v; render(); });
       if (!version) api.version().then((v) => { version = v; if (tab === 'about') render(); });
       watchServers();
@@ -421,3 +468,4 @@
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 슬롯 행에 '실행 후 보낼 키' 읽기 전용 값·녹화·지우기 추가
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: 슬롯 행에 실행 후 시계로 돌아오기 체크 추가
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 탭 맨 위에 언어 선택(한국어·中文·English), 모든 문구를 사전(ClockI18n)에서 읽고 언어를 바꾸면 즉시 다시 그림 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭을 구글(클라이언트 파일) + 사람 카드 목록(이름·연결/해제·캘린더·메모·삭제)과 '사람 추가'로 개편 | docs/v1.4-people-brief.md

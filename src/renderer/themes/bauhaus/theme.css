@@ -51,7 +51,10 @@
 
 .theme-bauhaus .ev { display: grid; grid-template-columns: 76px minmax(0, 1fr); font-size: 24px; padding: 5px 0; align-items: baseline; }
 .theme-bauhaus .ev .t { font-family: Jost, var(--f-sans), sans-serif; font-weight: 400; font-size: 24px; white-space: nowrap; }
-.theme-bauhaus .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-bauhaus .ev .n { display: flex; align-items: baseline; min-width: 0; }
+.theme-bauhaus .ev .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-bauhaus .ev .w { flex: none; margin-left: 10px; font-size: 16px; font-weight: 400; color: var(--bh-sub); white-space: nowrap; }
+.theme-bauhaus .ev[data-st=past] .w { color: var(--bh-past); }
 .theme-bauhaus .ev[data-st=past] { color: var(--bh-past); }
 .theme-bauhaus .ev[data-st=next] .t, .theme-bauhaus .ev[data-st=now] .t { background: var(--bh-yel); color: #161616; padding: 0 4px; margin-left: -4px; width: max-content; font-weight: 500; }
 .theme-bauhaus .ev[data-st=now] .n { font-weight: 600; }
@@ -109,3 +112,18 @@
 /* 언어별: 영어(Thu)·중국어(周四) 요일이 한글 한 글자보다 넓어 제목과 붙지 않게 칸을 넓힘 */
 .theme-bauhaus[lang=en] .wk, .theme-bauhaus[lang|=zh] .wk { grid-template-columns: 56px minmax(0, 1fr) auto; }
 /* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */
+
+/* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록. 2명은 쌓고, 3명 이상(data-c)은 왼쪽 이름표 칸 + 오른쪽 2줄 목록으로 줄여 메모 칸 높이 안에 둠 */
+.theme-bauhaus .gh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.theme-bauhaus .gn { font-size: 13.5px; font-weight: 600; letter-spacing: .02em; color: var(--bh-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-bauhaus .gp { font-size: 13px; color: var(--bh-sub); flex: none; white-space: nowrap; }
+.theme-bauhaus .gm { font-size: 17px; color: var(--bh-sub); padding: 2px 0; }
+.theme-bauhaus .gl { min-width: 0; }
+.theme-bauhaus .mg + .mg { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--bh-past); }
+.theme-bauhaus .mm[data-c="1"] .mg { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.theme-bauhaus [data-c="1"] .gh { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; padding-top: 3px; min-width: 0; }
+.theme-bauhaus [data-c="1"] .gn { max-width: 100%; }
+/* 2명은 기본 크기 그대로, 3명 이상은 한 줄 높이를 줄임 */
+.theme-bauhaus .mm[data-c="1"] .li { font-size: 19px; padding: 2px 0; }
+.theme-bauhaus .mm[data-c="1"] .mg + .mg { margin-top: 6px; padding-top: 6px; }
+/* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */

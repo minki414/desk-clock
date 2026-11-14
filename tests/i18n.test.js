@@ -82,16 +82,20 @@ test('상태 문구: 세 언어', () => {
 test('모델 조립(buildModel): 언어별로 이미 형식화된 문자열을 만듦', () => {
   const o = (lang) => ({
     lang, now: D, mode: 'light', weather: { place: 'P', tempC: 8, code: 3, hiC: 12, loC: 3, umbrella: false, mask: false },
-    events: [{ title: '', location: '', allDay: true, holiday: false, start: new Date(2026, 10, 11).getTime(), end: new Date(2026, 10, 12).getTime() }],
-    tasks: ['a', 'b', 'c', 'd', 'e'], slots: [{ key: 1, name: 'X', target: 'y' }],
-    timer: { phase: 'input', input: '1.35', invalidAt: 0, remainingMs: 0, totalMs: 0 }, hotkeysOn: true, sync: { calendar: { state: 'needAuth' } },
+    people: [{ id: 'p1', name: 'P', calendarOn: true, tasksOn: true, sync: { calendar: { state: 'needAuth' } },
+      events: [{ title: '', location: '', allDay: true, holiday: false, start: new Date(2026, 10, 11).getTime(), end: new Date(2026, 10, 12).getTime() }],
+      memos: ['a', 'b', 'c', 'd', 'e'] }],
+    slots: [{ key: 1, name: 'X', target: 'y' }],
+    timer: { phase: 'input', input: '1.35', invalidAt: 0, remainingMs: 0, totalMs: 0 }, hotkeysOn: true, sync: {},
   });
   const ko = M.buildModel(o('ko')), zh = M.buildModel(o('zh')), en = M.buildModel(o('en'));
   assert.deepEqual([ko.dateLong, zh.dateLong, en.dateLong], ['11월 11일 수요일', '11月11日 星期三', 'Wednesday, November 11']);
   assert.deepEqual([ko.timer.hint, zh.timer.hint, en.timer.hint], ['1분 35초', '1分35秒', '1 min 35 s']);
   assert.deepEqual([ko.weather.label, zh.weather.label, en.weather.label], ['흐림', '阴', 'Overcast']);
   assert.equal(en.weather.icon, 'cloud');
-  assert.deepEqual([ko.L.memoMore, zh.L.memoMore, en.L.memoMore], ['외 1건', '另有 1 项', '+1 more']);
+  assert.deepEqual([ko, zh, en].map((m) => m.memoGroups[0].moreText), ['외 1건', '另有 1 项', '+1 more']);   // 1명이면 이름 없이 최대 4개
+  assert.equal(ko.memoGroups[0].name, null);
+  assert.equal(ko.today[0].who, null);
   assert.deepEqual([ko.today[0].time, zh.today[0].time, en.today[0].time], ['종일', '全天', 'All day']);
   assert.deepEqual([ko.today[0].title, zh.today[0].title, en.today[0].title], ['(제목 없음)', '（无标题）', '(Untitled)']);   // 빈 제목
   assert.deepEqual([ko.week[0].dow, zh.week[0].dow, en.week[0].dow], ['목', '周四', 'Thu']);
@@ -127,3 +131,10 @@ test('src 안의 한글은 사전(ko)·주석·개정 기록·기본 슬롯 이�
   walk(root);
   assert.deepEqual(hits, []);
 });
+
+test('사람 이름 문구: 기본 이름·우리·이름 접두 상태 문장', () => {
+  assert.deepEqual(['ko', 'zh', 'en'].map((l) => I.t(l, 'person.default', { n: 1 })), ['사용자 1', '用户1', 'User 1']);
+  assert.deepEqual(['ko', 'zh', 'en'].map((l) => I.t(l, 'person.us')), ['우리', '我们', 'Us']);
+  assert.deepEqual(['ko', 'zh', 'en'].map((l) => I.t(l, 'status.withWho', { who: '지수', text: 'X' })), ['지수 X', '지수X', '지수: X']);
+});
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: buildModel 입력을 people 로, 사람 이름 문구 시험

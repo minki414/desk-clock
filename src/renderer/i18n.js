@@ -25,6 +25,9 @@
     'status.token': '토큰 보관 불가', 'status.needCalendar': '캘린더 연결 필요',
     'status.kind.calendar': '일정', 'status.kind.tasks': '메모', 'status.kind.weather': '날씨',
     'status.failed': '{name} 갱신 실패', 'status.failedAt': '{name} 갱신 실패 · {time} 기준',
+    'status.withWho': '{who} {text}',
+    // ----- 사람(v1.4) -----
+    'person.default': '사용자 {n}', 'person.us': '우리',
     // ----- 토스트·오류·대화상자 -----
     'toast.sendFail': '{n}번 키 보내기 실패', 'toast.empty': '{n}번 미등록', 'toast.fail': '{n}번 실행 실패',
     'err.connect': '연결 실패', 'err.unreadable': '파일을 읽을 수 없음', 'err.notDesktop': '데스크톱 앱용 클라이언트 JSON이 아님',
@@ -50,6 +53,10 @@
     'ui.google': '구글', 'ui.gNoClient': '클라이언트 파일 선택 필요', 'ui.gDisconnected': '연결 전', 'ui.gConnected': '연결됨', 'ui.gPick': '클라이언트 파일 고르기', 'ui.gConnect': '구글 로그인',
     'ui.gDisconnect': '연결 해제', 'ui.gWaiting': '브라우저에서 승인해 주십시오', 'ui.gLists': '목록 불러오기', 'ui.gListFail': '목록 갱신 실패', 'ui.gCalendars': '표시할 캘린더',
     'ui.gTaskList': '메모 목록', 'ui.gDefaultList': '기본 목록',
+    'ui.gClientOk': '클라이언트 파일 선택됨',
+    'ui.people': '사람', 'ui.peopleNote': '둘 이상이 캘린더를 켜면 같은 일정은 "우리"로 합쳐 보입니다.', 'ui.personName': '이름', 'ui.personNameAria': '사람 {n} 이름',
+    'ui.calOn': '캘린더 표시', 'ui.memoOn': '메모 표시', 'ui.personAdd': '사람 추가', 'ui.personMax': '최대 4명까지 추가할 수 있습니다',
+    'ui.personDel': '사람 삭제', 'ui.personDelSure': '한 번 더 누르면 삭제합니다', 'ui.personLast': '한 명뿐이면 삭제할 수 없습니다',
     'ui.weather': '날씨 위치', 'ui.locAuto': '자동(IP 추정)', 'ui.locManual': '직접 지정', 'ui.locReset': '자동으로 되돌리기', 'ui.locSearch': '지명 검색', 'ui.locGo': '검색', 'ui.locNone': '검색 결과 없음', 'ui.locFail': '검색 실패',
     'ui.servers': '감시할 서버', 'ui.serverName': '이름', 'ui.serverUrl': '주소(http://…)', 'ui.serverAdd': '서버 추가', 'ui.serverDel': '삭제', 'ui.serverNone': '등록한 서버 없음(네트워크만 감시)',
     'ui.serverUp': '정상', 'ui.serverDown': '응답 없음', 'ui.serverWait': '확인 중',
@@ -72,6 +79,8 @@
     'status.token': '无法保存令牌', 'status.needCalendar': '需要连接日历',
     'status.kind.calendar': '日程', 'status.kind.tasks': '备忘', 'status.kind.weather': '天气',
     'status.failed': '{name}更新失败', 'status.failedAt': '{name}更新失败 · 截至 {time}',
+    'status.withWho': '{who}{text}',
+    'person.default': '用户{n}', 'person.us': '我们',
     'toast.sendFail': '{n} 号键：按键发送失败', 'toast.empty': '{n} 号键：未设置', 'toast.fail': '{n} 号键：启动失败',
     'err.connect': '连接失败', 'err.unreadable': '无法读取文件', 'err.notDesktop': '不是桌面应用的客户端 JSON',
     'oauth.ok': '已连接，可以关闭此窗口。', 'oauth.fail': '连接失败，请在时钟设置中重试。',
@@ -94,6 +103,10 @@
     'ui.google': 'Google', 'ui.gNoClient': '需要选择客户端文件', 'ui.gDisconnected': '未连接', 'ui.gConnected': '已连接', 'ui.gPick': '选择客户端文件', 'ui.gConnect': '登录 Google',
     'ui.gDisconnect': '断开连接', 'ui.gWaiting': '请在浏览器中授权', 'ui.gLists': '加载列表', 'ui.gListFail': '列表更新失败', 'ui.gCalendars': '要显示的日历',
     'ui.gTaskList': '备忘列表', 'ui.gDefaultList': '默认列表',
+    'ui.gClientOk': '已选择客户端文件',
+    'ui.people': '人员', 'ui.peopleNote': '两人以上开启日历后，相同日程会合并显示为“我们”。', 'ui.personName': '名称', 'ui.personNameAria': '人员 {n} 名称',
+    'ui.calOn': '显示日历', 'ui.memoOn': '显示备忘', 'ui.personAdd': '添加人员', 'ui.personMax': '最多可添加 4 人',
+    'ui.personDel': '删除此人', 'ui.personDelSure': '再点一次即删除', 'ui.personLast': '只有一人时无法删除',
     'ui.weather': '天气位置', 'ui.locAuto': '自动（根据 IP 推测）', 'ui.locManual': '手动指定', 'ui.locReset': '恢复自动', 'ui.locSearch': '搜索地名', 'ui.locGo': '搜索', 'ui.locNone': '没有搜索结果', 'ui.locFail': '搜索失败',
     'ui.servers': '要监控的服务器', 'ui.serverName': '名称', 'ui.serverUrl': '地址（http://…）', 'ui.serverAdd': '添加服务器', 'ui.serverDel': '删除', 'ui.serverNone': '尚未添加服务器（仅监控网络）',
     'ui.serverUp': '正常', 'ui.serverDown': '无响应', 'ui.serverWait': '检测中',
@@ -116,6 +129,8 @@
     'status.token': 'Token storage unavailable', 'status.needCalendar': 'Calendar not connected',
     'status.kind.calendar': 'Events', 'status.kind.tasks': 'Memos', 'status.kind.weather': 'Weather',
     'status.failed': '{name} update failed', 'status.failedAt': '{name} update failed · {time}',
+    'status.withWho': '{who}: {text}',
+    'person.default': 'User {n}', 'person.us': 'Us',
     'toast.sendFail': 'Slot {n}: couldn’t send keys', 'toast.empty': 'Slot {n}: not set', 'toast.fail': 'Slot {n}: couldn’t launch',
     'err.connect': 'Connection failed', 'err.unreadable': 'Can’t read the file', 'err.notDesktop': 'Not a desktop-app client JSON',
     'oauth.ok': 'Connected. You can close this window.', 'oauth.fail': 'Connection failed. Try again from the clock settings.',
@@ -138,6 +153,10 @@
     'ui.google': 'Google', 'ui.gNoClient': 'Client file required', 'ui.gDisconnected': 'Not connected', 'ui.gConnected': 'Connected', 'ui.gPick': 'Choose client file', 'ui.gConnect': 'Sign in with Google',
     'ui.gDisconnect': 'Disconnect', 'ui.gWaiting': 'Approve access in your browser', 'ui.gLists': 'Load lists', 'ui.gListFail': 'Couldn’t load lists', 'ui.gCalendars': 'Calendars to show',
     'ui.gTaskList': 'Memo list', 'ui.gDefaultList': 'Default list',
+    'ui.gClientOk': 'Client file selected',
+    'ui.people': 'People', 'ui.peopleNote': 'When two or more people turn calendars on, the same event is merged and shown as “Us”.', 'ui.personName': 'Name', 'ui.personNameAria': 'Person {n} name',
+    'ui.calOn': 'Show calendar', 'ui.memoOn': 'Show memos', 'ui.personAdd': 'Add person', 'ui.personMax': 'Up to 4 people',
+    'ui.personDel': 'Remove person', 'ui.personDelSure': 'Press again to remove', 'ui.personLast': 'Can’t remove the only person',
     'ui.weather': 'Weather location', 'ui.locAuto': 'Automatic (from IP)', 'ui.locManual': 'Manual', 'ui.locReset': 'Back to automatic', 'ui.locSearch': 'Search for a place', 'ui.locGo': 'Search', 'ui.locNone': 'No results', 'ui.locFail': 'Search failed',
     'ui.servers': 'Servers to monitor', 'ui.serverName': 'Name', 'ui.serverUrl': 'Address (http://…)', 'ui.serverAdd': 'Add server', 'ui.serverDel': 'Delete', 'ui.serverNone': 'No servers added (network only)',
     'ui.serverUp': 'Online', 'ui.serverDown': 'No response', 'ui.serverWait': 'Checking',
@@ -229,3 +248,4 @@
   return { dict, langs, norm, htmlLang, t, fmtDate, fmtDuration, weatherLabel, weatherIcon, stageLabels, statusText };
 });
 // 개정 기록 | 2026-11-11 | v1.3 | 최초 작성: 세 언어 사전, 날짜·타이머·날씨 형식화, 상태 문구(labels.js의 한국어 문구를 ko로 이전) | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 사람 기본 이름·'우리'·상태 문장 이름 접두·설정창 사람 카드 문구(3언어)

@@ -6,7 +6,7 @@
   const $ = (id) => document.getElementById(id);
 
   let S = null;                       // 설정(메인이 정본)
-  let D = { weather: null, events: [], tasks: [], sync: {}, health: 'ok', dimOverlay: 0 };
+  let D = { weather: null, people: {}, sync: {}, health: 'ok', dimOverlay: 0 };
   let T = { phase: 'idle', endAt: 0, remainingMs: 0, totalMs: 0 };   // 메인 타이머 스냅샷
   let ks = K.initial();
   let invalidAt = 0, pressed = null, theme = null, themeId = null, settings = null;
@@ -18,7 +18,7 @@
     render(m) {
       const w = m.weather ? `${m.weather.place} ${m.weather.tempC}° ${m.weather.label}` : m.L.noWeather;
       const t = m.timer.phase === 'hidden' ? '' : `\n${m.L.timer} ${m.timer.input || Math.ceil(m.timer.remainingMs / 1000) + ' s'}`;
-      stage.textContent = `${m.now.toLocaleTimeString(I.htmlLang(m.lang))}\n${w}${t}\n${m.today.map((e) => `${e.time} ${e.title}`).join('\n') || m.L.noEvents}\n${m.memos.join(' · ') || m.L.noMemos}`;
+      stage.textContent = `${m.now.toLocaleTimeString(I.htmlLang(m.lang))}\n${w}${t}\n${m.today.map((e) => `${e.time} ${e.title}`).join('\n') || m.L.noEvents}\n${m.memoGroups.map((g) => g.items.join(' · ')).join(' / ') || m.L.noMemos}`;
     },
     unmount() {},
   };
@@ -67,7 +67,8 @@
   // 개발 판단: 형식화는 model.buildModel 한 곳(예시 모델과 공용). 여기서는 상태만 모아 넘긴다.
   function buildModel(now, mode) {
     return M.buildModel({
-      lang: S.lang, now, mode, weather: D.weather, events: D.events, tasks: D.tasks, slots: S.slots,
+      lang: S.lang, now, mode, weather: D.weather, slots: S.slots,
+      people: S.people.map((p) => { const d = (D.people || {})[p.id] || {}; return { id: p.id, name: p.name, calendarOn: p.calendar.on, tasksOn: p.tasks.on, events: d.events || [], memos: d.tasks || [], sync: d.sync || {} }; }),
       timer: timerModel(), hotkeysOn: S.hotkeysOn, pressedKey: pressed, sync: D.sync, health: D.health,
     });
   }
@@ -196,3 +197,4 @@
 // 개정 기록 | 2026-11-11 | v1.2 | fit(): 스테이지 너비를 화면 비율로 가변(1200~1800) | docs/v1.2-brief.md §1
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 0번 수신 제거, volume 액션 실행
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 언어: 모델 조립을 model.buildModel로, lang 속성·문서 제목·접근성 이름 갱신, 기본 렌더러 문구 사전화 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 모델 조립에 사람별 자료(S.people × D.people) 전달 | docs/v1.4-people-brief.md

@@ -101,11 +101,14 @@
 .theme-navy .hr { height: 1px; background: linear-gradient(90deg, var(--nv-hr), transparent); margin: 20px 0 12px; }
 .theme-navy .ev { display: grid; grid-template-columns: 96px minmax(0, 1fr); font-size: 26px; padding: 5px 0; align-items: baseline; }
 .theme-navy .ev .t { font-family: "Bodoni Moda", serif; font-size: 27px; color: var(--nv-silver); white-space: nowrap; }
-.theme-navy .ev .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-navy .ev .n { display: flex; align-items: baseline; min-width: 0; }
+.theme-navy .ev .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-navy .ev .w { flex: none; margin-left: 12px; font-size: 17px; font-weight: 400; color: var(--nv-sub); white-space: nowrap; }
+.theme-navy .ev[data-st=past] .w { color: var(--nv-past); }
 .theme-navy .ev[data-st=past] { color: var(--nv-past); }
 .theme-navy .ev[data-st=past] .t { color: var(--nv-past); }
 .theme-navy .ev[data-st=next] .t, .theme-navy .ev[data-st=now] .t { color: var(--nv-acc); }
-.theme-navy .ev[data-st=next] .n, .theme-navy .ev[data-st=now] .n { font-weight: 600; }
+.theme-navy .ev[data-st=next] .nt, .theme-navy .ev[data-st=now] .nt { font-weight: 600; }
 .theme-navy .more { font-size: 17px; color: var(--nv-sub); padding: 2px 0; }
 .theme-navy .none { font-size: 20px; color: var(--nv-sub); padding: 4px 0; }
 .theme-navy .wk { display: flex; gap: 18px; font-size: 18px; color: var(--nv-sub); }
@@ -126,3 +129,21 @@
 /* 언어별: 영어 날씨 줄(Snow · 1° / −6° · Mapo-gu)이 한 줄에 들어가게 글자를 줄임 */
 .theme-navy[lang=en] .wx { font-size: 19px; gap: 12px; }
 .theme-navy[lang|=zh] { line-height: 1.3; }
+
+/* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록. 2명은 쌓고, 3명 이상(data-c)은 왼쪽 이름표 칸 + 오른쪽 2줄 목록으로 줄여 메모 칸 높이 안에 둠 */
+.theme-navy .gh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
+.theme-navy .gn { font-size: 14px; letter-spacing: .08em; color: var(--nv-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.theme-navy .gp { font-size: 14px; color: var(--nv-sub); flex: none; white-space: nowrap; }
+.theme-navy .gm { font-size: 17px; color: var(--nv-sub); padding: 2px 0; }
+.theme-navy .gl { min-width: 0; }
+.theme-navy .mg + .mg { margin-top: 6px; padding-top: 8px; }
+.theme-navy .memo[data-c="1"] .mg { display: grid; grid-template-columns: 64px minmax(0, 1fr); column-gap: 10px; align-items: start; }
+.theme-navy [data-c="1"] .gh { flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 0; padding-top: 3px; min-width: 0; }
+.theme-navy [data-c="1"] .gn { max-width: 100%; }
+/* 구분선은 이 테마의 .hr 와 같은 흐려지는 1px 선 */
+.theme-navy .mg { position: relative; }
+.theme-navy .mg + .mg::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, var(--nv-hr), transparent); }
+.theme-navy .memo:not([data-g="1"]) .li { font-size: 21px; line-height: 1.4; }
+.theme-navy .memo[data-c="1"] .li { font-size: 19px; line-height: 1.3; }
+.theme-navy .memo[data-c="1"] .mg + .mg { margin-top: 3px; padding-top: 5px; }
+/* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */

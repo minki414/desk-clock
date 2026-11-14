@@ -26,7 +26,7 @@
     R.msk = K.el('span', '', fl); R.msk.innerHTML = I.mask; 
     R.wNone = K.el('div', 'none', sw.root);
     var sm = sec(L, ''); R.lMemo = sm.lab.firstChild; R.stM = sm.st; R.mm = K.el('div', 'mm', sm.root);
-    R.mMore = K.el('div', 'more', sm.root); R.mNone = K.el('div', 'none', sm.root);
+    R.mNone = K.el('div', 'none', sm.root);
 
     // 시계
     var dial = K.el('div', 'dial', M); K.el('div', 'sh', dial);
@@ -93,15 +93,13 @@
     K.text(R.stM, m.status.tasks || ''); K.hide(R.stM, !m.status.tasks);
 
     // 메모
-    var memos = m.memos.slice(0, 4);
-    K.pool(R.mm, memos.length, function (par) { var r = K.el('div', 'li', par); return { root: r }; })
-      .forEach(function (it, i) { if (memos[i] != null) K.text(it.root, memos[i]); });
-    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, m.L.memoMore);
+    K.memoGroups(R.mm, m.memoGroups);
+    K.hide(R.mNone, m.memoGroups.length > 0);
 
     // 일정
     var today = m.today.slice(0, 4);
-    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.el('span', 'n', r) }; })
-      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.text(it.n, e.title); K.attr(it.root, 'data-st', e.state); });
+    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r) }; })
+      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state); });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     // 이번 주(내일부터, 일정 있는 날만)
@@ -135,3 +133,4 @@
 })();
 // 개정 기록 | 2026-11-11 | v1 | 시안 a2 이식 | 모델 기반 렌더, 초침 1초 튕김(CSS transition), 변경된 부분만 갱신
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md

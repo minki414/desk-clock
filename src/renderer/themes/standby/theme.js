@@ -26,7 +26,7 @@
     var pe = K.el('div', 'p', Rt), he = K.el('h3', '', pe); R.lToday = K.el('span', '', he); R.stC = K.el('span', 'st', he);
     R.ev = K.el('div', '', pe); R.eMore = K.el('div', 'more', pe); R.eNone = K.el('div', 'none', pe); R.wk = K.el('div', 'wk', pe);
     var pm = K.el('div', 'p memo', Rt), hm = K.el('h3', '', pm); R.lMemo = K.el('span', '', hm); R.stM = K.el('span', 'st', hm);
-    R.mm2 = K.el('div', '', pm); R.mMore = K.el('div', 'more', pm); R.mNone = K.el('div', 'none', pm);
+    R.mm2 = K.el('div', 'mm', pm); R.mNone = K.el('div', 'none', pm);
     R.dot = K.el('i', 'dot', stage);
     R.wkCells = K.pool(R.wk, 7, function (par) { var d = K.el('div', '', par); return { root: d, b: K.el('b', '', d), u: K.el('u', '', d) }; });
   }
@@ -59,8 +59,8 @@
     K.text(R.stM, m.status.tasks || ''); K.hide(R.stM, !m.status.tasks);
 
     var today = m.today.slice(0, 4);
-    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); K.el('i', '', r); return { root: r, t: K.el('span', 'tt', r), n: K.el('span', 'n', r) }; })
-      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.text(it.n, e.title); K.attr(it.root, 'data-st', e.state); });
+    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); K.el('i', '', r); return { root: r, t: K.el('span', 'tt', r), n: K.nameCell(r) }; })
+      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state); });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
@@ -70,10 +70,8 @@
     }
     K.hide(R.wk, m.week.length === 0);
 
-    var memos = m.memos.slice(0, 4);
-    K.pool(R.mm2, memos.length, function (par) { var r = K.el('div', 'li', par); return { root: r, s: K.el('span', '', r) }; })
-      .forEach(function (it, j) { if (memos[j] != null) K.text(it.s, memos[j]); });
-    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, m.L.memoMore);
+    K.memoGroups(R.mm2, m.memoGroups, { span: true });
+    K.hide(R.mNone, m.memoGroups.length > 0);
 
     // 타이머: 알약 + 남은 비율 고리
     var t = m.timer;
@@ -93,3 +91,4 @@
 })();
 // 개정 기록 | 2026-11-11 | v1 | 시안 d4 이식 | 타이머 고리만 움직임(남은 비율, 1초 선형), 날씨 아이콘은 문구에서 고름
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md

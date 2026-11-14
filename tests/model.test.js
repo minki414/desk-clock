@@ -90,12 +90,6 @@ test('주간: 내일부터 7칸, 첫 일정·개수·일요일·공휴일', () =
   assert.equal(week[2].count, 0);
 });
 
-test('메모: 최대 4건과 외 n건', () => {
-  assert.deepEqual(M.buildMemos(['a', 'b']), { memos: ['a', 'b'], memoMore: 0 });
-  assert.deepEqual(M.buildMemos(['a', 'b', 'c', 'd', 'e', 'f']), { memos: ['a', 'b', 'c', 'd'], memoMore: 2 });
-  assert.deepEqual(M.buildMemos([]), { memos: [], memoMore: 0 });
-});
-
 test('범례: 등록된 슬롯만, 0 시계·T 타이머는 항상', () => {
   const slots = [{ key: 1, name: '유튜브', target: 'https://y' }, { key: 2, name: '', target: '' }, { key: 3, name: 'LP', target: 'http://l' }];
   assert.deepEqual(M.buildLegend(slots), [{ key: '1', name: '유튜브' }, { key: '3', name: 'LP' }, { key: '0', name: '시계' }, { key: 'T', name: '타이머' }]);
@@ -113,3 +107,101 @@ test('상태 문구: 명사형, 마지막 성공 시각 표시', () => {
   assert.equal(S('tasks', { state: 'failed' }), '메모 갱신 실패');
   assert.equal(S('weather', { state: 'failed', at: t }), '날씨 갱신 실패 · 19:20 기준');
 });
+
+// ----- 사람 여러 명(v1.4) -----
+const person = (id, name, o = {}) => ({ id, name, calendarOn: true, tasksOn: true, events: [], memos: [], sync: {}, ...o });
+
+test('일정 합치기: 시작 시각과 앞뒤 공백 뺀 제목이 완전히 같으면 한 번만(같은 사람의 여러 캘린더에서 겹쳐도)', () => {
+  const a = person('p1', '민기', { events: [
+    ev({ title: '점심', start: at(11, 12), end: at(11, 13) }),
+    ev({ title: '점심', start: at(11, 12), end: at(11, 13), location: '다른 캘린더' }),   // 같은 사람의 두 캘린더
+    ev({ title: '회의', start: at(11, 15), end: at(11, 16) }),
+  ] });
+  const b = person('p2', '지수', { events: [
+    ev({ title: '  점심  ', start: at(11, 12), end: at(11, 13) }),    // 공백만 다름 → 같은 일정
+    ev({ title: '점심 약속', start: at(11, 12), end: at(11, 13) }),   // 제목이 다름 → 다른 일정
+    ev({ title: '회의', start: at(11, 15, 30), end: at(11, 16) }),    // 시각이 다름 → 다른 일정
+    ev({ title: '회의', start: at(11, 15), end: at(11, 16) }),        // 같음
+  ] });
+  const m = M.mergeEvents([a, b]);
+  assert.deepEqual(m.map((e) => `${e.title.trim()}@${new Date(e.start).getHours()}:${new Date(e.start).getMinutes()}|${e.who}`).sort(),
+    ['점심 약속@12:0|지수', '점심@12:0|우리', '회의@15:0|우리', '회의@15:30|지수']);
+});
+
+test('일정 합치기: 종일 일정은 날짜와 제목으로 같은지 판정', () => {
+  const day = (d) => ({ allDay: true, start: at(d, 0), end: at(d + 1, 0) });
+  const m = M.mergeEvents([
+    person('p1', '민기', { events: [ev({ title: '출장', ...day(12) }), ev({ title: '출장', ...day(13) })] }),
+    person('p2', '지수', { events: [ev({ title: '출장', ...day(12) })] }),
+  ]);
+  assert.equal(m.length, 2);
+  assert.deepEqual(m.map((e) => e.who), ['우리', '민기']);
+});
+
+test('출처 표시: 캘린더를 켠 사람이 2명 이상일 때만, 2명 이상에게서 온 일정은 우리·한 사람은 이름, 1명이면 표시 없음', () => {
+  const ph = (n) => ev({ title: '개인' + n, start: at(11, 9 + n), end: at(11, 10 + n) });
+  const shared = ev({ title: '공유', start: at(11, 12), end: at(11, 13) });
+  const who = (people, lang) => Object.fromEntries(M.mergeEvents(people, lang).map((e) => [e.title, e.who]));
+  const p1 = person('p1', '민기', { events: [shared, ph(1)] }), p2 = person('p2', '지수', { events: [shared, ph(2)] });
+  assert.deepEqual(who([p1, p2], 'ko'), { 공유: '우리', 개인1: '민기', 개인2: '지수' });
+  assert.deepEqual(who([p1, p2], 'zh'), { 공유: '我们', 개인1: '민기', 개인2: '지수' });
+  assert.deepEqual(who([p1, p2], 'en'), { 공유: 'Us', 개인1: '민기', 개인2: '지수' });
+  // 1명뿐: 표시 없음(지금 화면 그대로)
+  assert.deepEqual(who([p1], 'ko'), { 공유: null, 개인1: null });
+  // 2명이어도 한 명이 캘린더를 끄면 그 사람 일정은 빠지고 표시도 없음
+  assert.deepEqual(who([p1, { ...p2, calendarOn: false }], 'ko'), { 공유: null, 개인1: null });
+  // 공휴일은 사람 일정이 아니므로 표시 없음(둘 다 구독해도 '우리'로 안 보임)
+  const hol = ev({ title: '어린이날', allDay: true, holiday: true, start: at(11, 0), end: at(12, 0) });
+  assert.deepEqual(who([{ ...p1, events: [hol] }, { ...p2, events: [hol] }], 'ko'), { 어린이날: null });
+});
+
+test('오늘 일정·이번 주: 출처가 오늘 줄에 실리고, 개수와 첫 일정은 중복 제거 뒤 기준', () => {
+  const dup = (h) => ev({ title: '수영', start: at(12, h), end: at(12, h + 1) });
+  const people = [person('p1', '민기', { events: [dup(7), ev({ title: '치과', start: at(11, 16), end: at(11, 17) })] }), person('p2', '지수', { events: [dup(7)] })];
+  const merged = M.mergeEvents(people);
+  const { today } = M.buildToday(merged, NOW);
+  assert.deepEqual(today.map((e) => [e.title, e.who]), [['치과', '민기']]);
+  const week = M.buildWeek(merged, NOW);
+  assert.equal(week[0].count, 1);   // 둘이 같은 수영을 넣어도 한 건
+  assert.equal(week[0].tip, '수영');
+  assert.equal(week[0].first, '수영');
+});
+
+test('메모 묶음: 켠 사람 순서, 이름은 2명 이상일 때만, 묶음당 상한 3(3묶음 이상이면 2)·1명이면 이름 없이 4', () => {
+  const memos = (n, p) => Array.from({ length: n }, (_, i) => `${p}${i + 1}`);
+  const g = (people) => M.buildMemoGroups(people).map((x) => [x.name, x.items.length, x.more, x.moreText]);
+  const a = person('p1', '민기', { memos: memos(6, 'a') }), b = person('p2', '지수', { memos: memos(2, 'b') });
+  // 1명: 이름 없이 최대 4개(지금 화면 그대로)
+  assert.deepEqual(M.buildMemoGroups([a]), [{ name: null, items: ['a1', 'a2', 'a3', 'a4'], more: 2, moreText: '외 2건' }]);
+  assert.deepEqual(M.buildMemoGroups([person('p1', '민기')]), []);
+  // 2명: 이름 라벨, 묶음당 3개
+  assert.deepEqual(g([a, b]), [['민기', 3, 3, '외 3건'], ['지수', 2, 0, '']]);
+  // 3명 이상: 묶음당 2개
+  const c = person('p3', '하늘', { memos: memos(3, 'c') });
+  assert.deepEqual(g([a, b, c]), [['민기', 2, 4, '외 4건'], ['지수', 2, 0, ''], ['하늘', 2, 1, '외 1건']]);
+  const d = person('p4', '다온', { memos: memos(9, 'd') });
+  assert.deepEqual(g([a, b, c, d]).map((x) => x[1]), [2, 2, 2, 2]);
+  // 메모를 끈 사람은 빠지고(순서 유지), 켠 사람이 1명이면 이름도 빠짐
+  assert.deepEqual(g([a, { ...b, tasksOn: false }]), [[null, 4, 2, '외 2건']]);
+  assert.deepEqual(g([{ ...a, tasksOn: false }, b]), [[null, 2, 0, '']]);
+  // 메모 없는 사람은 묶음을 만들지 않지만, 이름은 켠 사람 수 기준
+  assert.deepEqual(g([a, person('p2', '지수')]), [['민기', 3, 3, '외 3건']]);
+  // 언어별 '외 n건'
+  assert.equal(M.buildMemoGroups([a, b], 'en')[0].moreText, '+3 more');
+  assert.equal(M.buildMemoGroups([a, b], 'zh')[0].moreText, '另有 3 项');
+});
+
+test('상태 문장: 한 사람의 실패는 그 사람 이름을 붙여 알림(사람이 2명 이상일 때만), 3언어', () => {
+  const t = new Date(2026, 10, 11, 19, 20).getTime();
+  const st = (lang, people) => M.buildStatus(lang, 'tasks', people);
+  const solo = [person('p1', '지수', { sync: { tasks: { state: 'failed', at: t } } })];
+  assert.equal(st('ko', solo), '메모 갱신 실패 · 19:20 기준');   // 1명이면 이름 없음
+  const two = [person('p1', '민기'), person('p2', '지수', { sync: { tasks: { state: 'failed', at: t } } })];
+  assert.equal(st('ko', two), '지수 메모 갱신 실패 · 19:20 기준');
+  assert.equal(st('zh', two), '지수备忘更新失败 · 截至 19:20');
+  assert.equal(st('en', two), '지수: Memos update failed · 19:20');
+  assert.equal(st('ko', [two[0], { ...two[1], tasksOn: false }]), null);   // 메모를 끈 사람의 상태는 안 보임
+  const both = [person('p1', '민기', { sync: { calendar: { state: 'needAuth' } } }), person('p2', '지수', { sync: { calendar: { state: 'failed' } } })];
+  assert.equal(M.buildStatus('ko', 'calendar', both), '민기 캘린더 연결 필요 / 지수 일정 갱신 실패');
+});
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 합치기·출처 표시·메모 묶음·상태 문장 이름 시험

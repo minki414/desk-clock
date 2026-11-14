@@ -1,7 +1,7 @@
 // 창·전원·IPC 배선만 담당합니다. 실제 일은 각 모듈이 합니다.
 const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, shell, dialog, safeStorage } = require('electron');
 const path = require('node:path');
-const { createStore } = require('./store');
+const { createStore, newPerson, MAX_PEOPLE } = require('./store');
 const { createTimer } = require('./timer');
 const { launchSlot } = require('./launcher');
 const { createForeground, shouldReturn } = require('./foreground');
@@ -22,7 +22,7 @@ let google = null;
 let health = null;
 let dimmer = null;
 // 렌더러로 보내는 최신 자료 묶음(캐시에서 시작해 갱신 때마다 덮어씀)
-const data = { weather: null, events: [], tasks: [], sync: {}, health: 'ok', dimOverlay: 0 };
+const data = { weather: null, people: {}, sync: {}, health: 'ok', dimOverlay: 0 };
 
 const send = (ch, v) => { if (win && !win.isDestroyed()) win.webContents.send(ch, v); };
 const pushData = () => send('data', data);
@@ -39,10 +39,15 @@ function bringToFront() {
   win.setAlwaysOnTop(false);
 }
 
-// 설정에 연결 상태(클라이언트 JSON 유무·토큰 유무)를 반영하고 화면에 알림
-function googleFlags() {
-  send('settings', store.patch({ google: { hasClient: google.hasClient(), connected: google.isConnected() } }));
+// 설정에 연결 상태(클라이언트 JSON 유무·사람별 토큰 유무)를 반영하고 화면에 알림
+function applyFlags() {
+  return store.patch({ google: { hasClient: google.hasClient() }, people: store.settings().people.map((p) => ({ ...p, google: { connected: google.isConnected(p.id) } })) });
 }
+const googleFlags = () => send('settings', applyFlags());
+// 설정창이 보낸 사람 id 가 실제 목록에 있는 것인지 확인(파일 이름에 쓰이므로)
+const personOf = (id) => store.settings().people.find((p) => p.id === id);
+// 일정·메모 받아오기 설정(켬/끔·캘린더 선택·메모 목록)이 바뀌었는지 비교하는 표식
+const feedSig = () => JSON.stringify(store.settings().people.map((p) => [p.id, p.calendar, p.tasks]));
 
 // 자정에 일정 범위(오늘~7일 뒤)가 하루 밀리므로 바로 다시 가져옴
 function scheduleMidnight() {
@@ -74,11 +79,14 @@ function createWindow() {
 function wireIpc() {
   ipcMain.handle('app:init', () => ({ settings: store.settings(), data, timer: timer.snapshot() }));
   ipcMain.handle('settings:set', (_e, patch) => {
-    const s = store.patch(patch && typeof patch === 'object' ? patch : {});
+    const sig = feedSig();
+    store.patch(patch && typeof patch === 'object' ? patch : {});
+    const s = patch && patch.people ? applyFlags() : store.settings();   // 연결 표시는 설정창의 낡은 값이 아니라 토큰 파일이 정본
     if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
     dimmer.tick();
-    if (patch && (patch.location || patch.google)) sync.refresh();
+    if (patch && patch.location) sync.refresh();
     else if (patch && 'lang' in patch) sync.refresh(['weather']);   // 날씨 지명도 새 언어로
+    if (patch && patch.people && feedSig() !== sig) sync.refresh(['calendar', 'tasks']);
     if (patch && patch.servers) health.check();
     send('settings', s);
     return s;
@@ -117,24 +125,40 @@ function wireIpc() {
     googleFlags();
     return res;
   });
-  ipcMain.handle('google:connect', async () => {
+  ipcMain.handle('google:connect', async (_e, id) => {
+    if (!personOf(id)) return { ok: false, error: t(lang(), 'err.connect') };
     try {
-      await google.connect();
+      await google.connect(id);
       googleFlags();
       sync.refresh(['calendar', 'tasks']);
       return { ok: true };
     } catch (e) { return { ok: false, error: t(lang(), e.code === 'tokenUnavailable' ? 'status.token' : 'err.connect') }; }
   });
-  ipcMain.handle('google:disconnect', async () => {
-    await google.disconnect();
-    data.events = []; data.tasks = [];
-    data.sync = { ...data.sync, calendar: { state: 'needAuth' }, tasks: { state: 'needAuth' } };
-    store.saveCache({ events: [], tasks: [], eventsAt: null, tasksAt: null });
+  ipcMain.handle('google:disconnect', async (_e, id) => {
+    if (!personOf(id)) return;
+    await google.disconnect(id);
+    sync.clearPerson(id);
     googleFlags();
-    pushData();
   });
-  ipcMain.handle('google:lists', async () => {
-    try { return await google.lists(); } catch { return null; }   // null = 목록을 가져오지 못함
+  ipcMain.handle('google:lists', async (_e, id) => {
+    if (!personOf(id)) return null;
+    try { return await google.lists(id); } catch { return null; }   // null = 목록을 가져오지 못함
+  });
+  // 사람 추가(최대 4명)·삭제(마지막 한 명은 불가). 삭제하면 그 사람의 토큰 파일과 받아 둔 자료도 지움
+  ipcMain.handle('people:add', () => {
+    const st = store.settings();
+    if (st.people.length < MAX_PEOPLE) { store.patch({ people: [...st.people, newPerson(st.people, st.lang)] }); googleFlags(); }
+    return store.settings();
+  });
+  ipcMain.handle('people:remove', async (_e, id) => {
+    const st = store.settings();
+    if (st.people.length > 1 && personOf(id)) {
+      await google.disconnect(id);
+      store.patch({ people: st.people.filter((p) => p.id !== id) });
+      sync.clearPerson(id, true);
+      googleFlags();
+    }
+    return store.settings();
   });
   ipcMain.handle('weather:search', async (_e, q) => {
     try { return typeof q === 'string' && q.trim() ? await weather.geocode(q.trim(), 5, lang()) : []; } catch { return null; }   // null = 검색 실패
@@ -170,7 +194,8 @@ if (!app.requestSingleInstanceLock()) {
       decrypt: async (b) => (await safeStorage.decryptStringAsync(b)).result,
     };
     google = createGoogle({ dir: store.dir, safe, openUrl: (u) => shell.openExternal(u), lang });
-    store.patch({ google: { hasClient: google.hasClient(), connected: google.isConnected() } });
+    google.migrateLegacy();   // v1.3까지의 단일 토큰 파일 → 사람 1(실패하면 옛 파일 그대로 읽음)
+    applyFlags();
     sync = createSync({ store, data, push: pushData, google, onSettings: () => send('settings', store.settings()) });
     health = system.createHealth({ getServers: () => store.settings().servers, onChange: (h) => { data.health = h; pushData(); } });
     dimmer = system.createDimmer({
@@ -198,3 +223,4 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 실행 성공 뒤 sendKeys 가 있으면 맨 앞 창 안정 대기 후 전송, 다른 슬롯 실행 시 대기 취소
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: returnToClock 슬롯은 키 전송(또는 앱 창 안정) 뒤 1.5초 후 bringToFront
 // 개정 기록 | 2026-11-11 | v1.3 | 토스트·오류·대화상자 문구를 설정 언어로, 언어 변경 시 날씨 갱신, 지오코딩에 언어 전달 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 구글 연결·해제·목록을 사람 id별로, people:add/remove 통로, 시작 때 옛 토큰 파일 이관

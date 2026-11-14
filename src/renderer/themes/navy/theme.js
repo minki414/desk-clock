@@ -60,7 +60,7 @@
     K.el('div', 'hr', Rt);
     R.wk = K.el('div', 'wk', Rt);
     K.el('div', 'hr', Rt);
-    R.stM = K.el('div', 'st', Rt); R.mm = K.el('div', 'memo', Rt); R.mMore = K.el('div', 'more', Rt); R.mNone = K.el('div', 'none', Rt);
+    R.stM = K.el('div', 'st', Rt); R.mm = K.el('div', 'memo', Rt); R.mNone = K.el('div', 'none', Rt);
     R.dot = K.el('i', 'dot', stage);
     R.wkCells = K.pool(R.wk, 7, function (par) { var c = K.el('span', '', par); K.el('i', '', c); return { root: c, d: K.el('em', '', c) }; });
     R.wkCells.forEach(function (c) { c.d.style.fontStyle = 'normal'; });
@@ -89,8 +89,8 @@
     K.text(R.stM, m.status.tasks || ''); K.hide(R.stM, !m.status.tasks);
 
     var today = m.today.slice(0, 4);
-    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.el('span', 'n', r) }; })
-      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.text(it.n, e.title); K.attr(it.root, 'data-st', e.state); });
+    K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r) }; })
+      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state); });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
@@ -99,9 +99,8 @@
       K.attr(c.root, 'title', x.tip);
     }
 
-    var memos = m.memos.slice(0, 4);
-    K.pool(R.mm, memos.length, function (par) { return { root: K.el('div', 'li', par) }; }).forEach(function (it, j) { if (memos[j] != null) K.text(it.root, memos[j]); });
-    K.hide(R.mNone, memos.length > 0); K.hide(R.mMore, !m.memoMore); K.text(R.mMore, m.L.memoMore);
+    K.memoGroups(R.mm, m.memoGroups);
+    K.hide(R.mNone, m.memoGroups.length > 0);
 
     K.timerState(R.tm, R.tn, m.timer, m.now);
     K.text(R.tn, K.timerText(m.timer)); K.text(R.th, K.timerHint(m.timer)); K.hide(R.th, !K.timerHint(m.timer));
@@ -123,3 +122,4 @@
 })();
 // 개정 기록 | 2026-11-11 | v1 | 시안 a4 이식 | 초침 CSS linear 60s 연속 회전, 날짜 창 실제 날짜, 라이트판 추가
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
+// 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md
