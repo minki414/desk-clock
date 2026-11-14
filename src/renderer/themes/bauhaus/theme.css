@@ -54,16 +54,20 @@
 .theme-bauhaus .ev .n { display: flex; align-items: baseline; min-width: 0; }
 .theme-bauhaus .ev .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .theme-bauhaus .ev .w { flex: none; margin-left: 10px; font-size: 16px; font-weight: 400; color: var(--bh-sub); white-space: nowrap; }
+.theme-bauhaus .ev .w[data-kind=shared] { padding: 1px 7px; border-radius: 999px; background: rgba(242, 178, 0, .14); color: #b88600; font-weight: 500; font-size: 14.5px; }
+.theme-bauhaus[data-mode=dark] .ev .w[data-kind=shared] { color: #f2b200; background: rgba(242, 178, 0, .14); }
 .theme-bauhaus .ev[data-st=past] .w { color: var(--bh-past); }
+.theme-bauhaus .ev[data-st=past] .w[data-kind=shared] { background: rgba(120, 120, 120, .12); color: var(--bh-past); }
 .theme-bauhaus .ev[data-st=past] { color: var(--bh-past); }
 .theme-bauhaus .ev[data-st=next] .t, .theme-bauhaus .ev[data-st=now] .t { background: var(--bh-yel); color: #161616; padding: 0 4px; margin-left: -4px; width: max-content; font-weight: 500; }
 .theme-bauhaus .ev[data-st=now] .n { font-weight: 600; }
 
-.theme-bauhaus .wk { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; font-size: 20px; padding: 3px 0; color: var(--bh-sub); align-items: baseline; }
+.theme-bauhaus .wk { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; font-size: 20px; padding: 3px 0; color: var(--bh-sub); align-items: baseline; }
 .theme-bauhaus .wk b { color: var(--bh-ink); font-weight: 600; }
 .theme-bauhaus .wk[data-sun=true] b { color: #c4402e; }
 .theme-bauhaus[data-mode=dark] .wk[data-sun=true] b { color: #e8745f; }
 .theme-bauhaus .wk .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.theme-bauhaus .wk .w { font-size: 14.5px; color: var(--bh-sub); margin-left: 6px; }
 .theme-bauhaus .wk em { font-style: normal; font-size: 15px; padding-left: 6px; }
 
 /* 시계 */
@@ -110,7 +114,7 @@
 /* 개정 기록 | 2026-11-11 | v1.2 | 좌우 열 폭을 스테이지 너비에 맞춰 가변(1440에서 330, 3:2는 267) | 가변 너비 스테이지(docs/v1.2-brief.md §1) */
 
 /* 언어별: 영어(Thu)·중국어(周四) 요일이 한글 한 글자보다 넓어 제목과 붙지 않게 칸을 넓힘 */
-.theme-bauhaus[lang=en] .wk, .theme-bauhaus[lang|=zh] .wk { grid-template-columns: 56px minmax(0, 1fr) auto; }
+.theme-bauhaus[lang=en] .wk, .theme-bauhaus[lang|=zh] .wk { grid-template-columns: 56px minmax(0, 1fr) auto auto; }
 /* 개정 기록 | 2026-11-11 | v1.3 | 영어·중국어 화면에서 글자가 길어지는 곳만 조정(한국어 화면은 그대로) | docs/v1.3-i18n-brief.md */
 
 /* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록. 2명은 쌓고, 3명 이상(data-c)은 왼쪽 이름표 칸 + 오른쪽 2줄 목록으로 줄여 메모 칸 높이 안에 둠 */
@@ -127,3 +131,4 @@
 .theme-bauhaus .mm[data-c="1"] .li { font-size: 19px; padding: 2px 0; }
 .theme-bauhaus .mm[data-c="1"] .mg + .mg { margin-top: 6px; padding-top: 6px; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */
+/* 개정 기록 | 2026-11-15 | whoKind(data-kind) 알약 스타일 및 주간 who 스타일 추가 | 사용자 요청 */

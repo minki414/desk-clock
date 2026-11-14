@@ -10,6 +10,7 @@
   let T = { phase: 'idle', endAt: 0, remainingMs: 0, totalMs: 0 };   // 메인 타이머 스냅샷
   let ks = K.initial();
   let invalidAt = 0, pressed = null, theme = null, themeId = null, settings = null;
+  let forcedNight = false, forcedNightUntil = 0;
 
   // 테마 스크립트가 없을 때도 앱이 돌도록 하는 최소 글자 렌더러
   const plain = {
@@ -68,7 +69,21 @@
   function buildModel(now, mode) {
     return M.buildModel({
       lang: S.lang, now, mode, weather: D.weather, slots: S.slots,
-      people: S.people.map((p) => { const d = (D.people || {})[p.id] || {}; return { id: p.id, name: p.name, calendarOn: p.calendar.on, tasksOn: p.tasks.on, events: d.events || [], memos: d.tasks || [], sync: d.sync || {} }; }),
+      sharedLabel: S.sharedLabel || '',
+      people: S.people.map((p) => {
+        const d = (D.people || {})[p.id] || {};
+        return {
+          id: p.id,
+          name: p.name,
+          calendarOn: p.calendar.on,
+          calendarIds: p.calendar.ids || [],
+          sharedCalendarIds: p.calendar.shared || [],
+          tasksOn: p.tasks.on,
+          events: d.events || [],
+          memos: d.tasks || [],
+          sync: d.sync || {},
+        };
+      }),
       timer: timerModel(), hotkeysOn: S.hotkeysOn, pressedKey: pressed, sync: D.sync, health: D.health,
     });
   }
@@ -89,7 +104,13 @@
     if (!S) return;
     if (themeId !== S.theme) mountTheme();
     const now = new Date();
-    const mode = M.effectiveMode(now, S);
+    if (forcedNight && forcedNightUntil && now.getTime() >= forcedNightUntil) {
+      forcedNight = false;
+      forcedNightUntil = 0;
+      ks = { ...ks, forcedNight: false };
+      api.setForcedNight(false);
+    }
+    const mode = M.effectiveMode(now, S, forcedNight);
     if (stage.dataset.mode !== mode) { stage.dataset.mode = mode; syncBg(); setTimeout(syncBg, 2100); }
     $('dim').style.opacity = D.dimOverlay || 0;
     theme.render(buildModel(now, mode));
@@ -133,6 +154,19 @@
       pressed = String(a.slot);
       setTimeout(() => { pressed = null; render(); }, 200);   // 0.2초 눌림 표시
       api.launch(a.slot);
+    } else if (a.type === 'night.toggle') {
+      pressed = 'N';
+      setTimeout(() => { pressed = null; render(); }, 200);
+      forcedNight = !!a.on;
+      if (forcedNight) {
+        forcedNightUntil = M.nextNightEnd(new Date(), S).getTime();
+        api.setForcedNight(true);
+        showToast(I.t(S.lang, 'toast.nightOn'), 2000);
+      } else {
+        forcedNightUntil = 0;
+        api.setForcedNight(false);
+        showToast(I.t(S.lang, 'toast.nightOff'), 2000);
+      }
     } else if (a.type === 'settings.close') settings && settings.close();
   }
   function handleKey(k) {
@@ -165,10 +199,11 @@
   });
   api.onSettings((s) => applySettings(s));
   let toastT = null;
-  api.onToast((text) => {
+  function showToast(text, duration = 2000) {
     $('toast').textContent = text; $('toast').classList.add('on');
-    clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), 3000);
-  });
+    clearTimeout(toastT); toastT = setTimeout(() => $('toast').classList.remove('on'), duration);
+  }
+  api.onToast((text) => showToast(text, 3000));
 
   function applySettings(s) {
     S = s;
@@ -198,3 +233,5 @@
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 0번 수신 제거, volume 액션 실행
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 언어: 모델 조립을 model.buildModel로, lang 속성·문서 제목·접근성 이름 갱신, 기본 렌더러 문구 사전화 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 모델 조립에 사람별 자료(S.people × D.people) 전달 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | N 키 야간 강제 전환·2초 토스트·자동 해제 | 사용자 요청
+// 개정 기록 | 2026-11-15 | buildModel에 sharedLabel 및 sharedCalendarIds 전달 | 사용자 요청

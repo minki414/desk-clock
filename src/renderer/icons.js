@@ -102,9 +102,11 @@
       var K = window.ClockKit, n = K.el('span', 'n', parent);
       return { root: n, t: K.el('span', 'nt', n), w: K.el('span', 'w', n) };
     },
-    setName: function (cell, title, who) {
+    setName: function (cell, title, who, whoKind) {
       var K = window.ClockKit;
       K.text(cell.t, title); K.text(cell.w, who || ''); K.hide(cell.w, !who);
+      if (whoKind) cell.w.setAttribute('data-kind', whoKind);
+      else cell.w.removeAttribute('data-kind');
     },
     // 메모 묶음 [{ name|null, items, more, moreText }] 그리기: 묶음(.mg) = 이름표 줄(.gh: 이름 .gn + 2명 이상일 때의 '외 n건' .gp) + 목록(.gl) + 이름 없는 묶음의 '외 n건'(.gm).
     // host 의 data-g(묶음 수)·data-c(3개 이상이면 1)로 CSS 가 쌓는 방식(2명)과 왼쪽 이름표 칸 방식(3명 이상)을 고른다.
@@ -137,3 +139,4 @@
 // 개정 기록 | 2026-11-11 | v1 | 아이콘 7종 + 테마 공용 도우미(ClockKit) 신설 | 테마가 서로 불러 쓸 수 없어 먼저 불러오는 이 파일에 모음
 // 개정 기록 | 2026-11-11 | v1.3 | 요일 배열·날씨 문구 정규식 제거, timerHint 는 model.timer.hint 사용 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 테마 공용 도우미 nameCell·setName(일정 제목+who)·memoGroups(메모 묶음) 추가
+// 개정 기록 | 2026-11-15 | setName에 whoKind(data-kind) 속성 반영 | 사용자 요청

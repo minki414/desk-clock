@@ -112,13 +112,13 @@
     K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r), p: K.el('span', 'p', r) }; })
       .forEach(function (it, i) {
         var e = today[i]; if (!e) return;
-        K.text(it.t, e.time); K.setName(it.n, e.title, e.who); K.text(it.p, e.location || ''); K.hide(it.p, !e.location); K.attr(it.root, 'data-st', e.state);
+        K.text(it.t, e.time); K.setName(it.n, e.title, e.who, e.whoKind); K.text(it.p, e.location || ''); K.hide(it.p, !e.location); K.attr(it.root, 'data-st', e.state);
       });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
       var it = R.wkCells[i], x = m.week[i]; K.hide(it.root, !x); if (!x) continue;
-      K.text(it.b, x.dow); K.text(it.x, x.first ? x.first + (x.count > 1 ? ' +' + (x.count - 1) : '') : ''); K.attr(it.root, 'data-sun', x.isSunday || x.isHoliday);
+      K.text(it.b, x.dow); var titleText = x.first ? x.first + (x.firstWho ? ' ' + x.firstWho : '') + (x.count > 1 ? ' +' + (x.count - 1) : '') : ''; K.text(it.x, titleText); K.attr(it.root, 'data-sun', x.isSunday || x.isHoliday);
     }
 
     K.memoGroups(R.mm, m.memoGroups);
@@ -143,3 +143,4 @@
 // 개정 기록 | 2026-11-11 | v1 | 시안 a1 이식 | 시 7·분 5 가는 바늘, 갈색 #6b3e1f→#3d2210(다크 구리 #b8743f), 스몰 세컨즈 1초 이동
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | whoKind(data-kind) 반영 및 주간 첫 일정 who 표시 | 사용자 요청

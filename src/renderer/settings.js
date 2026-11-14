@@ -266,10 +266,19 @@
       // 캘린더: 켜기 + (연결됨·목록을 불러왔을 때) 체크 목록
       rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('calOn') }), toggle(p.calendar.on, (v) => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, on: v } })).then(render), `${p.name} ${U('calOn')}`)));
       if (p.calendar.on && conn && L) {
-        const ids = p.calendar.ids;
+        const ids = p.calendar.ids || [];
+        const shared = p.calendar.shared || [];
         const boxes = L.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: ids.includes(c.id) || (!ids.length && c.primary) }));
+        const sharedBoxes = L.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: shared.includes(c.id) }));
         boxes.forEach((b) => b.addEventListener('change', () => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, ids: boxes.filter((y) => y.checked).map((y) => y.value) } }))));
-        rows.push(h('div', { class: 'plist' }, h('p', { class: 'sub', textContent: U('gCalendars') }), L.calendars.map((c, j) => h('label', { class: 'check' }, boxes[j], h('span', { textContent: c.name })))));
+        sharedBoxes.forEach((b) => b.addEventListener('change', () => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, shared: sharedBoxes.filter((y) => y.checked).map((y) => y.value) } }))));
+        rows.push(h('div', { class: 'plist' },
+          h('p', { class: 'sub', textContent: U('gCalendars') }),
+          L.calendars.map((c, j) => h('div', { class: 'cal-item' },
+            h('label', { class: 'check' }, boxes[j], h('span', { textContent: c.name })),
+            h('label', { class: 'check cal-shared' }, sharedBoxes[j], h('span', { textContent: U('calShared') }))
+          ))
+        ));
       }
       // 메모: 켜기 + 메모 목록 고르기
       rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('memoOn') }), toggle(p.tasks.on, (v) => save(p.id, (x) => ({ ...x, tasks: { ...x.tasks, on: v } })).then(render), `${p.name} ${U('memoOn')}`)));
@@ -306,7 +315,9 @@
         const full = S.people.length >= 4;
         const add = btn(U('personAdd'), async () => { S = await api.addPerson(); ownAt = Date.now(); render(); });
         add.disabled = full;
-        return h('div', { class: 'blk' }, S.people.map((p, i) => personCard(p, i, save)), h('div', { class: 'btns' }, add), full ? hint(U('personMax')) : null);
+        const sharedInp = text(S.sharedLabel || '', I.t(S.lang, 'person.us'), (v) => commit({ sharedLabel: v.slice(0, 6) }), { maxLength: 6, 'aria-label': U('sharedLabel') });
+        const sharedRow = h('div', { class: 'prow shared-label-row' }, h('span', { textContent: U('sharedLabel') }), sharedInp);
+        return h('div', { class: 'blk' }, sharedRow, S.people.map((p, i) => personCard(p, i, save)), h('div', { class: 'btns' }, add), full ? hint(U('personMax')) : null);
       }, { cls: 'stack' });
     }
 
@@ -469,3 +480,4 @@
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: 슬롯 행에 실행 후 시계로 돌아오기 체크 추가
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 탭 맨 위에 언어 선택(한국어·中文·English), 모든 문구를 사전(ClockI18n)에서 읽고 언어를 바꾸면 즉시 다시 그림 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭을 구글(클라이언트 파일) + 사람 카드 목록(이름·연결/해제·캘린더·메모·삭제)과 '사람 추가'로 개편 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | 캘린더별 공유 체크 및 sharedLabel 입력칸 추가 | 사용자 요청

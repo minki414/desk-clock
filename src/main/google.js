@@ -32,8 +32,8 @@ function buildAuthUrl(client, { redirect, challenge, state }) {
 // 종일 일정의 날짜('2026-11-11')는 시간대 없이 그 날 0시(현지)로 해석
 const dateMs = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d).getTime(); };
 
-// Calendar API 항목 → { title, location, allDay, start, end(ms), holiday }. 취소·거절한 일정은 null
-function normalizeEvent(item, holiday = false) {
+// Calendar API 항목 → { title, location, allDay, start, end(ms), holiday, iCalUID, calId }. 취소·거절한 일정은 null
+function normalizeEvent(item, holiday = false, calId = null) {
   if (!item || item.status === 'cancelled') return null;
   if ((item.attendees || []).some((a) => a.self && a.responseStatus === 'declined')) return null;
   const s = item.start || {}, e = item.end || {};
@@ -42,10 +42,13 @@ function normalizeEvent(item, holiday = false) {
   let end = allDay ? (e.date ? dateMs(e.date) : start + DAY) : Date.parse(e.dateTime);
   if (!Number.isFinite(start)) return null;
   if (!Number.isFinite(end) || end < start) end = start;
-  return { title: item.summary || '',   // 제목이 없으면 비워 두고, 화면이 언어에 맞는 '(제목 없음)'을 보임
-     location: item.location || '', allDay, start, end, holiday };
+  return {
+    title: item.summary || '',   // 제목이 없으면 비워 두고, 화면이 언어에 맞는 '(제목 없음)'을 보임
+    location: item.location || '', allDay, start, end, holiday,
+    iCalUID: item.iCalUID || null, calId: calId || null,
+  };
 }
-const normalizeEvents = (items, holiday) => (items || []).map((i) => normalizeEvent(i, holiday)).filter(Boolean);
+const normalizeEvents = (items, holiday, calId = null) => (items || []).map((i) => normalizeEvent(i, holiday, calId)).filter(Boolean);
 
 // Tasks API 응답 → 제목 목록(완료·삭제·빈 제목 제외, 목록의 원래 순서)
 function normalizeTasks(resp) {
@@ -202,7 +205,7 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
   async function fetchEvents(id, calendarIds) {
     const from = new Date(); from.setHours(0, 0, 0, 0);
     const q = new URLSearchParams({ timeMin: from.toISOString(), timeMax: new Date(from.getTime() + 8 * DAY).toISOString(), singleEvents: 'true', orderBy: 'startTime', maxResults: '100' });
-    const lists = await Promise.all(calendarIds.map(async (cal) => normalizeEvents((await api(id, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal)}/events?${q}`)).items, isHolidayCalendar(cal))));
+    const lists = await Promise.all(calendarIds.map(async (cal) => normalizeEvents((await api(id, `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal)}/events?${q}`)).items, isHolidayCalendar(cal), cal)));
     return lists.flat();
   }
   async function fetchTasks(id, listId) {
@@ -226,3 +229,4 @@ module.exports = { createGoogle, pkcePair, challengeOf, buildAuthUrl, normalizeE
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 구글 인증·토큰 보관, 읽기 전용 두 범위
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 문구(가져오기 오류·연결 완료 페이지)를 lang()에 맞춰 생성, 제목 없는 일정은 빈 제목 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 토큰·연결·가져오기를 사람 id별로, prompt=select_account consent, 옛 단일 토큰 파일 이관(migrateLegacy)
+// 개정 기록 | 2026-11-15 | normalizeEvent에 iCalUID 및 calId 보존 | 사용자 요청

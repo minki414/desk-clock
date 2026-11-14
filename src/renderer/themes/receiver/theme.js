@@ -1,7 +1,7 @@
 // D1 리시버. 정본 시안 d1-receiver.html. 형광표시관은 값만 바뀐다(움직임 없음).
 (function () {
   var K = window.ClockKit, I = window.ClockIcons, ID = 'receiver', R = null, stage0 = null;
-  var KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'T'];
+  var KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'T', 'N'];
 
   function mount(stage) {
     stage0 = stage; stage.classList.add('theme-' + ID); stage.textContent = '';
@@ -32,11 +32,11 @@
     R.presets = K.el('div', 'presets', face);
     R.keys = {};
     KEYS.forEach(function (k) {
-      var c = K.el('div', 'key' + (k === '0' ? ' home' : '') + (k === 'T' ? ' tkey' : ''), R.presets);
+      var c = K.el('div', 'key' + (k === '0' ? ' home' : '') + (k === 'T' ? ' tkey' : '') + (k === 'N' ? ' nkey' : ''), R.presets);
       K.el('b', '', c, k); R.keys[k] = { root: c, name: K.el('span', '', c) };
     });
     R.dot = K.el('i', 'dot', stage);
-    R.wkCells = K.pool(R.wk, 7, function (par) { var c = K.el('div', '', par); K.el('i', 'lamp', c); return { root: c, d: K.el('span', '', c) }; });
+    R.wkCells = K.pool(R.wk, 7, function (par) { var c = K.el('div', 'cell', par); K.el('i', 'lamp', c); return { root: c, d: K.el('span', 'd', c), t: K.el('span', 't vfd', c) }; });
   }
 
   // 고정 문구는 모델(m.L)에서 받아 바뀐 때만 갱신(언어 전환 즉시 반영)
@@ -66,13 +66,17 @@
     K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev vfd', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r) }; })
       .forEach(function (it, i) {
         var e = today[i]; if (!e) return;
-        K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state);
+        K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.setName(it.n, e.title, e.who, e.whoKind); K.attr(it.root, 'data-st', e.state);
       });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
       var c = R.wkCells[i], x = m.week[i]; K.hide(c.root, !x); if (!x) continue;
-      K.text(c.d, x.dow); K.attr(c.root, 'data-has', !!x.first); K.attr(c.root, 'data-sun', x.isSunday || x.isHoliday);
+      K.text(c.d, x.dow);
+      var titleText = x.first ? x.first + (x.firstWho ? ' ' + x.firstWho : '') + (x.count > 1 ? ' +' + (x.count - 1) : '') : '—';
+      K.text(c.t, titleText);
+      K.attr(c.root, 'data-has', !!x.first);
+      K.attr(c.root, 'data-sun', x.isSunday || x.isHoliday);
       K.attr(c.root, 'title', x.tip);
     }
 
@@ -97,3 +101,5 @@
 // 개정 기록 | 2026-11-11 | v1 | 시안 d1 이식 | 프리셋 버튼 라벨=legend, pressedKey 눌림, 'T 타이머' 키 추가, 값만 바뀌는 형광표시관
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | 프리셋에 N 야간 버튼 추가 | 사용자 요청
+// 개정 기록 | 2026-11-15 | whoKind(data-kind) 반영 및 주간 표시등+요일+VFD제목 표시 | 사용자 요청

@@ -92,7 +92,7 @@ test('주간: 내일부터 7칸, 첫 일정·개수·일요일·공휴일', () =
 
 test('범례: 등록된 슬롯만, 0 시계·T 타이머는 항상', () => {
   const slots = [{ key: 1, name: '유튜브', target: 'https://y' }, { key: 2, name: '', target: '' }, { key: 3, name: 'LP', target: 'http://l' }];
-  assert.deepEqual(M.buildLegend(slots), [{ key: '1', name: '유튜브' }, { key: '3', name: 'LP' }, { key: '0', name: '시계' }, { key: 'T', name: '타이머' }]);
+  assert.deepEqual(M.buildLegend(slots), [{ key: '1', name: '유튜브' }, { key: '3', name: 'LP' }, { key: '0', name: '시계' }, { key: 'T', name: '타이머' }, { key: 'N', name: '야간' }]);
 });
 
 test('상태 문구: 명사형, 마지막 성공 시각 표시', () => {
@@ -204,4 +204,114 @@ test('상태 문장: 한 사람의 실패는 그 사람 이름을 붙여 알림(
   const both = [person('p1', '민기', { sync: { calendar: { state: 'needAuth' } } }), person('p2', '지수', { sync: { calendar: { state: 'failed' } } })];
   assert.equal(M.buildStatus('ko', 'calendar', both), '민기 캘린더 연결 필요 / 지수 일정 갱신 실패');
 });
+
+test('자동 해제 시각 계산: nextNightEnd', () => {
+  const s = { nightEnd: '07:00' };
+
+  // 1. 자정 전 23:00 -> 다음날 07:00
+  const d1 = new Date(2026, 10, 15, 23, 0, 0);
+  const end1 = M.nextNightEnd(d1, s);
+  assert.equal(end1.getFullYear(), 2026);
+  assert.equal(end1.getMonth(), 10);
+  assert.equal(end1.getDate(), 16);
+  assert.equal(end1.getHours(), 7);
+  assert.equal(end1.getMinutes(), 0);
+
+  // 2. 심야 02:00 -> 당일 07:00
+  const d2 = new Date(2026, 10, 15, 2, 0, 0);
+  const end2 = M.nextNightEnd(d2, s);
+  assert.equal(end2.getDate(), 15);
+  assert.equal(end2.getHours(), 7);
+  assert.equal(end2.getMinutes(), 0);
+
+  // 3. 낮 14:00 (낮에 강제 야간 켬) -> 다음날 07:00
+  const d3 = new Date(2026, 10, 15, 14, 0, 0);
+  const end3 = M.nextNightEnd(d3, s);
+  assert.equal(end3.getDate(), 16);
+  assert.equal(end3.getHours(), 7);
+  assert.equal(end3.getMinutes(), 0);
+
+  // 4. 정각 07:00 -> 다음날 07:00
+  const d4 = new Date(2026, 10, 15, 7, 0, 0);
+  const end4 = M.nextNightEnd(d4, s);
+  assert.equal(end4.getDate(), 16);
+  assert.equal(end4.getHours(), 7);
+
+  // 문자열 직접 전달도 지원
+  const end5 = M.nextNightEnd(d2, '06:30');
+  assert.equal(end5.getHours(), 6);
+  assert.equal(end5.getMinutes(), 30);
+});
+
+test('야간 강제 시 effectiveMode: 다크 모드 강제', () => {
+  const dDay = new Date(2026, 10, 15, 14, 0);
+  const sLight = { mode: 'light', nightStart: '19:00', nightEnd: '07:00' };
+  assert.equal(M.effectiveMode(dDay, sLight, false), 'light');
+  assert.equal(M.effectiveMode(dDay, sLight, true), 'dark');
+});
+
+test('공유 판정 4가지 경로와 sharedLabel·whoKind', () => {
+  // 경로 1: 2명 이상이 선택한 캘린더 id
+  const p1 = person('p1', '민기', {
+    calendarIds: ['cal_shared_both'],
+    events: [ev({ title: '부모님 식사', start: at(11, 18), end: at(11, 20), calId: 'cal_shared_both' })],
+  });
+  const p2 = person('p2', '지수', {
+    calendarIds: ['cal_shared_both'],
+    events: [ev({ title: '부모님 식사', start: at(11, 18), end: at(11, 20), calId: 'cal_shared_both' })],
+  });
+  let m = M.mergeEvents([p1, p2], 'ko');
+  assert.equal(m.length, 1);
+  assert.equal(m[0].who, '우리');
+  assert.equal(m[0].whoKind, 'shared');
+
+  // 경로 2: 1명만 선택했어도 '공유'로 체크한 캘린더
+  const pSingle = person('p1', '민기', {
+    sharedCalendarIds: ['cal_shared_one'],
+    events: [
+      ev({ title: '관리비 납부', start: at(11, 10), end: at(11, 11), calId: 'cal_shared_one' }),
+      ev({ title: '개인 병원', start: at(11, 14), end: at(11, 15), calId: 'cal_private' }),
+    ],
+  });
+  m = M.mergeEvents([pSingle], 'ko');
+  // 공유 캘린더가 하나라도 있으므로 1명이어도 출처 표시 켜짐
+  assert.equal(m.length, 2);
+  const byTitle = Object.fromEntries(m.map((e) => [e.title, e]));
+  assert.equal(byTitle['관리비 납부'].who, '우리');
+  assert.equal(byTitle['관리비 납부'].whoKind, 'shared');
+  assert.equal(byTitle['개인 병원'].who, '민기');
+  assert.equal(byTitle['개인 병원'].whoKind, 'person');
+
+  // 경로 3: 다른 캘린더지만 iCalUID 일치
+  const p3 = person('p1', '민기', {
+    events: [ev({ title: '지인 결혼식', start: at(12, 13), end: at(12, 15), iCalUID: 'uid_wedding_123', calId: 'cal1' })],
+  });
+  const p4 = person('p2', '지수', {
+    events: [ev({ title: '지인 결혼식', start: at(12, 13), end: at(12, 15), iCalUID: 'uid_wedding_123', calId: 'cal2' })],
+  });
+  m = M.mergeEvents([p3, p4], 'ko');
+  assert.equal(m.length, 1);
+  assert.equal(m[0].who, '우리');
+  assert.equal(m[0].whoKind, 'shared');
+
+  // 경로 4: iCalUID 없어도 시작 시각과 제목 일치
+  const p5 = person('p1', '민기', {
+    events: [ev({ title: '산책', start: at(12, 20), end: at(12, 21), calId: 'cal1' })],
+  });
+  const p6 = person('p2', '지수', {
+    events: [ev({ title: '  산책  ', start: at(12, 20), end: at(12, 21), calId: 'cal2' })],
+  });
+  m = M.mergeEvents([p5, p6], 'ko');
+  assert.equal(m.length, 1);
+  assert.equal(m[0].who, '우리');
+  assert.equal(m[0].whoKind, 'shared');
+
+  // sharedLabel 커스텀 문구 적용
+  m = M.mergeEvents([p5, p6], 'ko', '우리의집');
+  assert.equal(m[0].who, '우리의집');
+  assert.equal(m[0].whoKind, 'shared');
+});
+
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 합치기·출처 표시·메모 묶음·상태 문장 이름 시험
+// 개정 기록 | 2026-11-15 | nextNightEnd 자동 해제 시각 및 effectiveMode 야간 강제 시험 | 사용자 요청
+// 개정 기록 | 2026-11-15 | 공유 판정 4가지 경로와 sharedLabel·whoKind 단위 시험 추가 | 사용자 요청

@@ -26,6 +26,7 @@ contextBridge.exposeInMainWorld('clockApi', {
   openFolder: invoke('app:folder'),
   version: invoke('app:version'),
   quit: invoke('app:quit'),
+  setForcedNight: invoke('night:force'),
   onData: on('data'),
   onTimer: on('timer'),
   onToast: on('toast'),
@@ -33,3 +34,4 @@ contextBridge.exposeInMainWorld('clockApi', {
 });
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: onKey·drawer 통로 제거, volume 추가
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: addPerson·removePerson 통로 추가(연결·해제·목록은 사람 id를 인자로)
+// 개정 기록 | 2026-11-15 | setForcedNight 통로 노출 | 사용자 요청

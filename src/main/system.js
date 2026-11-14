@@ -93,13 +93,13 @@ const writeBrightness = (n) => ps(setCmd(n)).then(() => true, () => false);
 
 // setDim(patch): settings.dim에 기록(비정상 종료 뒤 다음 시작 때 복구하기 위함)
 function createDimmer({ getSettings, setDim, onOverlay }) {
-  let busy = false, iv = null;
+  let busy = false, iv = null, forced = false;
   async function tick() {
     if (busy) return;
     busy = true;
     try {
       const s = getSettings(), d = s.dim;
-      const want = s.nightDim && isNight(new Date(), s);
+      const want = forced || (s.nightDim && isNight(new Date(), s));
       if (want && !d.active) {
         // 사용자가 야간 중에 직접 바꾼 밝기를 존중하려고, 전환 시점에 한 번만 낮춤
         const orig = await readBrightness();
@@ -113,6 +113,10 @@ function createDimmer({ getSettings, setDim, onOverlay }) {
       onOverlay(now.active && now.mode === 'overlay' ? OVERLAY : 0);
     } finally { busy = false; }
   }
+  function setForced(val) {
+    forced = !!val;
+    return tick();
+  }
   // 종료 때는 비동기를 기다릴 수 없어 동기 호출로 원래 밝기를 되돌림
   function restoreSync() {
     const d = getSettings().dim;
@@ -122,10 +126,11 @@ function createDimmer({ getSettings, setDim, onOverlay }) {
     }
     setDim({ active: false, mode: 'wmi', original: null });
   }
-  return { tick, restoreSync, start() { tick(); iv = setInterval(tick, 60 * 1000); }, stop() { clearInterval(iv); } };
+  return { tick, setForced, restoreSync, start() { tick(); iv = setInterval(tick, 60 * 1000); }, stop() { clearInterval(iv); } };
 }
 
 module.exports = { volume, sendCombo, createHealth, checkHealth, serverStates, createDimmer, readBrightness };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 볼륨·상태 점, §8 야간 감광
 // 개정 기록 | 2026-11-11 | v1.2 | serverStates 추가 | 설정창 감시 서버 행별 상태 점
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: sendCombo(키 조합 전송) 추가
+// 개정 기록 | 2026-11-15 | dimmer 야간 강제(setForced) 지원 | 사용자 요청

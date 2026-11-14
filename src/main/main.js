@@ -97,26 +97,59 @@ function wireIpc() {
   ipcMain.handle('timer:cancel', () => timer.cancel());
   // 볼륨: 시계 창이 포커스일 때 렌더러 키 라우팅이 보냄(전역 단축키 없음)
   ipcMain.handle('system:volume', (_e, up) => system.volume(!!up));
+  ipcMain.handle('night:force', (_e, on) => dimmer.setForced(on));
   ipcMain.handle('launch', async (_e, n, force) => {
     const st = store.settings();
     if (!st.hotkeysOn && !force) return;   // force: 설정창의 '실행해 보기'는 단축키가 꺼져 있어도 동작
     foreground.cancelWait();   // 다른 슬롯을 누르면 앞 슬롯의 키 보내기 대기는 취소
     const slot = st.slots.find((x) => x.key === n);
-    const r = await launchSlot(slot, st.browser, shell);
-    if (r.ok) {
-      foreground.watch();
-      const combo = parseCombo(slot.sendKeys);
-      // 사용자 의도 [2026-11-11 요청]: 실행한 앱이 맨 앞에 뜬 뒤에만 키를 보내고, 시계 창에는 절대 보내지 않는다.
-      // 개발 판단: 시계 창 핸들을 제외 대상으로 넘겨 foreground.waitStable이 판정한다. 시간 초과·전송 실패는 같은 문구로 알린다.
-      // 사용자 의도 [2026-11-11 요청]: 실행 후 시계로 돌아오기를 켠 슬롯은 키를 보낸 뒤(키가 없으면 앱 창이 안정된 뒤) 1.5초 지나 시계를 앞으로 가져온다.
-      // 개발 판단: 전송 실패·시간 초과면 앞으로 가져오지 않는다(실패 알림이 이미 뜸). 키 없는 슬롯은 시간 초과 시 조용히 포기한다. 다른 앱은 최소화·종료하지 않는다.
-      const back = shouldReturn(slot);
-      const self = String(win.getNativeWindowHandle().readBigUInt64LE());
+    if (!slot || !slot.target) {
+      toast('toast.empty', { n });
+      return;
+    }
+
+    // 1. 실행 직전 포그라운드 허락: 시계가 맨 앞일 때만 효과가 있으므로 실행 직전에 호출
+    foreground.allowSetForegroundWindow();
+
+    // 2. 슬롯별 창 기억·재사용 판정: 살아있는 창이 있으면 새로 실행하지 않고 앞으로 꺼냄
+    const rememberedHwnd = foreground.getSlotWindow(n);
+    const alive = foreground.isWindowAlive(rememberedHwnd);
+    const decision = foreground.decideLaunch({
+      rememberedAlive: alive,
+      isMinimized: alive ? foreground.isWindowMinimized(rememberedHwnd) : false,
+    });
+
+    let ok = false;
+    if (decision === 'focus-existing') {
+      ok = foreground.focusWindow(rememberedHwnd);
+    }
+    if (!ok) {
+      const r = await launchSlot(slot, st.browser, shell);
+      if (!r.ok) {
+        toast(r.reason === 'empty' ? 'toast.empty' : 'toast.fail', { n });
+        return;
+      }
+      ok = true;
+    }
+
+    foreground.watch();
+    const combo = parseCombo(slot.sendKeys);
+    const back = shouldReturn(slot);
+    const self = String(win.getNativeWindowHandle().readBigUInt64LE());
+
+    // 3. 안정 판정 대기 (기존 창 꺼냄·새 실행 모두)
+    foreground.waitStable(self, async (readyHwnd) => {
+      if (readyHwnd) foreground.rememberSlotWindow(n, readyHwnd);
       if (combo) {
-        const fail = () => toast('toast.sendFail', { n });
-        foreground.waitStable(self, async () => { if (!(await system.sendCombo(combo))) fail(); else if (back) foreground.returnLater(); }, fail);
-      } else if (back) foreground.waitStable(self, foreground.returnLater, () => {});
-    } else toast(r.reason === 'empty' ? 'toast.empty' : 'toast.fail', { n });
+        if (!(await system.sendCombo(combo))) toast('toast.sendFail', { n });
+        else if (back) foreground.returnLater();
+      } else if (back) {
+        foreground.returnLater();
+      }
+    }, () => {
+      // 10초 안에 다른 창이 맨 앞이 되지 않으면 기억하지 않고, 상태 문장은 띄우지 않음(키 전송 실패 시만 토스트)
+      if (combo) toast('toast.sendFail', { n });
+    });
   });
   ipcMain.handle('google:pickClient', async () => {
     const r = await dialog.showOpenDialog(win, { filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
@@ -224,3 +257,5 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: returnToClock 슬롯은 키 전송(또는 앱 창 안정) 뒤 1.5초 후 bringToFront
 // 개정 기록 | 2026-11-11 | v1.3 | 토스트·오류·대화상자 문구를 설정 언어로, 언어 변경 시 날씨 갱신, 지오코딩에 언어 전달 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 구글 연결·해제·목록을 사람 id별로, people:add/remove 통로, 시작 때 옛 토큰 파일 이관
+// 개정 기록 | 2026-11-15 | 슬롯 창 재사용과 실행 직전 AllowSetForegroundWindow 호출 | 사용자 요청
+// 개정 기록 | 2026-11-15 | night:force 통로 배선 | 사용자 요청

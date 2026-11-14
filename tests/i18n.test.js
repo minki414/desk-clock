@@ -99,8 +99,8 @@ test('모델 조립(buildModel): 언어별로 이미 형식화된 문자열을 �
   assert.deepEqual([ko.today[0].time, zh.today[0].time, en.today[0].time], ['종일', '全天', 'All day']);
   assert.deepEqual([ko.today[0].title, zh.today[0].title, en.today[0].title], ['(제목 없음)', '（无标题）', '(Untitled)']);   // 빈 제목
   assert.deepEqual([ko.week[0].dow, zh.week[0].dow, en.week[0].dow], ['목', '周四', 'Thu']);
-  assert.deepEqual(en.legend.map((l) => l.name), ['X', 'Clock', 'Timer']);
-  assert.deepEqual(zh.legend.map((l) => l.name), ['X', '时钟', '计时器']);
+  assert.deepEqual(en.legend.map((l) => l.name), ['X', 'Clock', 'Timer', 'Night']);
+  assert.deepEqual(zh.legend.map((l) => l.name), ['X', '时钟', '计时器', '夜间']);
   assert.equal(en.status.calendar, 'Calendar not connected');
   assert.equal(en.lang, 'en');
   // 일시정지·울림 안내도 모델이 만듦

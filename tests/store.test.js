@@ -177,4 +177,23 @@ test('새 사람: 쓰이지 않은 id·기본 이름 번호, 캘린더·메모�
   assert.deepEqual([p.calendar.on, p.tasks.on, p.google.connected], [false, false, false]);
   assert.equal(newPerson(people, 'en').name, 'User 1');   // 이름 번호는 같은 언어 기본 이름끼리만 겹침 검사
 });
+
+test('공유 캘린더 설정과 sharedLabel 기본값·저장', () => {
+  const dir = tmpDir();
+  try {
+    const st = createStore(dir);
+    assert.equal(st.settings().sharedLabel, '');
+    st.patch({
+      sharedLabel: '  우리둘  ',
+      people: [{ id: 'p1', name: '사용자 1', calendar: { on: true, ids: ['c1', 'c2'], shared: ['c2'] } }],
+    });
+    const s = createStore(dir).settings();
+    assert.equal(s.sharedLabel, '우리둘');
+    assert.deepEqual(s.people[0].calendar.shared, ['c2']);
+    // 최대 6자 제한
+    st.patch({ sharedLabel: '123456789' });
+    assert.equal(createStore(dir).settings().sharedLabel, '123456');
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 설정 이관(v3)·사람 목록 정리 시험
+// 개정 기록 | 2026-11-15 | sharedLabel 및 공유 캘린더 저장 단위 시험 추가 | 사용자 요청

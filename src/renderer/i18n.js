@@ -9,7 +9,7 @@
   const ko = {
     'app.title': '식탁 시계',
     // ----- 시계 화면(테마) -----
-    'stage.today': '오늘', 'stage.schedule': '일정', 'stage.week': '이번 주', 'stage.memo': '메모', 'stage.timer': '타이머', 'stage.weather': '날씨', 'stage.clock': '시계',
+    'stage.today': '오늘', 'stage.schedule': '일정', 'stage.week': '이번 주', 'stage.memo': '메모', 'stage.timer': '타이머', 'stage.weather': '날씨', 'stage.clock': '시계', 'stage.night': '야간',
     'stage.noEvents': '일정 없음', 'stage.noMemos': '메모 없음', 'stage.noWeather': '날씨 정보 없음',
     'stage.more': '외 {n}건', 'stage.moreOf': '{first} 외 {n}건',
     'stage.umbrella': '우산', 'stage.umbrellaTip': '우산 챙기기', 'stage.mask': '마스크', 'stage.maskTip': '마스크 챙기기',
@@ -30,6 +30,7 @@
     'person.default': '사용자 {n}', 'person.us': '우리',
     // ----- 토스트·오류·대화상자 -----
     'toast.sendFail': '{n}번 키 보내기 실패', 'toast.empty': '{n}번 미등록', 'toast.fail': '{n}번 실행 실패',
+    'toast.nightOn': '야간 모드', 'toast.nightOff': '야간 모드 해제',
     'err.connect': '연결 실패', 'err.unreadable': '파일을 읽을 수 없음', 'err.notDesktop': '데스크톱 앱용 클라이언트 JSON이 아님',
     'oauth.ok': '연결되었습니다. 이 창을 닫아도 됩니다.', 'oauth.fail': '연결에 실패했습니다. 시계 설정에서 다시 시도해 주십시오.',
     'dialog.programs': '프로그램·바로가기', 'dialog.all': '모든 파일',
@@ -55,6 +56,7 @@
     'ui.gTaskList': '메모 목록', 'ui.gDefaultList': '기본 목록',
     'ui.gClientOk': '클라이언트 파일 선택됨',
     'ui.people': '사람', 'ui.peopleNote': '둘 이상이 캘린더를 켜면 같은 일정은 "우리"로 합쳐 보입니다.', 'ui.personName': '이름', 'ui.personNameAria': '사람 {n} 이름',
+    'ui.sharedLabel': '공유 일정 표시 문구', 'ui.calShared': '공유',
     'ui.calOn': '캘린더 표시', 'ui.memoOn': '메모 표시', 'ui.personAdd': '사람 추가', 'ui.personMax': '최대 4명까지 추가할 수 있습니다',
     'ui.personDel': '사람 삭제', 'ui.personDelSure': '한 번 더 누르면 삭제합니다', 'ui.personLast': '한 명뿐이면 삭제할 수 없습니다',
     'ui.weather': '날씨 위치', 'ui.locAuto': '자동(IP 추정)', 'ui.locManual': '직접 지정', 'ui.locReset': '자동으로 되돌리기', 'ui.locSearch': '지명 검색', 'ui.locGo': '검색', 'ui.locNone': '검색 결과 없음', 'ui.locFail': '검색 실패',
@@ -65,7 +67,7 @@
 
   const zh = {
     'app.title': '餐桌时钟',
-    'stage.today': '今天', 'stage.schedule': '日程', 'stage.week': '本周', 'stage.memo': '备忘', 'stage.timer': '计时器', 'stage.weather': '天气', 'stage.clock': '时钟',
+    'stage.today': '今天', 'stage.schedule': '日程', 'stage.week': '本周', 'stage.memo': '备忘', 'stage.timer': '计时器', 'stage.weather': '天气', 'stage.clock': '时钟', 'stage.night': '夜间',
     'stage.noEvents': '暂无日程', 'stage.noMemos': '暂无备忘', 'stage.noWeather': '暂无天气信息',
     'stage.more': '另有 {n} 项', 'stage.moreOf': '{first}，另有 {n} 项',
     'stage.umbrella': '雨伞', 'stage.umbrellaTip': '记得带伞', 'stage.mask': '口罩', 'stage.maskTip': '记得戴口罩',
@@ -82,6 +84,7 @@
     'status.withWho': '{who}{text}',
     'person.default': '用户{n}', 'person.us': '我们',
     'toast.sendFail': '{n} 号键：按键发送失败', 'toast.empty': '{n} 号键：未设置', 'toast.fail': '{n} 号键：启动失败',
+    'toast.nightOn': '夜间模式', 'toast.nightOff': '退出夜间模式',
     'err.connect': '连接失败', 'err.unreadable': '无法读取文件', 'err.notDesktop': '不是桌面应用的客户端 JSON',
     'oauth.ok': '已连接，可以关闭此窗口。', 'oauth.fail': '连接失败，请在时钟设置中重试。',
     'dialog.programs': '程序和快捷方式', 'dialog.all': '所有文件',
@@ -105,6 +108,7 @@
     'ui.gTaskList': '备忘列表', 'ui.gDefaultList': '默认列表',
     'ui.gClientOk': '已选择客户端文件',
     'ui.people': '人员', 'ui.peopleNote': '两人以上开启日历后，相同日程会合并显示为“我们”。', 'ui.personName': '名称', 'ui.personNameAria': '人员 {n} 名称',
+    'ui.sharedLabel': '共享日程显示名称', 'ui.calShared': '共享',
     'ui.calOn': '显示日历', 'ui.memoOn': '显示备忘', 'ui.personAdd': '添加人员', 'ui.personMax': '最多可添加 4 人',
     'ui.personDel': '删除此人', 'ui.personDelSure': '再点一次即删除', 'ui.personLast': '只有一人时无法删除',
     'ui.weather': '天气位置', 'ui.locAuto': '自动（根据 IP 推测）', 'ui.locManual': '手动指定', 'ui.locReset': '恢复自动', 'ui.locSearch': '搜索地名', 'ui.locGo': '搜索', 'ui.locNone': '没有搜索结果', 'ui.locFail': '搜索失败',
@@ -115,7 +119,7 @@
 
   const en = {
     'app.title': 'Table clock',
-    'stage.today': 'Today', 'stage.schedule': 'Schedule', 'stage.week': 'This week', 'stage.memo': 'Memos', 'stage.timer': 'Timer', 'stage.weather': 'Weather', 'stage.clock': 'Clock',
+    'stage.today': 'Today', 'stage.schedule': 'Schedule', 'stage.week': 'This week', 'stage.memo': 'Memos', 'stage.timer': 'Timer', 'stage.weather': 'Weather', 'stage.clock': 'Clock', 'stage.night': 'Night',
     'stage.noEvents': 'No events', 'stage.noMemos': 'No memos', 'stage.noWeather': 'No weather info',
     'stage.more': '+{n} more', 'stage.moreOf': '{first} +{n} more',
     'stage.umbrella': 'Umbrella', 'stage.umbrellaTip': 'Bring an umbrella', 'stage.mask': 'Mask', 'stage.maskTip': 'Wear a mask',
@@ -132,6 +136,7 @@
     'status.withWho': '{who}: {text}',
     'person.default': 'User {n}', 'person.us': 'Us',
     'toast.sendFail': 'Slot {n}: couldn’t send keys', 'toast.empty': 'Slot {n}: not set', 'toast.fail': 'Slot {n}: couldn’t launch',
+    'toast.nightOn': 'Night mode', 'toast.nightOff': 'Night mode off',
     'err.connect': 'Connection failed', 'err.unreadable': 'Can’t read the file', 'err.notDesktop': 'Not a desktop-app client JSON',
     'oauth.ok': 'Connected. You can close this window.', 'oauth.fail': 'Connection failed. Try again from the clock settings.',
     'dialog.programs': 'Programs and shortcuts', 'dialog.all': 'All files',
@@ -155,6 +160,7 @@
     'ui.gTaskList': 'Memo list', 'ui.gDefaultList': 'Default list',
     'ui.gClientOk': 'Client file selected',
     'ui.people': 'People', 'ui.peopleNote': 'When two or more people turn calendars on, the same event is merged and shown as “Us”.', 'ui.personName': 'Name', 'ui.personNameAria': 'Person {n} name',
+    'ui.sharedLabel': 'Shared event label', 'ui.calShared': 'Shared',
     'ui.calOn': 'Show calendar', 'ui.memoOn': 'Show memos', 'ui.personAdd': 'Add person', 'ui.personMax': 'Up to 4 people',
     'ui.personDel': 'Remove person', 'ui.personDelSure': 'Press again to remove', 'ui.personLast': 'Can’t remove the only person',
     'ui.weather': 'Weather location', 'ui.locAuto': 'Automatic (from IP)', 'ui.locManual': 'Manual', 'ui.locReset': 'Back to automatic', 'ui.locSearch': 'Search for a place', 'ui.locGo': 'Search', 'ui.locNone': 'No results', 'ui.locFail': 'Search failed',
@@ -249,3 +255,5 @@
 });
 // 개정 기록 | 2026-11-11 | v1.3 | 최초 작성: 세 언어 사전, 날짜·타이머·날씨 형식화, 상태 문구(labels.js의 한국어 문구를 ko로 이전) | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 사람 기본 이름·'우리'·상태 문장 이름 접두·설정창 사람 카드 문구(3언어)
+// 개정 기록 | 2026-11-15 | N 야간 단축키 및 야간 모드 토스트 문구 추가 | 사용자 요청
+// 개정 기록 | 2026-11-15 | sharedLabel 및 캘린더 공유 체크 문구 3언어 추가 | 사용자 요청

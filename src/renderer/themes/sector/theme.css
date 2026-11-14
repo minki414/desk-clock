@@ -98,7 +98,10 @@
 .theme-sector .ev .n { display: flex; align-items: baseline; min-width: 0; }
 .theme-sector .ev .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .theme-sector .ev .w { flex: none; margin-left: 12px; font-family: var(--f-serif), var(--f-sans), serif; font-weight: 300; font-size: 19px; color: var(--sc-sub); white-space: nowrap; }
+.theme-sector .ev .w[data-kind=shared] { padding: 1px 7px; border-radius: 999px; background: rgba(184, 116, 63, .14); color: #9c5520; font-weight: 500; font-size: 15px; }
+.theme-sector[data-mode=dark] .ev .w[data-kind=shared] { color: #d9915b; background: rgba(184, 116, 63, .2); }
 .theme-sector .ev[data-st=past] .w { color: var(--sc-past); }
+.theme-sector .ev[data-st=past] .w[data-kind=shared] { background: rgba(120, 120, 120, .12); color: var(--sc-past); }
 .theme-sector .ev .p { font-size: 18px; color: var(--sc-sub); padding-left: 14px; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .theme-sector .ev[data-st=past] { color: var(--sc-past); }
 .theme-sector .ev[data-st=past] .nt { text-decoration: line-through; text-decoration-thickness: 1.5px; }
@@ -157,3 +160,4 @@
 .theme-sector .memo:not([data-g="1"]) .li { font-size: 21px; padding: 2px 0; }
 .theme-sector .memo[data-c="1"] .li { font-size: 20px; padding: 1px 0; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */
+/* 개정 기록 | 2026-11-15 | whoKind(data-kind) 알약 스타일 추가 | 사용자 요청 */

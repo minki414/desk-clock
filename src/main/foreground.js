@@ -9,9 +9,19 @@ function native() {
   try {
     const koffi = require('koffi');
     const user32 = koffi.load('user32.dll');
+    const kernel32 = koffi.load('kernel32.dll');
     fns = {
       hwnd: user32.func('uintptr_t __stdcall GetForegroundWindow()'),
       cls: user32.func('int __stdcall GetClassNameW(uintptr_t hWnd, _Out_ uint16_t *buf, int n)'),
+      allowSetForegroundWindow: user32.func('int __stdcall AllowSetForegroundWindow(uint32_t dwProcessId)'),
+      isWindow: user32.func('int __stdcall IsWindow(uintptr_t hWnd)'),
+      isIconic: user32.func('int __stdcall IsIconic(uintptr_t hWnd)'),
+      showWindow: user32.func('int __stdcall ShowWindow(uintptr_t hWnd, int nCmdShow)'),
+      setForegroundWindow: user32.func('int __stdcall SetForegroundWindow(uintptr_t hWnd)'),
+      bringWindowToTop: user32.func('int __stdcall BringWindowToTop(uintptr_t hWnd)'),
+      getWindowThreadProcessId: user32.func('uint32_t __stdcall GetWindowThreadProcessId(uintptr_t hWnd, uintptr_t lpdwProcessId)'),
+      attachThreadInput: user32.func('int __stdcall AttachThreadInput(uint32_t idAttach, uint32_t idAttachTo, int fAttach)'),
+      getCurrentThreadId: kernel32.func('uint32_t __stdcall GetCurrentThreadId()'),
     };
   } catch { fns = false; }
   return fns;
@@ -60,14 +70,98 @@ function confirmSend(hwnd, info, selfHwnd) {
   return !!info && info.hwnd === hwnd && hwnd !== selfHwnd && !DESKTOP.has(info.cls);
 }
 
+const SW_RESTORE = 9;
+const SW_SHOW = 5;
+const ASFW_ANY = -1;
+
+function allowSetForegroundWindow(pid = ASFW_ANY) {
+  const f = native();
+  if (!f) return false;
+  try {
+    return f.allowSetForegroundWindow(pid) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+function isWindowAlive(hwnd, f = native()) {
+  if (!hwnd || !f) return false;
+  try {
+    return f.isWindow(BigInt(hwnd)) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+function isWindowMinimized(hwnd, f = native()) {
+  if (!hwnd || !f) return false;
+  try {
+    return f.isIconic(BigInt(hwnd)) !== 0;
+  } catch {
+    return false;
+  }
+}
+
+function focusWindow(hwnd, f = native()) {
+  if (!hwnd || !f) return false;
+  try {
+    const h = BigInt(hwnd);
+    if (!f.isWindow(h)) return false;
+    const iconic = f.isIconic(h);
+    f.showWindow(h, iconic ? SW_RESTORE : SW_SHOW);
+    f.allowSetForegroundWindow(ASFW_ANY);
+    const ok = f.setForegroundWindow(h);
+    if (!ok) {
+      const curThread = f.getCurrentThreadId ? f.getCurrentThreadId() : 0;
+      const targetThread = f.getWindowThreadProcessId ? f.getWindowThreadProcessId(h, 0) : 0;
+      let attached = false;
+      try {
+        if (curThread && targetThread && curThread !== targetThread) {
+          attached = f.attachThreadInput(curThread, targetThread, 1) !== 0;
+        }
+        f.setForegroundWindow(h);
+        f.bringWindowToTop(h);
+      } finally {
+        if (attached) {
+          f.attachThreadInput(curThread, targetThread, 0);
+        }
+      }
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function decideLaunch({ rememberedAlive, isMinimized } = {}) {
+  if (rememberedAlive) return 'focus-existing';
+  return 'launch';
+}
+
 function createForeground(bringToFront) {
   let iv = null, wait = null, back = null;
+  const slotWindows = new Map();
   const stop = () => { clearInterval(iv); iv = null; };
   const cancelWait = () => { clearInterval(wait); wait = null; clearTimeout(back); back = null; };
   return {
     stop,
     cancelWait,
-    // 안정된 앱 창이 뜨면 onReady(), 10초 안에 안 뜨면(또는 창을 읽을 수 없으면) onTimeout(). 새로 부르면 앞의 대기는 취소
+    rememberSlotWindow(slotKey, hwnd) {
+      if (hwnd) slotWindows.set(Number(slotKey), String(hwnd));
+      else slotWindows.delete(Number(slotKey));
+    },
+    getSlotWindow(slotKey) {
+      return slotWindows.get(Number(slotKey)) || null;
+    },
+    clearSlotWindows() {
+      slotWindows.clear();
+    },
+    allowSetForegroundWindow,
+    isWindowAlive,
+    isWindowMinimized,
+    focusWindow,
+    decideLaunch,
+    // 안정된 앱 창이 뜨면 onReady(hwnd), 10초 안에 안 뜨면(또는 창을 읽을 수 없으면) onTimeout(). 새로 부르면 앞의 대기는 취소
     waitStable(selfHwnd, onReady, onTimeout) {
       cancelWait();
       const t0 = Date.now(), samples = [];
@@ -77,7 +171,11 @@ function createForeground(bringToFront) {
         if (i) samples.push({ t: now, ...i });
         if (samples.length > 60) samples.shift();
         if (cand !== null && !confirmSend(cand, i, selfHwnd)) cand = null;   // 그 사이 창이 바뀌면 처음부터 다시 판정
-        if (cand !== null && now >= confirmAt) { cancelWait(); return onReady(); }
+        if (cand !== null && now >= confirmAt) {
+          const readyHwnd = cand;
+          cancelWait();
+          return onReady(readyHwnd);
+        }
         if (cand === null && shouldSend(samples, selfHwnd, now)) { cand = samples[samples.length - 1].hwnd; confirmAt = now + CONFIRM_MS; }
         if (!i || now - t0 > SEND_TIMEOUT_MS) { cancelWait(); onTimeout(); }
       };
@@ -99,8 +197,28 @@ function createForeground(bringToFront) {
   };
 }
 
-module.exports = { createForeground, foregroundClass, foregroundInfo, shouldSend, confirmSend, shouldReturn, RETURN_DELAY_MS, DESKTOP, STABLE_MS, CONFIRM_MS };
+module.exports = {
+  createForeground,
+  foregroundClass,
+  foregroundInfo,
+  shouldSend,
+  confirmSend,
+  shouldReturn,
+  allowSetForegroundWindow,
+  isWindowAlive,
+  isWindowMinimized,
+  focusWindow,
+  decideLaunch,
+  RETURN_DELAY_MS,
+  DESKTOP,
+  STABLE_MS,
+  CONFIRM_MS,
+  SW_RESTORE,
+  SW_SHOW,
+  ASFW_ANY,
+};
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §6 복귀 보조 장치
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 맨 앞 창 핸들·표본 판정(shouldSend)·대기(waitStable) 추가
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: 안정 창 시간 600→1000ms, 판정 뒤 700ms 재확인(confirmSend) 추가(첫 실행이 느린 앱 대비)
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: shouldReturn·returnLater 추가(키 보낸 뒤/앱 창 안정 뒤 1.5초 후 시계를 앞으로, cancelWait 로 함께 취소)
+// 개정 기록 | 2026-11-15 | 슬롯 창 기억·재사용과 포그라운드 허락 | 사용자 요청

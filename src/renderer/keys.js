@@ -8,7 +8,7 @@
   const DUP_MS = 1500;
   const STOP = ['Enter', 'NumpadEnter', 'Space', 'NumpadMultiply', 'Numpad0'];
 
-  const initial = () => ({ settingsOpen: false, hotkeysOn: true, phase: 'hidden', input: '', lastAt: {} });
+  const initial = () => ({ settingsOpen: false, hotkeysOn: true, phase: 'hidden', input: '', lastAt: {}, forcedNight: false });
 
   function route(state, k) {
     const same = { state, actions: [] };
@@ -68,6 +68,10 @@
       return out({ lastAt: { ...state.lastAt, [n]: k.t } }, { type: 'launch', slot: n });
     }
     if ((code === 'KeyT' || code === 'NumpadDivide') && state.phase === 'hidden') return out({ phase: 'input', input: '' });
+    if (code === 'KeyN') {
+      const nextForced = !state.forcedNight;
+      return out({ forcedNight: nextForced }, { type: 'night.toggle', on: nextForced });
+    }
     return same;
   }
 
@@ -76,3 +80,4 @@
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §4 키 라우팅
 // 개정 기록 | 2026-11-11 | 중복 실행 차단을 슬롯별로 | Codex 감사 FAIL(1→2→1 재실행) 수정
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: NumpadAdd/Subtract -> volume 액션(전역 단축키 대체)
+// 개정 기록 | 2026-11-15 | N 키 야간 강제 토글 라우팅 | 사용자 요청

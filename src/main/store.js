@@ -35,10 +35,17 @@ function normPeople(list, lang) {
     if (!isObj(p) || out.length >= MAX_PEOPLE) continue;
     const id = PERSON_ID.test(p.id) && !out.some((x) => x.id === p.id) ? p.id : nextPersonId(out);
     const cal = isObj(p.calendar) ? p.calendar : {}, tk = isObj(p.tasks) ? p.tasks : {};
+    const calObj = {
+      on: !!cal.on,
+      ids: Array.isArray(cal.ids) ? cal.ids.filter((x) => typeof x === 'string') : [],
+    };
+    if (Array.isArray(cal.shared)) {
+      calObj.shared = cal.shared.filter((x) => typeof x === 'string');
+    }
     out.push({
       id, name: String(p.name == null ? '' : p.name).trim().slice(0, 20) || t(lang, 'person.default', { n: out.length + 1 }),
       google: { connected: !!(isObj(p.google) && p.google.connected) },
-      calendar: { on: !!cal.on, ids: Array.isArray(cal.ids) ? cal.ids.filter((x) => typeof x === 'string') : [] },
+      calendar: calObj,
       tasks: { on: !!tk.on, listId: typeof tk.listId === 'string' ? tk.listId : '' },
     });
   }
@@ -60,6 +67,7 @@ const defaults = () => ({
   slots: defaultSlots(),
   location: { mode: 'auto', name: '', lat: null, lon: null, id: null },   // id: 지오코딩 지명 번호(언어를 바꾸면 이 번호로 이름을 다시 받음)
   google: { hasClient: false },   // 클라이언트 파일 유무만(연결·캘린더·메모 목록은 사람별 people 로 옮김)
+  sharedLabel: '',            // 공유 일정 표시 문구(기본 사전값 '우리', 최대 6자)
   people: [defaultPerson(1, 'ko')],
   servers: [],
   dim: { active: false, mode: 'wmi', original: null },   // 비정상 종료 뒤 밝기 복구용
@@ -129,6 +137,10 @@ function createStore(dir) {
       for (const k of Object.keys(p)) {
         if (!(k in settings)) continue;
         if (k === 'lang' && norm(p[k]) !== p[k]) continue;   // 지원하지 않는 언어 값은 무시
+        if (k === 'sharedLabel') {
+          next[k] = typeof p[k] === 'string' ? p[k].trim().slice(0, 6) : '';
+          continue;
+        }
         next[k] = k === 'people' ? normPeople(p[k], next.lang) : isObj(settings[k]) && isObj(p[k]) ? { ...settings[k], ...p[k] } : p[k];
       }
       settings = next;
@@ -151,3 +163,4 @@ module.exports = { createStore, defaults, withDefaults, writeAtomic, normPeople,
 // 개정 기록 | 2026-11-11 | 실행 후 시계로 돌아오기 | 사용자 요청: 슬롯 returnToClock(기본 끔) 추가, 옛 설정은 기본값 병합으로 끔
 // 개정 기록 | 2026-11-11 | v1.3 | lang 설정(기본 ko, 알 수 없는 값 무시)·location.id 추가 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: people(최대 4명)·settingsVersion 3 이관(단일 구글 연결→사람 1, 옛 설정 .v2.bak 보존)
+// 개정 기록 | 2026-11-15 | sharedLabel 설정 및 calendar.shared 저장 | 사용자 요청

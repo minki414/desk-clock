@@ -14,26 +14,113 @@
     if (a === b) return false;
     return a < b ? m >= a && m < b : m >= a || m < b;
   }
-  const effectiveMode = (now, s) => (s.mode === 'auto' ? (isNight(now, s) ? 'dark' : 'light') : s.mode);
+  const effectiveMode = (now, s, forcedNight = false) => (forcedNight ? 'dark' : (s.mode === 'auto' ? (isNight(now, s) ? 'dark' : 'light') : s.mode));
+
+  function nextNightEnd(now, s) {
+    const endStr = typeof s === 'string' ? s : (s && s.nightEnd) || '07:00';
+    const [h, m] = endStr.split(':').map(Number);
+    const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), h || 0, m || 0, 0, 0);
+    if (target.getTime() <= now.getTime()) {
+      target.setDate(target.getDate() + 1);
+    }
+    return target;
+  }
 
   const dayStart = (now, plus = 0) => new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus).getTime();
   const overlaps = (e, from, to) => e.start < to && Math.max(e.end, e.start + 1) > from;
   const byTime = (a, b) => (b.allDay - a.allDay) || (a.start - b.start) || a.title.localeCompare(b.title);
 
-  // 사람별 일정 합치기. 사용자 의도 [docs/v1.4-people-brief.md §2]: 시작 시각(종일이면 날짜)과 앞뒤 공백 뺀 제목이 같으면 같은 일정 → 한 번만.
-  // 출처 표시(who)는 캘린더를 켠 사람이 2명 이상일 때만: 2명 이상에게서 온 일정은 '우리', 한 사람뿐이면 그 사람 이름, 1명뿐이면 표시 없음.
-  // 개발 판단: 종일 일정의 start 는 그날 0시(현지) 밀리초라 같은 키 하나로 시각·날짜 비교가 모두 된다. 공휴일은 사람 일정이 아니므로(두 사람 모두 구독하면 '우리'로 보임) 항상 who 없음.
-  // p: [{ id, name, calendarOn, events }]
-  function mergeEvents(people, lang = 'ko') {
-    const on = people.filter((p) => p.calendarOn);
-    const names = on.length >= 2;
-    const seen = new Map();
-    on.forEach((p) => (p.events || []).forEach((e) => {
-      const key = `${e.start}|${String(e.title || '').trim()}`;   // 시작은 숫자뿐이라 첫 '|' 앞뒤가 섞일 수 없음
-      const g = seen.get(key) || seen.set(key, { e, by: [] }).get(key);
-      if (!g.by.includes(p)) g.by.push(p);
-    }));
-    return [...seen.values()].map(({ e, by }) => ({ ...e, who: !names || e.holiday ? null : by.length >= 2 ? I18N.t(lang, 'person.us') : by[0].name }));
+  // 사람별 일정 합치기 및 출처 판정(docs/v1.5-brief.md §C).
+  // 1. 공유 캘린더 판정:
+  //    - 그 캘린더 id를 2명 이상이 선택했거나 누구든 '공유'로 체크했으면 -> 공유.
+  // 2. 출처 판정(일정 하나당):
+  //    - 공유 캘린더에서 온 일정이면 -> 공유.
+  //    - 같은 일정(iCalUID 일치, 없으면 시작+제목 일치)이 2명 이상 계정에서 왔으면 -> 공유(초대받은 일정 등).
+  //    - 그 밖 -> 그 사람 이름.
+  //    - 중복은 하나로 합침(공유 판정된 것 우선).
+  // 3. 표시 켜짐 조건: 캘린더를 켠 사람이 2명 이상이거나 공유 캘린더가 하나라도 있으면 출처 표시 켬.
+  // 4. 공유 문구: 설정 sharedLabel(기본 사전값 '우리', 최대 6자).
+  function mergeEvents(people, lang = 'ko', sharedLabel = '') {
+    const on = (people || []).filter((p) => p && p.calendarOn);
+
+    // Path 1: 2명 이상이 선택한 캘린더 id
+    const calSelectedCount = new Map();
+    on.forEach((p) => {
+      const ids = p.calendarIds || (p.calendar && p.calendar.ids) || [];
+      new Set(ids).forEach((id) => {
+        calSelectedCount.set(id, (calSelectedCount.get(id) || 0) + 1);
+      });
+    });
+    const multiSelectedCals = new Set(
+      [...calSelectedCount.entries()].filter(([_, count]) => count >= 2).map(([id]) => id)
+    );
+
+    // Path 2: 누구든 '공유'로 체크한 캘린더 id
+    const markedSharedCals = new Set();
+    on.forEach((p) => {
+      const shared = p.sharedCalendarIds || (p.calendar && p.calendar.shared) || [];
+      shared.forEach((id) => markedSharedCals.add(id));
+    });
+
+    const isCalShared = (calId) => !!calId && (multiSelectedCals.has(calId) || markedSharedCals.has(calId));
+
+    // 표시 켜짐 조건
+    const hasAnySharedCal = markedSharedCals.size > 0 || multiSelectedCals.size > 0;
+    const showOrigin = on.length >= 2 || hasAnySharedCal;
+
+    // 공유 일정 표시 문구
+    const defaultUs = I18N.t(lang, 'person.us');
+    const sharedText = (sharedLabel && String(sharedLabel).trim()) ? String(sharedLabel).trim().slice(0, 6) : defaultUs;
+
+    // 중복 판정 기준
+    const matches = (a, b) => {
+      if (a.iCalUID && b.iCalUID) return a.iCalUID === b.iCalUID;
+      return a.start === b.start && String(a.title || '').trim() === String(b.title || '').trim();
+    };
+
+    const groups = [];
+    on.forEach((p) => {
+      (p.events || []).forEach((e) => {
+        const calId = e.calId || e.calendarId || null;
+        const sharedCal = isCalShared(calId);
+        let g = groups.find((grp) => grp.events.some((x) => matches(x.e, e)));
+        if (!g) {
+          g = { events: [] };
+          groups.push(g);
+        }
+        g.events.push({ e, person: p, sharedCal });
+      });
+    });
+
+    return groups.map((g) => {
+      const distinctPeople = new Set(g.events.map((x) => x.person.id || x.person.name || x.person));
+      const hasSharedCal = g.events.some((x) => x.sharedCal);
+      const multiAccount = distinctPeople.size >= 2;
+
+      // 대표 이벤트: 공유 판정된 것 우선
+      const rep = (hasSharedCal ? g.events.find((x) => x.sharedCal) : g.events[0]).e;
+      const isHoliday = !!rep.holiday;
+
+      let who = null;
+      let whoKind = null;
+
+      if (!showOrigin || isHoliday) {
+        who = null;
+        whoKind = null;
+      } else if (hasSharedCal || multiAccount) {
+        who = sharedText;
+        whoKind = 'shared';
+      } else {
+        who = g.events[0].person.name;
+        whoKind = 'person';
+      }
+
+      return {
+        ...rep,
+        who,
+        whoKind,
+      };
+    });
   }
 
   function buildToday(events, now, max = 4, lang = 'ko') {
@@ -47,7 +134,14 @@
         else if (e.start <= t) state = 'now';
         else if (!nextDone) { state = 'next'; nextDone = true; }
       }
-      return { time: e.allDay ? I18N.t(lang, 'stage.allDay') : hhmm(e.start), title: e.title || I18N.t(lang, 'stage.untitled'), location: e.location || '', who: e.who || null, state };
+      return {
+        time: e.allDay ? I18N.t(lang, 'stage.allDay') : hhmm(e.start),
+        title: e.title || I18N.t(lang, 'stage.untitled'),
+        location: e.location || '',
+        who: e.who || null,
+        whoKind: e.whoKind || null,
+        state
+      };
     });
     // 넘치면 지난 일정부터 덜어 내서 앞으로 일을 우선 보여 줌
     let shown = rows;
@@ -64,9 +158,21 @@
       const day = events.filter((e) => overlaps(e, from, to));
       const items = day.filter((e) => !e.holiday).sort(byTime);
       const dow = new Date(from).getDay();
-      const first = items.length ? items[0].title || I18N.t(lang, 'stage.untitled') : null;
-      cells.push({ dow: I18N.fmtDate(lang, new Date(from), 'dowShort'), isSunday: dow === 0, isHoliday: day.some((e) => e.holiday), first, count: items.length,
-        tip: first && items.length > 1 ? I18N.t(lang, 'stage.moreOf', { first, n: items.length - 1 }) : first || '' });
+      const firstEvent = items.length ? items[0] : null;
+      const first = firstEvent ? (firstEvent.title || I18N.t(lang, 'stage.untitled')) : null;
+      const cell = {
+        dow: I18N.fmtDate(lang, new Date(from), 'dowShort'),
+        isSunday: dow === 0,
+        isHoliday: day.some((e) => e.holiday),
+        first,
+        count: items.length,
+        tip: first && items.length > 1 ? I18N.t(lang, 'stage.moreOf', { first, n: items.length - 1 }) : first || ''
+      };
+      if (firstEvent && firstEvent.who) {
+        cell.firstWho = firstEvent.who;
+        cell.firstWhoKind = firstEvent.whoKind || null;
+      }
+      cells.push(cell);
     }
     return cells;
   }
@@ -98,7 +204,12 @@
 
   function buildLegend(slots, lang = 'ko') {
     const l = slots.filter((s) => s.target && s.name).map((s) => ({ key: String(s.key), name: s.name }));
-    return [...l, { key: '0', name: I18N.t(lang, 'stage.clock') }, { key: 'T', name: I18N.t(lang, 'stage.timer') }];
+    return [
+      ...l,
+      { key: '0', name: I18N.t(lang, 'stage.clock') },
+      { key: 'T', name: I18N.t(lang, 'stage.timer') },
+      { key: 'N', name: I18N.t(lang, 'stage.night') },
+    ];
   }
 
   // 타이머 안내 글: 입력 중엔 해석 결과('1분 35초'), 일시정지·울림엔 상태 이름
@@ -113,7 +224,7 @@
   // o: { lang, now, mode, weather(원자료: place·tempC·code·hiC·loC·umbrella·mask)|null, people:[{ id, name, calendarOn, tasksOn, events, memos, sync:{calendar,tasks} }], slots, timer(phase·input·invalidAt·remainingMs·totalMs), hotkeysOn, pressedKey, sync(날씨), health }
   function buildModel(o) {
     const lang = I18N.norm(o.lang), now = o.now;
-    const events = mergeEvents(o.people, lang);
+    const events = mergeEvents(o.people, lang, o.sharedLabel);
     const today = buildToday(events, now, 4, lang);
     const L = I18N.stageLabels(lang);
     L.todayMore = today.todayMore ? I18N.t(lang, 'stage.more', { n: today.todayMore }) : '';
@@ -132,8 +243,10 @@
     };
   }
 
-  return { isNight, effectiveMode, mergeEvents, buildToday, buildWeek, buildMemoGroups, buildStatus, buildLegend, buildModel, timerHint, hhmm };
+  return { isNight, nextNightEnd, effectiveMode, mergeEvents, buildToday, buildWeek, buildMemoGroups, buildStatus, buildLegend, buildModel, timerHint, hhmm };
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 테마 계약 모델(오늘 4건·7칸 주간·메모 4건)
 // 개정 기록 | 2026-11-11 | v1.3 | 언어(lang) 인자, 요일·'종일'·범례를 사전으로, buildModel 신설(앱·예시 모델 공용), 주간 칸 tip | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 합치기·중복 제거·출처(who), 메모 묶음(memoGroups), 상태 문장에 이름, buildModel 입력을 people 로
+// 개정 기록 | 2026-11-15 | nextNightEnd 계산 및 범례 N 야간 추가, effectiveMode 야간 강제 반영 | 사용자 요청
+// 개정 기록 | 2026-11-15 | 캘린더 기반 일정 출처(공유/개인) 판정 및 sharedLabel 반영 | 사용자 요청

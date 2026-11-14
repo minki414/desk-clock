@@ -100,7 +100,10 @@
 .theme-flip .row .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* 출처는 행 오른쪽 끝에 보조색 작은 글자로(제목이 길면 제목이 먼저 줄어듦) */
 .theme-flip .row .w { flex: none; margin-left: auto; padding-left: 12px; font-size: 14px; font-weight: 600; letter-spacing: .06em; color: var(--fl-sub); white-space: nowrap; }
+.theme-flip .row .w[data-kind=shared] { padding: 1px 7px; border-radius: 999px; background: rgba(235, 94, 40, .14); color: #d04a10; font-weight: 600; font-size: 13px; }
+.theme-flip[data-mode=dark] .row .w[data-kind=shared] { background: rgba(235, 94, 40, .2); color: #ff6f33; }
 .theme-flip .row[data-st=past] .w { color: var(--fl-past); }
+.theme-flip .row[data-st=past] .w[data-kind=shared] { background: rgba(120, 120, 120, .12); color: var(--fl-past); }
 .theme-flip .row[data-st=past] { color: var(--fl-past); }
 .theme-flip .row[data-st=past] .t { color: var(--fl-past); }
 .theme-flip .row[data-st=next] .nt, .theme-flip .row[data-st=now] .nt { font-weight: 700; }
@@ -148,3 +151,4 @@
 .theme-flip .mm[data-c="1"] .li { font-size: 16px; padding: 1px 0; }
 .theme-flip .mm[data-c="1"] .mg + .mg { margin-top: 4px; padding-top: 3px; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */
+/* 개정 기록 | 2026-11-15 | whoKind(data-kind) 알약 스타일 추가 | 사용자 요청 */

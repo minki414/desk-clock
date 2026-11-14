@@ -23,12 +23,12 @@
     R.msk = K.el('div', 'flag', fl); R.msk.innerHTML = I.mask + '<span></span>'; R.mskT = R.msk.lastChild;
     R.wNone = K.el('div', 'wnone', pw); R.wst = K.el('div', 'wst', pw);
 
-    var pe = K.el('div', 'p', Rt), he = K.el('h3', '', pe); R.lToday = K.el('span', '', he); R.stC = K.el('span', 'st', he);
+    var pe = K.el('div', 'p today', Rt), he = K.el('h3', '', pe); R.lToday = K.el('span', '', he); R.stC = K.el('span', 'st', he);
     R.ev = K.el('div', '', pe); R.eMore = K.el('div', 'more', pe); R.eNone = K.el('div', 'none', pe); R.wk = K.el('div', 'wk', pe);
     var pm = K.el('div', 'p memo', Rt), hm = K.el('h3', '', pm); R.lMemo = K.el('span', '', hm); R.stM = K.el('span', 'st', hm);
     R.mm2 = K.el('div', 'mm', pm); R.mNone = K.el('div', 'none', pm);
     R.dot = K.el('i', 'dot', stage);
-    R.wkCells = K.pool(R.wk, 7, function (par) { var d = K.el('div', '', par); return { root: d, b: K.el('b', '', d), u: K.el('u', '', d) }; });
+    R.wkCells = K.pool(R.wk, 7, function (par) { var d = K.el('div', 'cell', par); return { root: d, b: K.el('b', 'd', d), t: K.el('span', 't', d), w: K.el('span', 'w', d), m: K.el('span', 'm', d) }; });
   }
 
   // 고정 문구는 모델(m.L)에서 받아 바뀐 때만 갱신(언어 전환 즉시 반영)
@@ -60,12 +60,20 @@
 
     var today = m.today.slice(0, 4);
     K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); K.el('i', '', r); return { root: r, t: K.el('span', 'tt', r), n: K.nameCell(r) }; })
-      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state); });
+      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.cls(it.t, 'ad', !/^\d/.test(e.time)); K.setName(it.n, e.title, e.who, e.whoKind); K.attr(it.root, 'data-st', e.state); });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     for (var i = 0; i < 7; i++) {
       var c = R.wkCells[i], x = m.week[i]; K.hide(c.root, !x); if (!x) continue;
-      K.text(c.b, x.dow); K.attr(c.root, 'data-has', !!x.first); K.attr(c.root, 'data-sun', x.isSunday || x.isHoliday);
+      K.text(c.b, x.dow);
+      K.text(c.t, x.first || '—');
+      K.text(c.w, x.first && x.firstWho ? x.firstWho : '');
+      K.hide(c.w, !x.first || !x.firstWho);
+      var more = x.first && x.count > 1 ? '+' + (x.count - 1) : '';
+      K.text(c.m, more);
+      K.hide(c.m, !more);
+      K.attr(c.root, 'data-has', !!x.first);
+      K.attr(c.root, 'data-sun', x.isSunday || x.isHoliday);
       K.attr(c.root, 'title', x.tip);
     }
     K.hide(R.wk, m.week.length === 0);
@@ -92,3 +100,5 @@
 // 개정 기록 | 2026-11-11 | v1 | 시안 d4 이식 | 타이머 고리만 움직임(남은 비율, 1초 선형), 날씨 아이콘은 문구에서 고름
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | whoKind(data-kind) 반영 및 주간 7칸 요일+일정 알약 표시 | 사용자 요청
+// 개정 기록 | 2026-11-15 | 디자이너 검토 반영: 주간 2열 목록(4행/3행, +n, who) 컴팩트 배치 | 사용자 요청

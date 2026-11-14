@@ -155,3 +155,37 @@ test('Numpad0은 실행을 일으키지 않음(숨김 상태 무동작, 입력 �
 test('슬롯 실행은 repeat 차단(볼륨과 달리)', () => {
   assert.deepEqual(route(initial(), key('Numpad1', { repeat: true })).actions, []);
 });
+
+test('KeyN: 야간 강제 토글, 서랍·입력·울림 중 무시, 단축키 끔과 무관', () => {
+  const init = initial();
+  assert.equal(init.forcedNight, false);
+
+  // 1. 일반 상태에서 KeyN 누르면 켜짐
+  let r = route(init, key('KeyN'));
+  assert.equal(r.state.forcedNight, true);
+  assert.deepEqual(r.actions, [{ type: 'night.toggle', on: true }]);
+
+  // 2. 다시 누르면 꺼짐
+  r = route(r.state, key('KeyN'));
+  assert.equal(r.state.forcedNight, false);
+  assert.deepEqual(r.actions, [{ type: 'night.toggle', on: false }]);
+
+  // 3. 서랍 열림 중 무시
+  assert.equal(route({ ...init, settingsOpen: true }, key('KeyN')).state.forcedNight, false);
+
+  // 4. 타이머 입력 중 무시
+  assert.equal(route({ ...init, phase: 'input' }, key('KeyN')).state.forcedNight, false);
+
+  // 5. 알림 울림 중 무시
+  assert.equal(route({ ...init, phase: 'ringing' }, key('KeyN')).state.forcedNight, false);
+
+  // 6. 단축키 끔(hotkeysOn: false)이어도 동작 (문자 키)
+  r = route({ ...init, hotkeysOn: false }, key('KeyN'));
+  assert.equal(r.state.forcedNight, true);
+  assert.deepEqual(r.actions, [{ type: 'night.toggle', on: true }]);
+
+  // 7. 수정키·반복(repeat) 무시
+  assert.equal(route(init, key('KeyN', { ctrl: true })).state, init);
+  assert.equal(route(init, key('KeyN', { alt: true })).state, init);
+  assert.equal(route(init, key('KeyN', { repeat: true })).state, init);
+});

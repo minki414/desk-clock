@@ -58,8 +58,9 @@
 .theme-standby .legend.off { opacity: .3; }
 
 .theme-standby .r { position: absolute; right: 56px; top: 56px; bottom: 56px; width: clamp(400px, calc(var(--stage-w) - 970px), 520px); display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 18px; }
-.theme-standby .p { position: relative; min-height: 0; overflow: hidden; background: var(--sb-pane); border-radius: 28px; padding: 24px 28px; box-shadow: 0 1px 2px var(--sb-shadow), 0 12px 30px var(--sb-shadow); }
-.theme-standby .p h3 { display: flex; align-items: baseline; gap: 12px; font-size: 17px; font-weight: 600; color: var(--sb-sub); margin-bottom: 10px; white-space: nowrap; }
+.theme-standby .p { position: relative; min-height: 0; overflow: hidden; background: var(--sb-pane); border-radius: 28px; padding: 18px 24px; box-shadow: 0 1px 2px var(--sb-shadow), 0 12px 30px var(--sb-shadow); }
+.theme-standby .p.today { display: flex; flex-direction: column; }
+.theme-standby .p h3 { display: flex; align-items: baseline; gap: 12px; font-size: 17px; font-weight: 600; color: var(--sb-sub); margin-bottom: 6px; flex: none; white-space: nowrap; }
 .theme-standby .p h3 .st { font-weight: 400; font-size: 14px; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .theme-standby .wx { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 18px; min-height: 145px; }
 .theme-standby .wx .k { width: 64px; height: 64px; color: var(--sb-icon); }
@@ -73,7 +74,7 @@
 .theme-standby .wnone { grid-column: 1 / -1; font-size: 22px; color: var(--sb-sub); }
 .theme-standby .wst { grid-column: 1 / -1; font-size: 14px; color: var(--sb-sub); margin-top: -10px; }
 
-.theme-standby .ev { display: grid; grid-template-columns: 6px 84px minmax(0, 1fr); gap: 14px; align-items: center; font-size: 25px; padding: 8px 0; }
+.theme-standby .ev { display: grid; grid-template-columns: 6px 84px minmax(0, 1fr); gap: 14px; align-items: center; font-size: 25px; padding: 5px 0; }
 .theme-standby .ev i { width: 6px; height: 30px; border-radius: 3px; background: var(--sb-bar); }
 .theme-standby .ev .tt { font-family: Nunito, var(--f-sans), sans-serif; font-weight: 800; font-size: 25px; color: var(--sb-sub); white-space: nowrap; }
 .theme-standby .ev .tt.ad { font-family: var(--f-sans), sans-serif; font-size: 21px; }
@@ -81,7 +82,10 @@
 .theme-standby .ev .nt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 /* 출처는 이 테마의 요일 칩과 같은 말: 칸 색(pane2) 알약 안 보조색 작은 글자 */
 .theme-standby .ev .w { flex: none; margin-left: 12px; padding: 1px 10px; border-radius: 999px; background: var(--sb-pane2); font-size: 15px; font-weight: 600; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .ev .w[data-kind=shared] { background: rgba(93, 123, 255, .14); color: #4365ff; }
+.theme-standby[data-mode=dark] .ev .w[data-kind=shared] { background: rgba(93, 123, 255, .2); color: #7f97ff; }
 .theme-standby .ev[data-st=past] .w { color: var(--sb-past); }
+.theme-standby .ev[data-st=past] .w[data-kind=shared] { background: rgba(120, 120, 120, .12); color: var(--sb-past); }
 .theme-standby .ev[data-st=next] i, .theme-standby .ev[data-st=now] i { background: var(--sb-acc); }
 .theme-standby .ev[data-st=next] .tt, .theme-standby .ev[data-st=now] .tt { color: var(--sb-acc); }
 .theme-standby .ev[data-st=next] .nt, .theme-standby .ev[data-st=now] .nt { font-weight: 700; }
@@ -89,16 +93,25 @@
 .theme-standby .ev[data-st=past] { color: var(--sb-past); }
 .theme-standby .more { font-size: 16px; color: var(--sb-sub); padding: 2px 0 0 20px; }
 .theme-standby .none { font-size: 20px; color: var(--sb-sub); padding: 6px 0; }
-.theme-standby .wk { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 14px; }
-.theme-standby .wk div { background: var(--sb-pane2); border-radius: 12px; padding: 8px 0; text-align: center; font-size: 15px; color: var(--sb-sub); }
-.theme-standby .wk div b { display: block; color: var(--sb-ink); font-size: 17px; margin-bottom: 4px; }
-.theme-standby .wk div u { display: block; width: 6px; height: 6px; border-radius: 50%; margin: 0 auto; background: var(--sb-acc); text-decoration: none; }
-.theme-standby .wk div[data-has=false] u { background: transparent; }
-.theme-standby .wk div[data-sun=true] b { color: var(--sb-red); }
-.theme-standby .memo .li { font-size: 23px; padding: 5px 0; display: flex; gap: 12px; align-items: center; }
-.theme-standby .memo .li::before { content: ""; width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--sb-circle); flex: none; }
+.theme-standby .wk { display: grid; grid-template-rows: repeat(4, 26px); grid-auto-flow: column; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--sb-track); }
+.theme-standby .wk .cell:nth-child(1) { grid-column: 1; grid-row: 1; }
+.theme-standby .wk .cell:nth-child(2) { grid-column: 1; grid-row: 2; }
+.theme-standby .wk .cell:nth-child(3) { grid-column: 1; grid-row: 3; }
+.theme-standby .wk .cell:nth-child(4) { grid-column: 1; grid-row: 4; }
+.theme-standby .wk .cell:nth-child(5) { grid-column: 2; grid-row: 1; }
+.theme-standby .wk .cell:nth-child(6) { grid-column: 2; grid-row: 2; }
+.theme-standby .wk .cell:nth-child(7) { grid-column: 2; grid-row: 3; }
+.theme-standby .wk .cell { display: flex; align-items: center; gap: 6px; height: 26px; min-width: 0; font-size: 14px; }
+.theme-standby .wk .cell b.d { flex: none; font-size: 14px; font-weight: 700; color: var(--sb-ink); min-width: 14px; }
+.theme-standby .wk .cell[data-sun=true] b.d { color: var(--sb-red); }
+.theme-standby .wk .cell .t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--sb-sub); }
+.theme-standby .wk .cell[data-has=true] .t { color: var(--sb-ink); font-weight: 500; }
+.theme-standby .wk .cell .w { flex: none; font-size: 11.5px; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .wk .cell .m { flex: none; font-size: 11.5px; font-weight: 600; color: var(--sb-sub); white-space: nowrap; }
+.theme-standby .memo .li { font-size: 21px; padding: 3px 0; display: flex; gap: 10px; align-items: center; }
+.theme-standby .memo .li::before { content: ""; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--sb-circle); flex: none; }
 .theme-standby .memo .li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
-.theme-standby .memo .more { padding-left: 28px; }
+.theme-standby .memo .more { padding-left: 24px; }
 
 .theme-standby .dot { position: absolute; left: 22px; bottom: 20px; width: 7px; height: 7px; border-radius: 50%; background: var(--sb-ok); transition: background .6s; }
 .theme-standby .dot[data-h=net] { background: #e0a030; }
@@ -115,24 +128,31 @@
 .theme-standby[lang=en] .wx .side { font-size: 18px; }
 .theme-standby[lang=en] .flag { font-size: 15px; padding: 5px 10px 5px 8px; }
 .theme-standby[lang|=zh] { line-height: 1.3; }   /* Noto 기본 줄 높이가 높아 일정 칸이 넘치지 않게 */
+.theme-standby[lang|=zh] .ev { padding: 4px 0; }
+.theme-standby[lang|=zh] .wk { grid-template-rows: repeat(4, 25px); padding-top: 6px; }
+.theme-standby[lang|=zh] .wk .cell { height: 25px; }
 
-/* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록. 2명 이상은 2열 격자(일정 칸과 높이를 나눠 쓰는 자리라 가로로 펼침) */
-.theme-standby .gh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; }
-.theme-standby .gn { font-size: 14px; font-weight: 600; color: var(--sb-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+/* 메모 묶음 — 이름표 줄(이름 ··· '외 n건')과 목록 */
+.theme-standby .gh { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; min-width: 0; margin-bottom: 2px; }
+.theme-standby .gn { font-size: 14px; font-weight: 700; color: var(--sb-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .theme-standby .gp { font-size: 13px; color: var(--sb-sub); flex: none; white-space: nowrap; }
-.theme-standby .gm { font-size: 16px; color: var(--sb-sub); padding: 2px 0 0 28px; }
+.theme-standby .gm { font-size: 15px; color: var(--sb-sub); padding: 2px 0 0 25px; }
 .theme-standby .gl { min-width: 0; }
-.theme-standby .mg + .mg { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--sb-track); }
-.theme-standby .mm:not([data-g="1"]) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.theme-standby .mm:not([data-g="1"]) .mg { min-width: 0; }
-.theme-standby .mm:not([data-g="1"]) .mg + .mg { margin-top: 0; padding-top: 0; border-top: 0; }
-.theme-standby .mm:not([data-g="1"]) .mg:nth-child(odd) { padding-right: 16px; }
-.theme-standby .mm:not([data-g="1"]) .mg:nth-child(even) { padding-left: 16px; border-left: 1px solid var(--sb-track); }
-.theme-standby .mm:not([data-g="1"]) .mg:nth-child(n+3) { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--sb-track); }
-/* 메모 칸은 일정 칸과 높이를 나눠 쓰므로 줄을 줄임 */
-.theme-standby .mm:not([data-g="1"]) .li { font-size: 18px; padding: 2px 0; gap: 8px; }
-.theme-standby .mm:not([data-g="1"]) .li::before { width: 13px; height: 13px; border-width: 1.5px; }
-.theme-standby .mm:not([data-g="1"]) .mg:nth-child(odd) { padding-right: 12px; }
-.theme-standby .mm:not([data-g="1"]) .mg:nth-child(even) { padding-left: 12px; }
-.theme-standby .mm[data-c="1"] .li { font-size: 17px; padding: 1px 0; }
+
+/* 2명 묶음: 세로로 쌓음 (전체 너비, 그룹당 최대 3개, 그룹 간 얇은 구분선) */
+.theme-standby .mm[data-g="2"] .mg + .mg { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--sb-track); }
+.theme-standby .mm[data-g="2"] .li { font-size: 18.5px; padding: 2px 0; gap: 8px; }
+.theme-standby .mm[data-g="2"] .li::before { width: 13px; height: 13px; border-width: 1.5px; }
+
+/* 3~4명 묶음: 2×2 격자 유지 */
+.theme-standby .mm[data-c="1"] { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.theme-standby .mm[data-c="1"] .mg { min-width: 0; }
+.theme-standby .mm[data-c="1"] .mg + .mg { margin-top: 0; padding-top: 0; border-top: 0; }
+.theme-standby .mm[data-c="1"] .mg:nth-child(odd) { padding-right: 12px; }
+.theme-standby .mm[data-c="1"] .mg:nth-child(even) { padding-left: 12px; border-left: 1px solid var(--sb-track); }
+.theme-standby .mm[data-c="1"] .mg:nth-child(n+3) { margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--sb-track); }
+.theme-standby .mm[data-c="1"] .li { font-size: 16.5px; padding: 1.5px 0; gap: 7px; }
+.theme-standby .mm[data-c="1"] .li::before { width: 12px; height: 12px; border-width: 1.5px; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who(.w)와 메모 묶음(.mg/.gh/.gn/.gp/.gl/.gm) 모양 | docs/v1.4-people-brief.md */
+/* 개정 기록 | 2026-11-15 | whoKind(data-kind) 알약 스타일 및 주간 7칸 요일+일정 알약 스타일 적용 | 사용자 요청 */
+/* 개정 기록 | 2026-11-15 | 디자이너 검토 반영: 주간 2열 목록화 및 2명 메모 수직 적층(전폭) | 사용자 요청 */

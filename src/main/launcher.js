@@ -69,5 +69,11 @@ async function launchSlot(slot, browser, shell) {
   }
 }
 
-module.exports = { launchSlot, findBrowser, parseRegDefault, isWebUrl };
+function decideLaunch({ rememberedAlive, isMinimized } = {}) {
+  if (rememberedAlive) return 'focus-existing';
+  return 'launch';
+}
+
+module.exports = { launchSlot, findBrowser, parseRegDefault, isWebUrl, decideLaunch };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §6 실행·복귀
+// 개정 기록 | 2026-11-15 | decideLaunch 순수 함수 노출 | 사용자 요청

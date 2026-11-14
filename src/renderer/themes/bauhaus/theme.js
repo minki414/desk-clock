@@ -99,15 +99,15 @@
     // 일정
     var today = m.today.slice(0, 4);
     K.pool(R.ev, today.length, function (par) { var r = K.el('div', 'ev', par); return { root: r, t: K.el('span', 't', r), n: K.nameCell(r) }; })
-      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.setName(it.n, e.title, e.who); K.attr(it.root, 'data-st', e.state); });
+      .forEach(function (it, i) { var e = today[i]; if (!e) return; K.text(it.t, e.time); K.setName(it.n, e.title, e.who, e.whoKind); K.attr(it.root, 'data-st', e.state); });
     K.hide(R.eNone, today.length > 0); K.hide(R.eMore, !m.todayMore); K.text(R.eMore, m.L.todayMore);
 
     // 이번 주(내일부터, 일정 있는 날만)
     var wk = m.week.filter(function (x) { return x.first; });
-    K.pool(R.wk, wk.length, function (par) { var r = K.el('div', 'wk', par); return { root: r, d: K.el('b', '', r), n: K.el('span', 'n', r), c: K.el('em', '', r) }; })
+    K.pool(R.wk, wk.length, function (par) { var r = K.el('div', 'wk', par); return { root: r, d: K.el('b', '', r), n: K.el('span', 'n', r), w: K.el('span', 'w', r), c: K.el('em', '', r) }; })
       .forEach(function (it, i) {
         var x = wk[i]; if (!x) return;
-        K.text(it.d, x.dow); K.text(it.n, x.first); K.attr(it.root, 'data-sun', x.isSunday || x.isHoliday);
+        K.text(it.d, x.dow); K.text(it.n, x.first); K.text(it.w, x.firstWho || ''); K.hide(it.w, !x.firstWho); K.attr(it.root, 'data-sun', x.isSunday || x.isHoliday);
         K.text(it.c, x.count > 1 ? '+' + (x.count - 1) : ''); K.hide(it.c, x.count < 2);
       });
     K.hide(R.kNone, wk.length > 0);
@@ -134,3 +134,4 @@
 // 개정 기록 | 2026-11-11 | v1 | 시안 a2 이식 | 모델 기반 렌더, 초침 1초 튕김(CSS transition), 변경된 부분만 갱신
 // 개정 기록 | 2026-11-11 | v1.3 | 언어 전환: 고정 문구·날짜·'외 n건'을 모델(m.L, m.date*)에서 받음, 테마 이름 제거 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 제목 뒤 who, 메모를 묶음(memoGroups)으로 그림 | docs/v1.4-people-brief.md
+// 개정 기록 | 2026-11-15 | setName에 e.whoKind 전달 | 사용자 요청

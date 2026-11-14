@@ -145,6 +145,11 @@
 #drawer .prow .btns { flex: none; flex-wrap: nowrap; }
 #drawer .plist { display: flex; flex-direction: column; gap: 2px; padding-left: 2px; }
 #drawer .plist .sub { margin: 0 0 2px; }
+#drawer .cal-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+#drawer .cal-item .check { flex: 1; min-width: 0; }
+#drawer .cal-item .cal-shared { flex: none; font-size: 13px; color: var(--sub); }
+#drawer .shared-label-row input { max-width: 140px; text-align: right; }
 #drawer .pfoot { display: flex; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--line); }
 #drawer .btn:disabled { opacity: .4; cursor: default; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭 사람 카드 모양 */
+/* 개정 기록 | 2026-11-15 | 캘린더별 공유 체크 및 sharedLabel 행 모양 | 사용자 요청 */
