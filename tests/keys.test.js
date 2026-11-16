@@ -96,14 +96,16 @@ test('동작 중: Space·NumpadMultiply 일시정지/재개, Enter 초기화', (
   assert.deepEqual(types(r), ['timer.cancel']);
 });
 
-test('슬롯 실행: 단축키 켜짐일 때만, 반복·1.5초 내 중복 무시', () => {
-  let r = route(initial(), key('Numpad3'));
+test('슬롯 실행: 단축키 켜짐일 때만 전달하고 e.repeat은 무시', () => {
+  const initialState = initial();
+  let r = route(initialState, key('Numpad3'));
   assert.deepEqual(r.actions, [{ type: 'launch', slot: 3 }]);
-  // 같은 슬롯 1.5초 안
-  assert.deepEqual(route(r.state, key('Numpad3', { t: 11000 })).actions, []);
+  // 실행 시각은 메인에서 판단하므로 독립된 키 누름은 모두 전달
+  assert.deepEqual(route(r.state, key('Numpad3', { t: 11000 })).actions, [{ type: 'launch', slot: 3 }]);
+  assert.equal(r.state, initialState);
   // 다른 슬롯은 허용
   assert.deepEqual(types(route(r.state, key('Numpad4', { t: 10100 }))), ['launch']);
-  // 1.5초 이후 허용
+  // 나중의 독립된 입력도 메인으로 전달
   assert.deepEqual(types(route(r.state, key('Numpad3', { t: 11500 }))), ['launch']);
   // e.repeat 무시
   assert.deepEqual(route(initial(), key('Numpad3', { repeat: true })).actions, []);
@@ -117,15 +119,6 @@ test('슬롯 실행: 단축키 켜짐일 때만, 반복·1.5초 내 중복 무�
 test('타이머가 도는 동안에도 슬롯 실행 가능, 수정키는 무시', () => {
   assert.deepEqual(types(route({ ...initial(), phase: 'running' }, key('Numpad2'))), ['launch']);
   assert.deepEqual(route(initial(), key('Numpad2', { alt: true })).actions, []);
-});
-
-test('같은 슬롯은 다른 슬롯이 끼어들어도 1.5초 내 재실행 안 함', () => {
-  let s = initial(), launches = [];
-  for (const [code, t] of [['Numpad1', 0], ['Numpad2', 100], ['Numpad1', 200], ['Numpad1', 1700]]) {
-    const r = route(s, { code, t }); s = r.state;
-    launches.push(...r.actions.filter((a) => a.type === 'launch').map((a) => a.slot));
-  }
-  assert.deepEqual(launches, [1, 2, 1]);
 });
 
 test('볼륨 +/−: 단축키 켜짐이면 volume 액션, 꾹 누름(repeat)도 허용', () => {
@@ -189,3 +182,5 @@ test('KeyN: 야간 강제 토글, 서랍·입력·울림 중 무시, 단축키 �
   assert.equal(route(init, key('KeyN', { alt: true })).state, init);
   assert.equal(route(init, key('KeyN', { repeat: true })).state, init);
 });
+
+// 개정 기록 | 2026-11-16 | 슬롯 중복 실행 판정을 메인으로 통합 | 사용자 요청

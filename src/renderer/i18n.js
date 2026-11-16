@@ -7,6 +7,17 @@
   else root.ClockI18n = api;
 })(typeof self !== 'undefined' ? self : this, function () {
   const ko = {
+    'ui.customHotkeys': '사용자 단축키', 'ui.customNone': '지정 안 함',
+    'ui.customNote': '여기서 정한 단축키는 다른 프로그램을 쓰는 중에도 동작하며, 그 프로그램의 같은 단축키는 시계가 켜져 있는 동안 동작하지 않습니다.',
+    'ui.customAdd': '+ 단축키 추가', 'ui.customDelete': '삭제',
+    'ui.customTaken': '다른 프로그램이 이미 쓰는 조합입니다', 'ui.customDup': '위의 단축키와 같은 조합입니다',
+    'ui.customInvalid': 'Ctrl·Alt·Win과 함께 누르거나 F1~F24를 쓰세요',
+    'ui.customCloseWarning': '시계를 뺀 모든 창에 닫기를 요청합니다(저장 안 한 문서는 각 앱이 묻습니다)',
+    'ui.action.return': '시계로 돌아오기', 'ui.action.minimizeOthers': '시계 외 모든 창 최소화', 'ui.action.closeOthers': '시계 외 모든 창 닫기',
+    'ui.action.volumeUp': '볼륨 올리기', 'ui.action.volumeDown': '볼륨 내리기', 'ui.action.mute': '음소거 켜기/끄기',
+    'ui.action.playPause': '재생/일시정지', 'ui.action.nextTrack': '다음 곡', 'ui.action.prevTrack': '이전 곡',
+    'ui.action.slot': '슬롯 실행', 'ui.action.timer': '타이머 열기', 'ui.action.night': '야간 모드 전환', 'ui.action.fullscreen': '전체화면 켜기/끄기', 'ui.action.screenOff': '화면 끄기',
+    'toast.minimized': '창 {n}개를 내렸습니다', 'toast.closed': '창 {n}개에 닫기를 요청했습니다', 'toast.hotkeyFail': '단축키 실행 실패',
     'status.expired': '구글 로그인 만료 · 설정에서 다시 로그인', 'ui.gExpired': '로그인 만료 — 다시 로그인해 주세요', 'ui.gReconnect': '다시 로그인',
     'ui.fullscreenOff': '전체화면 끄기(작업 표시줄 보기)', 'ui.fullscreenOn': '전체화면으로',
     'ui.returnHotkey': '시계로 돌아오기',
@@ -72,6 +83,17 @@
   };
 
   const zh = {
+    'ui.customHotkeys': '自定义快捷键', 'ui.customNone': '未设置',
+    'ui.customNote': '这里设置的快捷键在使用其他程序时也会生效；时钟运行期间，其他程序的相同快捷键将不可用。',
+    'ui.customAdd': '+ 添加快捷键', 'ui.customDelete': '删除',
+    'ui.customTaken': '其他程序已使用此组合', 'ui.customDup': '与上面的快捷键组合相同',
+    'ui.customInvalid': '请配合 Ctrl、Alt 或 Win，或使用 F1~F24',
+    'ui.customCloseWarning': '请求关闭时钟以外的所有窗口（未保存的文档由各应用询问）',
+    'ui.action.return': '返回时钟', 'ui.action.minimizeOthers': '最小化时钟以外的所有窗口', 'ui.action.closeOthers': '关闭时钟以外的所有窗口',
+    'ui.action.volumeUp': '增大音量', 'ui.action.volumeDown': '减小音量', 'ui.action.mute': '静音开关',
+    'ui.action.playPause': '播放/暂停', 'ui.action.nextTrack': '下一曲', 'ui.action.prevTrack': '上一曲',
+    'ui.action.slot': '运行槽位', 'ui.action.timer': '打开计时器', 'ui.action.night': '切换夜间模式', 'ui.action.fullscreen': '切换全屏', 'ui.action.screenOff': '关闭屏幕',
+    'toast.minimized': '已最小化 {n} 个窗口', 'toast.closed': '已请求关闭 {n} 个窗口', 'toast.hotkeyFail': '快捷键执行失败',
     'status.expired': 'Google 登录已过期 · 请在设置中重新登录', 'ui.gExpired': '登录已过期 — 请重新登录', 'ui.gReconnect': '重新登录',
     'ui.fullscreenOff': '退出全屏（显示任务栏）', 'ui.fullscreenOn': '进入全屏',
     'ui.returnHotkey': '返回时钟',
@@ -130,6 +152,17 @@
   };
 
   const en = {
+    'ui.customHotkeys': 'Custom shortcuts', 'ui.customNone': 'Not set',
+    'ui.customNote': 'These shortcuts work while using other programs. While the clock is running, the same shortcuts in those programs will be unavailable.',
+    'ui.customAdd': '+ Add shortcut', 'ui.customDelete': 'Delete',
+    'ui.customTaken': 'Another program is already using this combination', 'ui.customDup': 'Same combination as a shortcut above',
+    'ui.customInvalid': 'Use Ctrl, Alt or Win, or an unmodified F1–F24 key',
+    'ui.customCloseWarning': 'Requests closing all windows except the clock (each app asks about unsaved documents)',
+    'ui.action.return': 'Return to the clock', 'ui.action.minimizeOthers': 'Minimize all other windows', 'ui.action.closeOthers': 'Close all other windows',
+    'ui.action.volumeUp': 'Volume up', 'ui.action.volumeDown': 'Volume down', 'ui.action.mute': 'Toggle mute',
+    'ui.action.playPause': 'Play/pause', 'ui.action.nextTrack': 'Next track', 'ui.action.prevTrack': 'Previous track',
+    'ui.action.slot': 'Run slot', 'ui.action.timer': 'Open timer', 'ui.action.night': 'Toggle night mode', 'ui.action.fullscreen': 'Toggle fullscreen', 'ui.action.screenOff': 'Turn screen off',
+    'toast.minimized': 'Minimized {n} windows', 'toast.closed': 'Requested closing {n} windows', 'toast.hotkeyFail': 'Shortcut failed',
     'status.expired': 'Google sign-in expired · Sign in again in settings', 'ui.gExpired': 'Sign-in expired — please sign in again', 'ui.gReconnect': 'Sign in again',
     'ui.fullscreenOff': 'Exit fullscreen (show taskbar)', 'ui.fullscreenOn': 'Enter fullscreen',
     'ui.returnHotkey': 'Return to the clock',
@@ -282,3 +315,5 @@
 // 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 사용자 단축키 목록 UI 3언어 | 사용자 요청

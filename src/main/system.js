@@ -129,8 +129,63 @@ function createDimmer({ getSettings, setDim, onOverlay }) {
   return { tick, setForced, restoreSync, start() { tick(); iv = setInterval(tick, 60 * 1000); }, stop() { clearInterval(iv); } };
 }
 
-module.exports = { volume, sendCombo, createHealth, checkHealth, serverStates, createDimmer, readBrightness };
+const SHELL_CLASSES = new Set(['Progman', 'WorkerW', 'Shell_TrayWnd', 'Shell_SecondaryTrayWnd', 'Windows.UI.Core.CoreWindow']);
+function pickOtherWindows(list, selfPid, { excludeMinimized = false } = {}) {
+  return list.filter((w) => w.visible && !w.owned && !w.toolWindow && !w.cloaked &&
+    typeof w.title === 'string' && w.title.trim() && w.pid !== selfPid && !SHELL_CLASSES.has(w.cls) && (!excludeMinimized || !w.minimized));
+}
+let windowsApi;
+function loadWindows() {
+  if (windowsApi) return windowsApi;
+  const koffi = require('koffi'), user32 = koffi.load('user32.dll'), dwm = koffi.load('dwmapi.dll');
+  const callback = koffi.proto('int __stdcall ClockEnumWindows(uintptr_t hwnd, intptr_t param)');
+  const enumerate = user32.func('int __stdcall EnumWindows(ClockEnumWindows *callback, intptr_t param)');
+  const visible = user32.func('int __stdcall IsWindowVisible(uintptr_t hwnd)');
+  const owner = user32.func('uintptr_t __stdcall GetWindow(uintptr_t hwnd, uint32_t cmd)');
+  const style = user32.func('intptr_t __stdcall GetWindowLongPtrW(uintptr_t hwnd, int index)');
+  const pid = user32.func('uint32_t __stdcall GetWindowThreadProcessId(uintptr_t hwnd, _Out_ uint32_t *pid)');
+  const title = user32.func('int __stdcall GetWindowTextW(uintptr_t hwnd, _Out_ uint16_t *text, int count)');
+  const cls = user32.func('int __stdcall GetClassNameW(uintptr_t hwnd, _Out_ uint16_t *text, int count)');
+  const iconic = user32.func('int __stdcall IsIconic(uintptr_t hwnd)');
+  const cloak = dwm.func('int32_t __stdcall DwmGetWindowAttribute(uintptr_t hwnd, uint32_t attr, _Out_ uint32_t *value, uint32_t size)');
+  const post = user32.func('int __stdcall PostMessageW(uintptr_t hwnd, uint32_t msg, uintptr_t wparam, intptr_t lparam)');
+  const readText = (fn, hwnd, size) => { const buf = new Uint16Array(size); const n = fn(hwnd, buf, size); return String.fromCharCode(...buf.subarray(0, Math.max(0,n))); };
+  windowsApi = { post, list() {
+    const list = []; let error;
+    const cb = koffi.register((hwnd) => {
+      try {
+        const processId = new Uint32Array(1), cloaked = new Uint32Array(1);
+        pid(hwnd, processId);
+        const hr = cloak(hwnd, 14, cloaked, 4);
+        list.push({ hwnd, pid: processId[0], cls: readText(cls,hwnd,256), title: readText(title,hwnd,32768),
+          visible: !!visible(hwnd), owned: !!owner(hwnd,4), toolWindow: !!(Number(style(hwnd,-20)) & 0x80),
+          cloaked: hr !== 0 || !!cloaked[0], minimized: !!iconic(hwnd) });
+        return 1;
+      } catch (e) { error = e; return 0; }
+    }, koffi.pointer(callback));
+    try { if (!enumerate(cb,0) && !error) throw new Error('EnumWindows'); if (error) throw error; }
+    finally { koffi.unregister(cb); }
+    return list;
+  } };
+  return windowsApi;
+}
+function affectOtherWindows(action, selfPid, native = loadWindows()) {
+  const windows = pickOtherWindows(native.list(), selfPid, { excludeMinimized: action === 'minimizeOthers' });
+  let n = 0;
+  for (const w of windows) if (native.post(w.hwnd, action === 'minimizeOthers' ? 0x112 : 0x10, action === 'minimizeOthers' ? 0xf020 : 0, 0)) n++;
+  return n;
+}
+function screenOff(native = loadWindows()) { if (!native.post(0xffff,0x112,0xf170,2)) throw new Error('PostMessageW'); }
+function mediaKey(action, event) {
+  const vk = { mute:0xad, playPause:0xb3, nextTrack:0xb0, prevTrack:0xb1 }[action];
+  if (!vk) return;
+  const send = event || loadKeybd();
+  if (!send) throw new Error('keybd_event');
+  send(vk,0,0,0); send(vk,0,KEYUP,0);
+}
+module.exports = { volume, sendCombo, createHealth, checkHealth, serverStates, createDimmer, readBrightness, pickOtherWindows, affectOtherWindows, screenOff, mediaKey };
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §1 볼륨·상태 점, §8 야간 감광
 // 개정 기록 | 2026-11-11 | v1.2 | serverStates 추가 | 설정창 감시 서버 행별 상태 점
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청: sendCombo(키 조합 전송) 추가
 // 개정 기록 | 2026-11-15 | dimmer 야간 강제(setForced) 지원 | 사용자 요청
+// 개정 기록 | 2026-11-16 | 창 선택·비동기 창 요청·미디어 키·화면 끄기 | 사용자 요청

@@ -156,5 +156,16 @@
 
 #drawer .sdot.expired { background: #e8a33d; }
 #drawer .person .hint { overflow-wrap: anywhere; }
+#drawer .custom-entry { padding: 10px 0; border-top: 1px solid var(--line); }
+#drawer .custom-row { display: flex; gap: 6px; align-items: center; min-width: 0; }
+#drawer .custom-row select { font-size: 12px; padding: 5px 4px; height: 30px; }
+#drawer .custom-action { flex: 1; min-width: 0; }
+#drawer .custom-slot { flex: 0 0 42px; width: 42px; }
+#drawer .custom-rec { flex: 0 1 auto; min-width: 0; gap: 6px; }
+#drawer .custom-rec .kv { width: max-content; max-width: 160px; min-width: 45px; padding: 3px 5px; }
+#drawer .custom-row .btn { flex: none; padding: 0 7px; font-size: 12px; }
+#drawer .custom-state:empty { display: none; }
+#drawer .custom-hotkeys > .btn { margin-top: 10px; }
+/* 개정 기록 | 2026-11-16 | 520px 사용자 단축키 목록 레이아웃 | 사용자 요청 */
 
 /* // 개정 기록 | 2026-11-16 | 만료 경고 점과 계정 표시 | 사용자 요청 */

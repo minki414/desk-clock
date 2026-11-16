@@ -2,7 +2,20 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { parseCombo, formatCombo } = require('../renderer/keycombo.js');
-const normReturn = (v) => v === '' ? '' : parseCombo(v) ? formatCombo(v) : 'Ctrl+H';
+const HOTKEY_ACTIONS = ['return', 'minimizeOthers', 'closeOthers', 'volumeUp', 'volumeDown', 'mute', 'playPause', 'nextTrack', 'prevTrack', 'slot', 'timer', 'night', 'fullscreen', 'screenOff'];
+function normHotkeys(list) {
+  const out = [];
+  for (const row of Array.isArray(list) ? list.slice(0, 12) : []) {
+    if (!row || !HOTKEY_ACTIONS.includes(row.action)) continue;
+    let id = row.id;
+    if (typeof id !== 'string' || !/^h\d+$/.test(id) || out.some((x) => x.id === id)) {
+      let n = 1; while (out.some((x) => x.id === `h${n}`)) n++;
+      id = `h${n}`;
+    }
+    out.push({ id, action: row.action, arg: row.action === 'slot' ? (Number.isInteger(row.arg) && row.arg >= 1 && row.arg <= 9 ? row.arg : 1) : null, combo: formatCombo(row.combo) });
+  }
+  return out;
+}
 const { norm, t } = require('../renderer/i18n.js');
 
 const defaultSlots = () => {
@@ -55,7 +68,7 @@ function normPeople(list, lang) {
 }
 
 const defaults = () => ({
-  settingsVersion: 3,         // 기본값 바뀜을 한 번만 옛 설정에 적용하는 표식(3: 사람 목록)
+  settingsVersion: 4,         // 기본값 바뀜을 한 번만 옛 설정에 적용하는 표식(3: 사람 목록)
   lang: 'ko',                 // ko | zh | en — 화면 언어. 설정에 없으면 한국어
   theme: 'bauhaus',
   mode: 'light',              // light | dark | auto — 사용자 결정(2026-11-11): 기본 라이트
@@ -65,7 +78,7 @@ const defaults = () => ({
   minBrightness: 0,
   browser: 'brave',           // brave | chrome | edge | default
   hotkeysOn: true,
-  returnHotkey: 'Ctrl+H',
+  customHotkeys: [{ id: 'h1', action: 'return', arg: null, combo: 'Ctrl+H' }],
   autoStart: false,           // Windows 시작 시 자동 실행(portable exe에서만 적용)
   slots: defaultSlots(),
   location: { mode: 'auto', name: '', lat: null, lon: null, id: null },   // id: 지오코딩 지명 번호(언어를 바꾸면 이 번호로 이름을 다시 받음)
@@ -108,7 +121,7 @@ function createStore(dir) {
   const cFile = path.join(dir, 'cache.json');
   const saved = readJson(sFile, null);
   let settings = withDefaults(defaults(), saved);
-  settings.returnHotkey = normReturn(settings.returnHotkey);
+  settings.customHotkeys = normHotkeys(settings.customHotkeys);
   settings.lang = norm(settings.lang);   // 알 수 없는 값은 한국어로
   settings.people = normPeople(isObj(saved) && Array.isArray(saved.people) ? saved.people : settings.people, settings.lang);
   // 1회 이관: 버전 2 이전 설정은 야간 감광을 끄고 색 모드를 라이트로(옛 기본이 켬·자동이라 저장돼 있음). 감광 중이던 밝기는 dimmer.tick()이 복구
@@ -129,6 +142,11 @@ function createStore(dir) {
     try { if (!fs.existsSync(sFile + '.v2.bak')) fs.copyFileSync(sFile, sFile + '.v2.bak'); } catch { /* 백업 실패는 이관을 막지 않음 */ }
     writeAtomic(sFile, settings);
   }
+  if (isObj(saved) && ver < 4) {
+    settings.customHotkeys = saved.returnHotkey === '' ? [] : [{ id: 'h1', action: 'return', arg: null, combo: formatCombo(saved.returnHotkey) || 'Ctrl+H' }];
+    settings.settingsVersion = 4;
+    writeAtomic(sFile, settings);
+  }
   let cache = readJson(cFile, {});
   if (!isObj(cache)) cache = {};
   return {
@@ -141,7 +159,7 @@ function createStore(dir) {
       for (const k of Object.keys(p)) {
         if (!(k in settings)) continue;
         if (k === 'lang' && norm(p[k]) !== p[k]) continue;   // 지원하지 않는 언어 값은 무시
-        if (k === 'returnHotkey') { next[k] = normReturn(p[k]); continue; }
+        if (k === 'customHotkeys') { next[k] = normHotkeys(p[k]); continue; }
         if (k === 'sharedLabel') {
           next[k] = typeof p[k] === 'string' ? p[k].trim().slice(0, 6) : '';
           continue;
@@ -173,3 +191,5 @@ module.exports = { createStore, defaults, withDefaults, writeAtomic, normPeople,
 // 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | customHotkeys v4 | 사용자 요청

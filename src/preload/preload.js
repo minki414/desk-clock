@@ -10,7 +10,8 @@ contextBridge.exposeInMainWorld('clockApi', {
   launch: invoke('launch'),
   toggleFullscreen: invoke('window:toggleFullscreen'),
   onWindow: on('window'),
-  hotkeyState: invoke('hotkey:state'),
+  onCommand: on('command'),
+  hotkeyStates: invoke('hotkey:states'),
   hotkeySuspend: invoke('hotkey:suspend'),
   volume: invoke('system:volume'),
   timerStart: invoke('timer:start'),
@@ -43,3 +44,5 @@ contextBridge.exposeInMainWorld('clockApi', {
 // 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | customHotkeys 목록 배선 | 사용자 요청

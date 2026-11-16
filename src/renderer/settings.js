@@ -22,6 +22,12 @@
     let svStates = [];                 // 감시 서버별 상태(true/false/null)
     let svTimer = null, quitTimer = null, quitArmed = false, svSeq = 0;
     let stopRec = () => {};            // 진행 중인 '실행 후 보낼 키' 녹화를 끝냄(없으면 아무 일도 안 함)
+    let paintHotkeyStates = () => {};
+    async function resumeHotkeys() {
+      const states = await api.hotkeySuspend(false);
+      paintHotkeyStates(states);
+      return states;
+    }
     let paintThumbs = () => {};        // 테마 카드 썸네일을 현재 색 모드에 맞춰 다시 칠함
 
     // 작은 DOM 도우미: 속성은 가능하면 프로퍼티로, 이벤트는 on:{}로
@@ -147,30 +153,31 @@
     // 개발 판단: 녹화 중에는 document 캡처 단계에서 키를 가로채 app.js 의 키 라우팅(Esc 닫기·숫자패드 실행)에 닿지 않게 한다. 수정키만 눌린 것은 무시한다.
     function sendKeysRow(s, save, returning = false, onState = () => {}) {
       let cur = KC.formatCombo(s.sendKeys), t = null;
-      const val = h('span', { class: 'kv', textContent: cur || U('sendNone') });
-      const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === U('sendNone')); };
+      const none = U(returning ? 'customNone' : 'sendNone');
+      const val = h('span', { class: 'kv', title: cur, textContent: cur || none });
+      const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === none); };
       const rec = btn(U('sendRec'), () => (recording ? stopRec() : start()), 'sm');
-      const clear = btn(U('sendClear'), () => { stopRec(); cur = ''; show(U('sendNone')); save(returning ? { returnHotkey: '' } : { sendKeys: '' }); }, 'sm');
+      const clear = btn(U('sendClear'), () => { stopRec(); cur = ''; show(none); save(returning ? { combo: '' } : { sendKeys: '' }); }, 'sm');
       let recording = false;
-      const onKey = (e) => {
+      const onKey = async (e) => {
         e.preventDefault(); e.stopImmediatePropagation();
         if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
         if (e.key === 'Escape') return stopRec();
-        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U('sendNone')); return save(returning ? { returnHotkey: '' } : { sendKeys: '' }); }
+        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(none); return save(returning ? { combo: '' } : { sendKeys: '' }); }
         const combo = KC.comboFromEvent(e);
-        stopRec();
+        await stopRec();
         if (returning && !KC.toAccelerator(combo)) { onState('invalid'); return; }
-        if (!combo) { show(U('sendBad')); clearTimeout(t); t = setTimeout(() => show(cur || U('sendNone')), 1500); return; }
-        cur = combo; show(cur); save(returning ? { returnHotkey: cur } : { sendKeys: cur });
+        if (!combo) { show(U('sendBad')); clearTimeout(t); t = setTimeout(() => show(cur || none), 1500); return; }
+        cur = combo; show(cur); val.title = cur; save(returning ? { combo: cur } : { sendKeys: cur });
       };
       const end = () => {
         recording = false;
-        api.hotkeySuspend(false);
         document.removeEventListener('keydown', onKey, true);
         rec.removeEventListener('blur', end);
         rec.setAttribute('aria-pressed', 'false'); rec.textContent = U('sendRec');
-        val.classList.remove('wait'); show(cur || U('sendNone'));
+        val.classList.remove('wait'); show(cur || none);
         stopRec = () => {};
+        return resumeHotkeys();
       };
       async function start() {
         stopRec();
@@ -184,7 +191,7 @@
         show(U('sendWait')); val.classList.add('wait');
         document.addEventListener('keydown', onKey, true);
       }
-      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U(returning ? 'returnHotkey' : 'sendKeys') }), val, h('span', { class: 'grow' }), rec, clear);
+      return returning ? h('div', { class: 'l4 custom-rec' }, val, rec) : h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U('sendKeys') }), val, h('span', { class: 'grow' }), rec, clear);
     }
 
     function slotCard(s) {
@@ -222,15 +229,50 @@
     }
 
     function keys() {
-      const msg = hint(U('returnHotkeyNote'));
-      const state = (v) => { msg.textContent = U(v === 'taken' ? 'returnHotkeyTaken' : v === 'invalid' ? 'returnHotkeyInvalid' : 'returnHotkeyNote'); };
-      api.hotkeyState().then(state);
       return [
-        h('section', { class: 'field stack' }, sendKeysRow({ sendKeys: S.returnHotkey }, async (p) => { await set(p); state(await api.hotkeyState()); }, true, state), msg),
+        customHotkeys(),
         field(U('hotkeys'), U('hotkeysNote'), (c) => toggle(S.hotkeysOn, (v) => c({ hotkeysOn: v }), U('hotkeys')), { inline: true }),
         field(U('browser'), '', (c) => seg([['brave', 'Brave'], ['chrome', 'Chrome'], ['edge', 'Edge'], ['default', U('browser.default')]], S.browser, (v) => c({ browser: v }), U('browser')), { cls: 'stack' }),
         h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('slots') }))), h('div', { class: 'slots' }, S.slots.map(slotCard))),
       ];
+    }
+
+    function customHotkeys() {
+      const actions = ['return', 'minimizeOthers', 'closeOthers', 'volumeUp', 'volumeDown', 'mute', 'playPause', 'nextTrack', 'prevTrack', 'slot', 'timer', 'night', 'fullscreen', 'screenOff'];
+      const messages = {};
+      paintHotkeyStates = (states) => {
+        for (const [id, node] of Object.entries(messages)) {
+          const key = { taken: 'customTaken', dup: 'customDup', invalid: 'customInvalid' }[states[id]];
+          node.textContent = key ? U(key) : '';
+        }
+      };
+      const refreshStates = async () => paintHotkeyStates(await api.hotkeyStates());
+      const save = async (id, patch) => {
+        await set({ customHotkeys: S.customHotkeys.map((entry) => entry.id === id ? { ...entry, ...patch } : entry) });
+        await refreshStates();
+      };
+      const rows = S.customHotkeys.map((entry) => {
+        const msg = h('p', { class: 'hint custom-state', role: 'status' });
+        messages[entry.id] = msg;
+        const action = h('select', { class: 'custom-action', 'aria-label': U('customHotkeys'), on: { change: async (e) => {
+          stopRec(); await save(entry.id, { action: e.target.value, arg: e.target.value === 'slot' ? 1 : null }); render();
+        } } }, actions.map((id) => h('option', { value: id, selected: entry.action === id, textContent: U(`action.${id}`) })));
+        action.title = U(`action.${entry.action}`);
+        const slot = entry.action === 'slot' ? h('select', { class: 'custom-slot', 'aria-label': U('action.slot'), on: { change: (e) => save(entry.id, { arg: Number(e.target.value) }) } },
+          Array.from({length:9}, (_, i) => h('option', { value: i + 1, selected: entry.arg === i + 1, textContent: i + 1 }))) : null;
+        const rec = sendKeysRow({ sendKeys: entry.combo }, (patch) => save(entry.id, patch), true, () => { msg.textContent = U('customInvalid'); });
+        const del = btn(U('customDelete'), async () => { stopRec(); await set({customHotkeys:S.customHotkeys.filter((x) => x.id !== entry.id)}); render(); }, 'sm');
+        return h('div', { class: 'custom-entry', 'data-id': entry.id }, h('div', { class: 'custom-row' }, action, slot, rec, del), msg,
+          entry.action === 'closeOthers' ? hint(U('customCloseWarning')) : null);
+      });
+      const add = btn(U('customAdd'), async () => {
+        stopRec(); if (S.customHotkeys.length >= 12) return;
+        let n = 1; while (S.customHotkeys.some((x) => x.id === `h${n}`)) n++;
+        await set({customHotkeys:[...S.customHotkeys,{id:`h${n}`,action:'return',arg:null,combo:''}]}); render();
+      }, 'wide');
+      add.disabled = S.customHotkeys.length >= 12;
+      refreshStates();
+      return h('section', { class: 'field stack custom-hotkeys' }, h('div', { class:'fh' }, h('span', { class:'fn', textContent:U('customHotkeys') }), hint(U('customNote'))), rows, add);
     }
 
     // ----- 탭: 연결 -----
@@ -510,3 +552,7 @@
 // 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 만료 설정 푸시 즉시 카드 갱신과 오래된 목록 제거 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 사용자 단축키 목록 UI 3언어 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 감사 후속: 상태 복구와 반복 실행 제한 | 사용자 요청

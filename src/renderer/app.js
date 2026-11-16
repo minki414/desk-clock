@@ -200,6 +200,10 @@
 
   // ----- 메인에서 오는 갱신 -----
   api.onData((d) => { D = d; render(); });
+  api.onCommand((c) => {
+    const r = K.command(ks, c.type);
+    ks = r.state; r.actions.forEach(run); syncRing(); render();
+  });
   api.onTimer((s) => {
     T = s;
     if (s.phase !== 'idle') ks = { ...ks, phase: s.phase };
@@ -237,6 +241,7 @@
     loop();
   });
 })();
+// 개정 기록 | 2026-11-16 | 전역 단축키 렌더러 명령 처리 | 사용자 요청
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §2·§3·§9: 초 경계 정렬 렌더, 테마 계약 모델
 // 개정 기록 | 2026-11-11 | v1.2 | fit(): 스테이지 너비를 화면 비율로 가변(1200~1800) | docs/v1.2-brief.md §1
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: 전역 0번 수신 제거, volume 액션 실행

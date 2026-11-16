@@ -5,10 +5,15 @@
   if (typeof module === 'object' && module.exports) module.exports = api;
   else root.ClockKeys = api;
 })(typeof self !== 'undefined' ? self : this, function (P) {
-  const DUP_MS = 1500;
   const STOP = ['Enter', 'NumpadEnter', 'Space', 'NumpadMultiply', 'Numpad0'];
 
-  const initial = () => ({ settingsOpen: false, hotkeysOn: true, phase: 'hidden', input: '', lastAt: {}, forcedNight: false });
+  const initial = () => ({ settingsOpen: false, hotkeysOn: true, phase: 'hidden', input: '', forcedNight: false });
+  function transition(state, type) {
+    if (state.settingsOpen) return { state, actions: [] };
+    if (type === 'timerOpen' && state.phase === 'hidden') return { state: { ...state, phase: 'input', input: '' }, actions: [] };
+    if (type === 'nightToggle') return { state: { ...state, forcedNight: !state.forcedNight }, actions: [{ type: 'night.toggle', on: !state.forcedNight }] };
+    return { state, actions: [] };
+  }
 
   function route(state, k) {
     const same = { state, actions: [] };
@@ -62,22 +67,19 @@
     if (k.repeat) return same;
     const slot = /^Numpad([1-9])$/.exec(code);
     if (slot && state.hotkeysOn) {
-      const n = Number(slot[1]);
-      // 슬롯마다 따로 기억: 1→2→1처럼 끼어들어도 같은 슬롯 1.5초 내 재실행 차단(감사 지적)
-      if (state.lastAt[n] != null && k.t - state.lastAt[n] < DUP_MS) return same;
-      return out({ lastAt: { ...state.lastAt, [n]: k.t } }, { type: 'launch', slot: n });
+      return { state, actions: [{ type: 'launch', slot: Number(slot[1]) }] };
     }
-    if ((code === 'KeyT' || code === 'NumpadDivide') && state.phase === 'hidden') return out({ phase: 'input', input: '' });
-    if (code === 'KeyN') {
-      const nextForced = !state.forcedNight;
-      return out({ forcedNight: nextForced }, { type: 'night.toggle', on: nextForced });
-    }
+    if (code === 'KeyT' || code === 'NumpadDivide') return transition(state, 'timerOpen');
+    if (code === 'KeyN') return transition(state, 'nightToggle');
     return same;
   }
 
-  return { initial, route };
+  const command = (state, type) => route(state, { code: { timerOpen: 'KeyT', nightToggle: 'KeyN' }[type] });
+  return { initial, route, command };
 });
 // 개정 기록 | 2026-11-11 | 최초 작성 | 설계서 §4 키 라우팅
 // 개정 기록 | 2026-11-11 | 중복 실행 차단을 슬롯별로 | Codex 감사 FAIL(1→2→1 재실행) 수정
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: NumpadAdd/Subtract -> volume 액션(전역 단축키 대체)
 // 개정 기록 | 2026-11-15 | N 키 야간 강제 토글 라우팅 | 사용자 요청
+// 개정 기록 | 2026-11-16 | 전역 명령과 T·N 상태 전이 공유 | 사용자 요청
+// 개정 기록 | 2026-11-16 | 슬롯 중복 판정을 메인 공통 실행 경로로 통합 | 사용자 요청

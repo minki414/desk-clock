@@ -52,7 +52,7 @@
 
   function toAccelerator(str) {
     const p = parseCombo(str);
-    if (!p || !p.mods.some((m) => [0x11, 0x12, 0x5b].includes(m))) return null;
+    if (!p || (!p.mods.some((m) => [0x11, 0x12, 0x5b].includes(m)) && !(p.mods.length === 0 && p.key >= 0x70 && p.key <= 0x87))) return null;
     const names = { Ctrl: 'Control', Win: 'Super', Esc: 'Escape' };
     return p.text.split('+').map((k) => names[k] || k).join('+');
   }
@@ -61,3 +61,5 @@
 // 개정 기록 | 2026-11-11 | 실행 후 키 보내기 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | customHotkeys 목록 배선 | 사용자 요청

@@ -2,7 +2,9 @@
 const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, shell, dialog, safeStorage, globalShortcut } = require('electron');
 const path = require('node:path');
 const { createStore, newPerson, MAX_PEOPLE } = require('./store');
-const { createHotkey } = require('./hotkey');
+const { createHotkeys } = require('./hotkey');
+const { createDispatcher } = require('./hotkeyActions');
+const dispatch = createDispatcher({ now: () => Date.now() });
 const { createTimer } = require('./timer');
 const { launchSlot } = require('./launcher');
 const { createForeground, shouldReturn } = require('./foreground');
@@ -86,38 +88,15 @@ function createWindow() {
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 }
 
-function wireIpc() {
-  ipcMain.handle('app:init', () => ({ settings: store.settings(), data, fullscreen: win.isFullScreen(), timer: timer.snapshot() }));
-  ipcMain.handle('settings:set', (_e, patch) => {
-    const sig = feedSig();
-    store.patch(patch && typeof patch === 'object' ? patch : {});
-    const s = patch && patch.people ? applyFlags() : store.settings();   // 연결 표시는 설정창의 낡은 값이 아니라 토큰 파일이 정본
-    if (patch && 'returnHotkey' in patch) hotkey.apply(s.returnHotkey);
-    if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
-    dimmer.tick();
-    if (patch && patch.location) sync.refresh();
-    else if (patch && 'lang' in patch) sync.refresh(['weather']);   // 날씨 지명도 새 언어로
-    if (patch && patch.people && feedSig() !== sig) sync.refresh(['calendar', 'tasks']);
-    if (patch && patch.servers) health.check();
-    send('settings', s);
-    return s;
-  });
-  ipcMain.handle('window:toggleFullscreen', () => {
-    if (win.isFullScreen()) { win.setFullScreen(false); win.maximize(); }
-    else win.setFullScreen(true);
-  });
-  ipcMain.handle('hotkey:state', () => hotkey.state());
-  ipcMain.handle('hotkey:suspend', (_e, on) => hotkey.suspend(on === true));
-  ipcMain.handle('timer:start', (_e, ms) => { if (Number.isFinite(ms) && ms > 0) timer.start(ms); });
-  ipcMain.handle('timer:pause', () => timer.pause());
-  ipcMain.handle('timer:resume', () => timer.resume());
-  ipcMain.handle('timer:cancel', () => timer.cancel());
-  // 볼륨: 시계 창이 포커스일 때 렌더러 키 라우팅이 보냄(전역 단축키 없음)
-  ipcMain.handle('system:volume', (_e, up) => system.volume(!!up));
-  ipcMain.handle('night:force', (_e, on) => dimmer.setForced(on));
-  ipcMain.handle('launch', async (_e, n, force) => {
+const slotLastAt = new Map();
+async function runSlot(n, { force = false, allowWhenDisabled = false } = {}) {
     const st = store.settings();
-    if (!st.hotkeysOn && !force) return;   // force: 설정창의 '실행해 보기'는 단축키가 꺼져 있어도 동작
+    if (!st.hotkeysOn && !force && !allowWhenDisabled) return;
+    if (!force) {
+      const now = Date.now(), previous = slotLastAt.get(n);
+      if (previous !== undefined && now - previous < 1500) return;
+      slotLastAt.set(n, now);
+    }
     foreground.cancelWait();   // 다른 슬롯을 누르면 앞 슬롯의 키 보내기 대기는 취소
     const slot = st.slots.find((x) => x.key === n);
     if (!slot || !slot.target) {
@@ -167,7 +146,40 @@ function wireIpc() {
       // 10초 안에 다른 창이 맨 앞이 되지 않으면 기억하지 않고, 상태 문장은 띄우지 않음(키 전송 실패 시만 토스트)
       if (combo) toast('toast.sendFail', { n });
     });
+}
+
+function toggleFullscreen() {
+  if (win.isFullScreen()) { win.setFullScreen(false); win.maximize(); }
+  else win.setFullScreen(true);
+}
+
+function wireIpc() {
+  ipcMain.handle('app:init', () => ({ settings: store.settings(), data, fullscreen: win.isFullScreen(), timer: timer.snapshot() }));
+  ipcMain.handle('settings:set', (_e, patch) => {
+    const sig = feedSig();
+    store.patch(patch && typeof patch === 'object' ? patch : {});
+    const s = patch && patch.people ? applyFlags() : store.settings();   // 연결 표시는 설정창의 낡은 값이 아니라 토큰 파일이 정본
+    if (patch && 'customHotkeys' in patch) hotkey.apply(s.customHotkeys);
+    if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
+    dimmer.tick();
+    if (patch && patch.location) sync.refresh();
+    else if (patch && 'lang' in patch) sync.refresh(['weather']);   // 날씨 지명도 새 언어로
+    if (patch && patch.people && feedSig() !== sig) sync.refresh(['calendar', 'tasks']);
+    if (patch && patch.servers) health.check();
+    send('settings', s);
+    return s;
   });
+  ipcMain.handle('window:toggleFullscreen', toggleFullscreen);
+  ipcMain.handle('hotkey:states', () => hotkey.states());
+  ipcMain.handle('hotkey:suspend', (_e, on) => { hotkey.suspend(on === true); return hotkey.states(); });
+  ipcMain.handle('timer:start', (_e, ms) => { if (Number.isFinite(ms) && ms > 0) timer.start(ms); });
+  ipcMain.handle('timer:pause', () => timer.pause());
+  ipcMain.handle('timer:resume', () => timer.resume());
+  ipcMain.handle('timer:cancel', () => timer.cancel());
+  // 볼륨: 시계 창이 포커스일 때 렌더러 키 라우팅이 보냄(전역 단축키 없음)
+  ipcMain.handle('system:volume', (_e, up) => system.volume(!!up));
+  ipcMain.handle('night:force', (_e, on) => dimmer.setForced(on));
+  ipcMain.handle('launch', (_e, n, force) => runSlot(n, { force }));
   ipcMain.handle('google:pickClient', async () => {
     const r = await dialog.showOpenDialog(win, { filters: [{ name: 'JSON', extensions: ['json'] }], properties: ['openFile'] });
     if (r.canceled || !r.filePaths[0]) return { ok: false, canceled: true };
@@ -247,11 +259,15 @@ if (!app.requestSingleInstanceLock()) {
     });
     wireIpc();
     foreground = createForeground(bringToFront);
-    hotkey = createHotkey({ shortcut: globalShortcut, onPress: () => {
-      if (!win || win.isDestroyed() || win.isFocused()) return;
-      foreground.cancelWait(); bringToFront();
-    } });
-    hotkey.apply(store.settings().returnHotkey);
+    hotkey = createHotkeys({ shortcut: globalShortcut, onPress: (entry) => dispatch(entry, {
+      isFocused: () => !win || win.isDestroyed() || win.isFocused(),
+      cancelWait: () => foreground.cancelWait(), bringToFront,
+      others: (action) => system.affectOtherWindows(action, process.pid),
+      volume: system.volume, media: system.mediaKey, runSlot,
+      command: (command) => send('command', command), fullscreen: toggleFullscreen,
+      screenOff: system.screenOff, toast,
+    }) });
+    hotkey.apply(store.settings().customHotkeys);
     // safeStorage의 동기 API는 폐기 예정이라 비동기 어댑터로 감쌈
     const safe = {
       available: () => safeStorage.isAsyncEncryptionAvailable(),
@@ -300,3 +316,9 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 목록·동기화·연결 계정 조회의 만료 설정을 멱등하게 반영 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | customHotkeys v4 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | customHotkeys 목록 배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 감사 후속: 상태 복구와 반복 실행 제한 | 사용자 요청
