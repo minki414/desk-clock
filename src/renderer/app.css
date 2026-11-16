@@ -6,8 +6,14 @@ body.awake, body.drawer-open { cursor: default; }
 #stage { position: absolute; left: 50%; top: 50%; width: var(--stage-w, 1440px); height: 900px; transform-origin: 0 0; overflow: hidden; }
 #toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(20, 20, 20, .82); color: #eee; font-size: 16px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 39; }
 #toast.on { opacity: 1; }
-#gear { position: fixed; right: 18px; bottom: 18px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(20, 20, 20, .6); color: #ddd; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 30; cursor: pointer; }
-body.awake #gear { opacity: 1; pointer-events: auto; }
-body.drawer-open #gear { opacity: 0; pointer-events: none; }
+#gear, #screenBtn { position: fixed; right: 18px; bottom: 18px; width: 44px; height: 44px; border: 0; border-radius: 50%; background: rgba(20, 20, 20, .6); color: #ddd; display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .3s; z-index: 30; cursor: pointer; }
+body.awake #gear, body.awake #screenBtn { opacity: 1; pointer-events: auto; }
+body.drawer-open #gear, body.drawer-open #screenBtn { opacity: 0; pointer-events: none; }
 /* 야간 감광 대체 막(WMI 밝기 조절이 안 될 때) */
 #dim { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 1s; }
+
+#screenBtn { right: auto; left: 18px; }
+#screenBtn .enter-screen, #screenBtn.windowed .exit-screen { display: none; }
+#screenBtn.windowed .enter-screen { display: block; }
+
+/* // 개정 기록 | 2026-11-16 | 톱니 대칭 전체화면 버튼 | 사용자 요청 */

@@ -89,3 +89,27 @@ test('사람별 갱신: 연결 전인 사람은 연결 필요 상태, 캘린더�
   sync.stop();
 });
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 사람별 갱신·실패 격리·옛 캐시 이어받기 시험
+
+test('expired 콜백과 정상 주기, 사람별 격리 및 만료 상태 유지', async () => {
+  const expired = [], delays = [];
+  const people = [P('p1', 'P'), P('p2', 'Q')];
+  const store = { settings: () => ({ people }), cache: () => ({}), saveCache: () => {} };
+  const data = {};
+  let phase = 0;
+  const google = { fetchEvents: async (id) => { if (id === 'p1' || phase === 1) throw Object.assign(new Error('expired'), { code: phase === 2 ? 'needAuth' : 'expired' }); return ['fresh']; } };
+  const sync = createSync({ store, data, push: () => {}, google, onExpired: (id) => { expired.push(id); people.find((p) => p.id === id).google = { expired: true }; } });
+  const realSet = global.setTimeout, realClear = global.clearTimeout;
+  global.setTimeout = (fn, ms) => { delays.push(ms); return 1; }; global.clearTimeout = () => {};
+  const settle = async () => { for (let n=0;n<15;n++) await Promise.resolve(); };
+  try {
+    sync.refresh(['calendar']); await settle();
+    assert.deepEqual(expired, ['p1']); assert.deepEqual(data.people.p2.events, ['fresh']);
+    assert.equal(data.people.p1.sync.calendar.state, 'expired');
+    phase = 1;
+    sync.refresh(['calendar']); await settle(); sync.refresh(['calendar']); await settle();
+    assert.ok(delays.every((n) => n === MIN), `정상 주기: ${delays}`);
+    phase = 2; sync.refresh(['calendar']); await settle();
+    assert.equal(data.people.p1.sync.calendar.state, 'expired');
+  } finally { sync.stop(); global.setTimeout = realSet; global.clearTimeout = realClear; }
+});
+// 개정 기록 | 2026-11-16 | 만료 콜백·주기·사람별 격리 시험 | 사용자 요청

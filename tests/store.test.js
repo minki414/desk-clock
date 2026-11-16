@@ -135,7 +135,7 @@ test('이관: 단일 구글 연결·캘린더 선택·메모 목록 → 사람 1
     assert.equal(s.theme, 'navy');
     assert.deepEqual(s.google, { hasClient: true });   // 연결·목록은 사람별로 옮김
     assert.equal(s.people.length, 1);
-    assert.deepEqual(s.people[0], { id: 'p1', name: 'User 1', google: { connected: true }, calendar: { on: true, ids: ['primary', 'fam@group'] }, tasks: { on: true, listId: 'L1' } });
+    assert.deepEqual(s.people[0], { id: 'p1', name: 'User 1', google: { connected: true, expired: false, account: '' }, calendar: { on: true, ids: ['primary', 'fam@group'] }, tasks: { on: true, listId: 'L1' } });
     assert.equal(JSON.parse(fs.readFileSync(file, 'utf8')).settingsVersion, 3);   // 저장됨
     assert.deepEqual(JSON.parse(fs.readFileSync(file + '.v2.bak', 'utf8')), old);   // 되돌릴 사본
     assert.deepEqual(createStore(dir).settings().people, s.people);   // 다시 열어도 그대로
@@ -197,3 +197,25 @@ test('공유 캘린더 설정과 sharedLabel 기본값·저장', () => {
 });
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 설정 이관(v3)·사람 목록 정리 시험
 // 개정 기록 | 2026-11-15 | sharedLabel 및 공유 캘린더 저장 단위 시험 추가 | 사용자 요청
+
+test('돌아오기 단축키 기본값과 저장·패치 정규화', () => {
+  const dir = tmpDir();
+  try {
+    const st = createStore(dir); assert.equal(st.settings().returnHotkey, 'Ctrl+H');
+    assert.equal(st.patch({ returnHotkey: 'h+ctrl' }).returnHotkey, 'Ctrl+H');
+    assert.equal(st.patch({ returnHotkey: '' }).returnHotkey, '');
+    for (const bad of [null, 5, 'bad+combo']) assert.equal(st.patch({ returnHotkey: bad }).returnHotkey, 'Ctrl+H');
+    assert.equal(st.patch({ returnHotkey: 'Shift+H' }).returnHotkey, 'Shift+H');
+    assert.equal(createStore(dir).settings().settingsVersion, 3);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+// 개정 기록 | 2026-11-16 | 돌아오기 단축키 정규화 시험 | 사용자 요청
+
+test('사람의 만료·계정 기본값과 타입·길이 정규화', () => {
+  const p = (google) => normPeople([{ id: 'p1', google }], 'ko')[0].google;
+  assert.deepEqual(p(), { connected: false, expired: false, account: '' });
+  assert.deepEqual(p({ connected: true, expired: 1, account: 'user@example.test' }), { connected: true, expired: true, account: 'user@example.test' });
+  assert.equal(p({ account: 123 }).account, '');
+  assert.equal(p({ account: 'a'.repeat(300) }).account.length, 254);
+});
+// 개정 기록 | 2026-11-16 | 구글 만료·계정 정규화 시험 | 사용자 요청

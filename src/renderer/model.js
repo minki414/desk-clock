@@ -196,7 +196,9 @@
   function buildStatus(lang, kind, people) {
     const flag = kind === 'calendar' ? 'calendarOn' : 'tasksOn';
     const list = people.filter((p) => p[flag]).map((p) => {
-      const text = I18N.statusText(lang, kind, (p.sync || {})[kind]);
+      const st = (p.sync || {})[kind];
+      const authInTasks = kind === 'tasks' && !p.calendarOn && st && st.state === 'expired';
+      const text = I18N.statusText(lang, authInTasks ? 'calendar' : kind, st);
       return text && people.length >= 2 ? I18N.t(lang, 'status.withWho', { who: p.name, text }) : text;
     }).filter(Boolean);
     return list.length ? list.join(' / ') : null;
@@ -250,3 +252,5 @@
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정 합치기·중복 제거·출처(who), 메모 묶음(memoGroups), 상태 문장에 이름, buildModel 입력을 people 로
 // 개정 기록 | 2026-11-15 | nextNightEnd 계산 및 범례 N 야간 추가, effectiveMode 야간 강제 반영 | 사용자 요청
 // 개정 기록 | 2026-11-15 | 캘린더 기반 일정 출처(공유/개인) 판정 및 sharedLabel 반영 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청

@@ -19,13 +19,14 @@ function pkcePair() {
 }
 const challengeOf = (verifier) => b64url(crypto.createHash('sha256').update(verifier).digest());
 
-function buildAuthUrl(client, { redirect, challenge, state }) {
+function buildAuthUrl(client, { redirect, challenge, state, loginHint }) {
   const u = new URL(client.auth_uri || 'https://accounts.google.com/o/oauth2/v2/auth');
   u.search = new URLSearchParams({
     client_id: client.client_id, redirect_uri: redirect, response_type: 'code', scope: SCOPES,
     code_challenge: challenge, code_challenge_method: 'S256', state,
     access_type: 'offline', prompt: 'select_account consent',   // consent: refresh token이 확실히 옴 / select_account: 이미 로그인한 계정이 있어도 다른 계정(두 번째 사람)을 고를 수 있음
   }).toString();
+  if (loginHint) u.searchParams.set('login_hint', loginHint);
   return u.toString();
 }
 
@@ -66,7 +67,7 @@ const isHolidayCalendar = (id) => String(id).includes('#holiday@');
 // 개발 판단: id 는 'p<숫자>' 형식만 받아(설정창이 보낸 값이라도) 파일 경로로 새어 나가지 않게 한다. 액세스 토큰은 메모리에만 사람별로 캐시.
 const ID = /^p\d{1,3}$/;
 const LEGACY_OWNER = 'p1';   // v1.3까지의 단일 연결(google-token.bin)은 사람 1의 것
-function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' }) {
+function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko', onExpired = () => {} }) {
   const clientFile = path.join(dir, 'google-client.json');
   const legacyFile = path.join(dir, 'google-token.bin');
   const access = {};   // 사람 id → { token, exp }
@@ -134,7 +135,7 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
       method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded' }, body, signal: AbortSignal.timeout(15000),
     });
     const j = await res.json().catch(() => ({}));
-    if (!res.ok) throw fail(j.error === 'invalid_grant' ? 'needAuth' : 'failed', j.error || `HTTP ${res.status}`);
+    if (!res.ok) throw fail(j.error === 'invalid_grant' ? (params.grant_type === 'refresh_token' ? 'expired' : 'needAuth') : 'failed', j.error || `HTTP ${res.status}`);
     return j;
   }
 
@@ -148,13 +149,16 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
       const j = await tokenRequest(c, { grant_type: 'refresh_token', refresh_token: refresh });
       access[id] = { token: j.access_token, exp: now() + (j.expires_in || 3600) * 1000 };
     } catch (e) {
-      if (e.code === 'needAuth') dropToken(id);   // 취소·만료된 토큰이면 다시 연결하도록
+      if (e.code === 'expired' && isConnected(id)) {
+        dropToken(id);
+        onExpired(id);   // 병렬 API 요청도 토큰을 지운 첫 요청만 알림
+      }
       throw e;
     }
     return access[id].token;
   }
 
-  async function connect(id) {
+  async function connect(id, { loginHint } = {}) {
     own(id);   // id 형식 확인
     const c = client();
     if (!c) throw fail('needAuth', 'client JSON required');
@@ -176,7 +180,7 @@ function createGoogle({ dir, safe, openUrl, now = Date.now, lang = () => 'ko' })
           clearTimeout(timer);
           ok ? resolve(u.searchParams.get('code')) : reject(fail('failed', u.searchParams.get('error') || 'connect denied'));
         });
-        Promise.resolve().then(() => openUrl(buildAuthUrl(c, { redirect, challenge, state }))).catch((e) => { clearTimeout(timer); reject(e); });
+        Promise.resolve().then(() => openUrl(buildAuthUrl(c, { redirect, challenge, state, loginHint }))).catch((e) => { clearTimeout(timer); reject(e); });
       });
       const j = await tokenRequest(c, { grant_type: 'authorization_code', code, code_verifier: verifier, redirect_uri: redirect });
       if (!j.refresh_token) throw fail('failed', 'no refresh token');
@@ -230,3 +234,7 @@ module.exports = { createGoogle, pkcePair, challengeOf, buildAuthUrl, normalizeE
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 문구(가져오기 오류·연결 완료 페이지)를 lang()에 맞춰 생성, 제목 없는 일정은 빈 제목 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 토큰·연결·가져오기를 사람 id별로, prompt=select_account consent, 옛 단일 토큰 파일 이관(migrateLegacy)
 // 개정 기록 | 2026-11-15 | normalizeEvent에 iCalUID 및 calId 보존 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 모든 API의 토큰 만료를 공통 콜백으로 전달 | 사용자 요청

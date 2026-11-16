@@ -1,7 +1,8 @@
 // 창·전원·IPC 배선만 담당합니다. 실제 일은 각 모듈이 합니다.
-const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, shell, dialog, safeStorage } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, powerSaveBlocker, powerMonitor, shell, dialog, safeStorage, globalShortcut } = require('electron');
 const path = require('node:path');
 const { createStore, newPerson, MAX_PEOPLE } = require('./store');
+const { createHotkey } = require('./hotkey');
 const { createTimer } = require('./timer');
 const { launchSlot } = require('./launcher');
 const { createForeground, shouldReturn } = require('./foreground');
@@ -21,6 +22,7 @@ let sync = null;
 let google = null;
 let health = null;
 let dimmer = null;
+let hotkey = null;
 // 렌더러로 보내는 최신 자료 묶음(캐시에서 시작해 갱신 때마다 덮어씀)
 const data = { weather: null, people: {}, sync: {}, health: 'ok', dimOverlay: 0 };
 
@@ -41,11 +43,18 @@ function bringToFront() {
 
 // 설정에 연결 상태(클라이언트 JSON 유무·사람별 토큰 유무)를 반영하고 화면에 알림
 function applyFlags() {
-  return store.patch({ google: { hasClient: google.hasClient() }, people: store.settings().people.map((p) => ({ ...p, google: { connected: google.isConnected(p.id) } })) });
+  return store.patch({ google: { hasClient: google.hasClient() }, people: store.settings().people.map((p) => ({ ...p, google: { ...p.google, connected: google.isConnected(p.id) } })) });
 }
 const googleFlags = () => send('settings', applyFlags());
 // 설정창이 보낸 사람 id 가 실제 목록에 있는 것인지 확인(파일 이름에 쓰이므로)
 const personOf = (id) => store.settings().people.find((p) => p.id === id);
+function markExpired(id) {
+  const p = personOf(id);
+  if (!p || (p.google.expired && !p.google.connected)) return;
+  store.patch({ people: store.settings().people.map((p) => p.id === id ? { ...p, google: { ...p.google, expired: true } } : p) });
+  googleFlags();
+}
+
 // 일정·메모 받아오기 설정(켬/끔·캘린더 선택·메모 목록)이 바뀌었는지 비교하는 표식
 const feedSig = () => JSON.stringify(store.settings().people.map((p) => [p.id, p.calendar, p.tasks]));
 
@@ -73,15 +82,17 @@ function createWindow() {
   win.setMenuBarVisibility(false);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   win.webContents.on('will-navigate', (e) => e.preventDefault());
+  for (const event of ['enter-full-screen', 'leave-full-screen']) win.on(event, () => send('window', { fullscreen: win.isFullScreen() }));
   win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 }
 
 function wireIpc() {
-  ipcMain.handle('app:init', () => ({ settings: store.settings(), data, timer: timer.snapshot() }));
+  ipcMain.handle('app:init', () => ({ settings: store.settings(), data, fullscreen: win.isFullScreen(), timer: timer.snapshot() }));
   ipcMain.handle('settings:set', (_e, patch) => {
     const sig = feedSig();
     store.patch(patch && typeof patch === 'object' ? patch : {});
     const s = patch && patch.people ? applyFlags() : store.settings();   // 연결 표시는 설정창의 낡은 값이 아니라 토큰 파일이 정본
+    if (patch && 'returnHotkey' in patch) hotkey.apply(s.returnHotkey);
     if (patch && 'autoStart' in patch) autostart.apply(app, store.settings().autoStart);
     dimmer.tick();
     if (patch && patch.location) sync.refresh();
@@ -91,6 +102,12 @@ function wireIpc() {
     send('settings', s);
     return s;
   });
+  ipcMain.handle('window:toggleFullscreen', () => {
+    if (win.isFullScreen()) { win.setFullScreen(false); win.maximize(); }
+    else win.setFullScreen(true);
+  });
+  ipcMain.handle('hotkey:state', () => hotkey.state());
+  ipcMain.handle('hotkey:suspend', (_e, on) => hotkey.suspend(on === true));
   ipcMain.handle('timer:start', (_e, ms) => { if (Number.isFinite(ms) && ms > 0) timer.start(ms); });
   ipcMain.handle('timer:pause', () => timer.pause());
   ipcMain.handle('timer:resume', () => timer.resume());
@@ -161,8 +178,17 @@ function wireIpc() {
   ipcMain.handle('google:connect', async (_e, id) => {
     if (!personOf(id)) return { ok: false, error: t(lang(), 'err.connect') };
     try {
-      await google.connect(id);
+      await google.connect(id, { loginHint: personOf(id).google.account });
+      store.patch({ people: store.settings().people.map((p) => p.id === id ? { ...p, google: { ...p.google, expired: false } } : p) });
+      let account = '';
+      try {
+        const lists = await google.lists(id);
+        const primary = lists.calendars.find((c) => c.primary && c.id.includes('@'));
+        if (primary) account = primary.id;
+      } catch { /* 목록 실패는 완료된 로그인을 취소하지 않음 */ }
+      store.patch({ people: store.settings().people.map((p) => p.id === id && !p.google.expired ? { ...p, google: { ...p.google, account } } : p) });
       googleFlags();
+      bringToFront();
       sync.refresh(['calendar', 'tasks']);
       return { ok: true };
     } catch (e) { return { ok: false, error: t(lang(), e.code === 'tokenUnavailable' ? 'status.token' : 'err.connect') }; }
@@ -170,6 +196,7 @@ function wireIpc() {
   ipcMain.handle('google:disconnect', async (_e, id) => {
     if (!personOf(id)) return;
     await google.disconnect(id);
+    store.patch({ people: store.settings().people.map((p) => p.id === id ? { ...p, google: { connected: false, expired: false, account: '' } } : p) });
     sync.clearPerson(id);
     googleFlags();
   });
@@ -220,16 +247,21 @@ if (!app.requestSingleInstanceLock()) {
     });
     wireIpc();
     foreground = createForeground(bringToFront);
+    hotkey = createHotkey({ shortcut: globalShortcut, onPress: () => {
+      if (!win || win.isDestroyed() || win.isFocused()) return;
+      foreground.cancelWait(); bringToFront();
+    } });
+    hotkey.apply(store.settings().returnHotkey);
     // safeStorage의 동기 API는 폐기 예정이라 비동기 어댑터로 감쌈
     const safe = {
       available: () => safeStorage.isAsyncEncryptionAvailable(),
       encrypt: (t) => safeStorage.encryptStringAsync(t),
       decrypt: async (b) => (await safeStorage.decryptStringAsync(b)).result,
     };
-    google = createGoogle({ dir: store.dir, safe, openUrl: (u) => shell.openExternal(u), lang });
+    google = createGoogle({ dir: store.dir, safe, openUrl: (u) => shell.openExternal(u), lang, onExpired: markExpired });
     google.migrateLegacy();   // v1.3까지의 단일 토큰 파일 → 사람 1(실패하면 옛 파일 그대로 읽음)
     applyFlags();
-    sync = createSync({ store, data, push: pushData, google, onSettings: () => send('settings', store.settings()) });
+    sync = createSync({ store, data, push: pushData, google, onSettings: () => send('settings', store.settings()), onExpired: markExpired });
     health = system.createHealth({ getServers: () => store.settings().servers, onChange: (h) => { data.health = h; pushData(); } });
     dimmer = system.createDimmer({
       getSettings: store.settings,
@@ -247,6 +279,7 @@ if (!app.requestSingleInstanceLock()) {
     // 절전 복귀: 모든 값을 즉시 다시 확인
     powerMonitor.on('resume', () => { sync.refresh(); health.check(); dimmer.tick(); timer.check(); });
   });
+  app.on('will-quit', () => hotkey && hotkey.dispose());
   app.on('before-quit', () => { dimmer && dimmer.restoreSync(); });
   app.on('window-all-closed', () => app.quit());
 }
@@ -259,3 +292,11 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 구글 연결·해제·목록을 사람 id별로, people:add/remove 통로, 시작 때 옛 토큰 파일 이관
 // 개정 기록 | 2026-11-15 | 슬롯 창 재사용과 실행 직전 AllowSetForegroundWindow 호출 | 사용자 요청
 // 개정 기록 | 2026-11-15 | night:force 통로 배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 목록·동기화·연결 계정 조회의 만료 설정을 멱등하게 반영 | 사용자 요청

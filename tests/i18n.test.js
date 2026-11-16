@@ -138,3 +138,20 @@ test('사람 이름 문구: 기본 이름·우리·이름 접두 상태 문장',
   assert.deepEqual(['ko', 'zh', 'en'].map((l) => I.t(l, 'status.withWho', { who: '지수', text: 'X' })), ['지수 X', '지수X', '지수: X']);
 });
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: buildModel 입력을 people 로, 사람 이름 문구 시험
+
+test('로그인 만료 문구는 캘린더 한 줄, 메모만 켠 사람은 메모 한 줄', () => {
+  for (const lang of ['ko', 'zh', 'en']) {
+    assert.equal(I.statusText(lang, 'calendar', { state: 'expired' }), I.t(lang, 'status.expired'));
+    assert.equal(I.statusText(lang, 'tasks', { state: 'expired' }), null);
+    const person = { id: 'p1', name: 'P', calendarOn: false, tasksOn: true, sync: { tasks: { state: 'expired' } } };
+    const opts = { lang, now: D, mode: 'light', slots: [], timer: { phase: 'hidden' }, sync: {}, people: [person] };
+    const m = M.buildModel(opts);
+    assert.equal(m.status.calendar, null);
+    assert.equal(m.status.tasks, I.t(lang, 'status.expired'));
+    const both = M.buildModel({ ...opts, people: [{ ...person, calendarOn: true, sync: { calendar: { state: 'expired' }, tasks: { state: 'expired' } } }, { ...person, id: 'p2', name: 'Q', sync: {} }] });
+    assert.equal(both.status.calendar, I.t(lang, 'status.withWho', { who: 'P', text: I.t(lang, 'status.expired') }));
+    assert.equal(both.status.tasks, null);
+  }
+  assert.equal(I.statusText('ko', 'calendar', { state: 'expired' }), '구글 로그인 만료 · 설정에서 다시 로그인');
+});
+// 개정 기록 | 2026-11-16 | 만료 상태 3언어와 메모 전용 안내 시험 | 사용자 요청

@@ -1,5 +1,5 @@
 // 화면 언어(한국어·简体中文·English) 사전과 형식화 도우미. 렌더러와 메인 프로세스가 같은 파일을 씁니다.
-// 사용자 의도 [docs/v1.3-i18n-brief.md]: 앱이 만든 모든 글자가 설정의 언어를 따르고, 사용자 데이터(일정·메모 제목, 슬롯 이름)는 그대로 둔다.
+// 사용자 의도 [docs/v1.3-i18n-brief.md]: 앱이 만든 모든 글자가 설정의 언어를 따르고, 사용자 입력 자료(일정·메모 제목, 슬롯 이름)는 그대로 둔다.
 // 개발 판단: 키는 평평한 점 표기('ui.title')로 두고 세 언어가 같은 키 집합을 갖는지 시험으로 검사한다. 문장은 합니다체, 상태는 명사형(ko).
 (function (root, factory) {
   const api = factory();
@@ -7,6 +7,12 @@
   else root.ClockI18n = api;
 })(typeof self !== 'undefined' ? self : this, function () {
   const ko = {
+    'status.expired': '구글 로그인 만료 · 설정에서 다시 로그인', 'ui.gExpired': '로그인 만료 — 다시 로그인해 주세요', 'ui.gReconnect': '다시 로그인',
+    'ui.fullscreenOff': '전체화면 끄기(작업 표시줄 보기)', 'ui.fullscreenOn': '전체화면으로',
+    'ui.returnHotkey': '시계로 돌아오기',
+    'ui.returnHotkeyTaken': '다른 프로그램이 이미 쓰는 조합이라 등록하지 못했습니다',
+    'ui.returnHotkeyInvalid': 'Ctrl·Alt·Win 중 하나와 함께 눌러 주세요',
+    'ui.returnHotkeyNote': '시계가 켜져 있는 동안 다른 프로그램의 같은 단축키(예: 브라우저 방문 기록 Ctrl+H)는 동작하지 않습니다',
     'app.title': '식탁 시계',
     // ----- 시계 화면(테마) -----
     'stage.today': '오늘', 'stage.schedule': '일정', 'stage.week': '이번 주', 'stage.memo': '메모', 'stage.timer': '타이머', 'stage.weather': '날씨', 'stage.clock': '시계', 'stage.night': '야간',
@@ -66,6 +72,12 @@
   };
 
   const zh = {
+    'status.expired': 'Google 登录已过期 · 请在设置中重新登录', 'ui.gExpired': '登录已过期 — 请重新登录', 'ui.gReconnect': '重新登录',
+    'ui.fullscreenOff': '退出全屏（显示任务栏）', 'ui.fullscreenOn': '进入全屏',
+    'ui.returnHotkey': '返回时钟',
+    'ui.returnHotkeyTaken': '其他程序已使用此快捷键，无法注册',
+    'ui.returnHotkeyInvalid': '请同时按下 Ctrl、Alt 或 Win',
+    'ui.returnHotkeyNote': '时钟运行期间，其他程序的相同快捷键（如浏览器历史记录 Ctrl+H）将不可用',
     'app.title': '餐桌时钟',
     'stage.today': '今天', 'stage.schedule': '日程', 'stage.week': '本周', 'stage.memo': '备忘', 'stage.timer': '计时器', 'stage.weather': '天气', 'stage.clock': '时钟', 'stage.night': '夜间',
     'stage.noEvents': '暂无日程', 'stage.noMemos': '暂无备忘', 'stage.noWeather': '暂无天气信息',
@@ -118,6 +130,12 @@
   };
 
   const en = {
+    'status.expired': 'Google sign-in expired · Sign in again in settings', 'ui.gExpired': 'Sign-in expired — please sign in again', 'ui.gReconnect': 'Sign in again',
+    'ui.fullscreenOff': 'Exit fullscreen (show taskbar)', 'ui.fullscreenOn': 'Enter fullscreen',
+    'ui.returnHotkey': 'Return to the clock',
+    'ui.returnHotkeyTaken': 'Another program is already using this shortcut',
+    'ui.returnHotkeyInvalid': 'Include Ctrl, Alt, or Win',
+    'ui.returnHotkeyNote': 'While the clock is running, the same shortcut in other apps (such as browser history Ctrl+H) is unavailable',
     'app.title': 'Table clock',
     'stage.today': 'Today', 'stage.schedule': 'Schedule', 'stage.week': 'This week', 'stage.memo': 'Memos', 'stage.timer': 'Timer', 'stage.weather': 'Weather', 'stage.clock': 'Clock', 'stage.night': 'Night',
     'stage.noEvents': 'No events', 'stage.noMemos': 'No memos', 'stage.noWeather': 'No weather info',
@@ -243,6 +261,7 @@
   function statusText(lang, kind, st) {
     if (!st) return null;
     if (st.state === 'tokenUnavailable') return kind === 'calendar' ? t(lang, 'status.token') : null;
+    if (st.state === 'expired') return kind === 'calendar' ? t(lang, 'status.expired') : null;
     if (st.state === 'needAuth') return kind === 'calendar' ? t(lang, 'status.needCalendar') : null;
     if (st.state === 'failed') {
       const name = t(lang, `status.kind.${kind}`);
@@ -257,3 +276,9 @@
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 사람 기본 이름·'우리'·상태 문장 이름 접두·설정창 사람 카드 문구(3언어)
 // 개정 기록 | 2026-11-15 | N 야간 단축키 및 야간 모드 토스트 문구 추가 | 사용자 요청
 // 개정 기록 | 2026-11-15 | sharedLabel 및 캘린더 공유 체크 문구 3언어 추가 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청

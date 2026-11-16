@@ -1,12 +1,17 @@
-# 이어하기 안내 (2026-11-15, v1.5.0 기준)
+# 이어하기 안내 (2026-11-16, v1.6.0 기준)
 
 PC 포맷 전에 남긴 상태 기록입니다. 새 PC에서 이 저장소를 받은 뒤 이 문서부터 읽으면 이어서 작업할 수 있습니다.
 
 ## 현재 상태
-- 최신 배포: v1.5.0 (Releases의 `DeskClock-1.5.0-portable.exe`). 단위 시험 102개 통과.
+- 현재 버전: v1.6.0 (`DeskClock-1.6.0-portable.exe`). 단위 시험 118개 통과.
 - 정본 문서: `PRODUCT.md`(제품), `DESIGN.md`(테마 6종 시각 규칙), `docs/architecture.md`(구조), `docs/theme-contract.md`(핵심 앱↔테마 계약), `docs/setup.md`(설치·구글 연결 안내).
-- 버전별 작업 지시: `docs/v1.2-brief.md` ~ `docs/v1.5-brief.md`, 결과 보고 `docs/v1.5-report.md`.
-- 이 공개 저장소는 버전마다 커밋 1개(스냅숏)만 올립니다. 개발 중 세부 커밋 이력은 포맷 전 PC에만 있었습니다.
+- 버전별 작업 지시: `docs/v1.2-brief.md` ~ `docs/v1.6-brief.md`, 결과 보고 `docs/v1.6-report.md`.
+- 이 공개 저장소는 버전마다 커밋 1개(스냅숏)만 올립니다. 개발 중 세부 커밋 이력은 로컬 main에 유지합니다.
+
+## v1.6 기능
+- Ctrl+H로 시계에 돌아오는 전역 단축키(설정에서 변경·끄기).
+- 좌하단 버튼으로 전체화면 끄기·켜기.
+- 구글 로그인 만료 표시와 계정별 다시 로그인.
 
 ## 작업 방식 (사용자 결정)
 - 설계·결과 확인: Claude Opus. 구현: Gemini Flash High(`agy --model gemini-3.8-flash-high --dangerously-skip-permissions -p "<지시서 경로>를 읽고 수행"`, 지시서는 `prompts/FLASH_*.md`). 감사가 필요하면 Codex 최소 범위.

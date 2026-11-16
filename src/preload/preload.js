@@ -8,6 +8,10 @@ contextBridge.exposeInMainWorld('clockApi', {
   init: invoke('app:init'),
   setSettings: invoke('settings:set'),
   launch: invoke('launch'),
+  toggleFullscreen: invoke('window:toggleFullscreen'),
+  onWindow: on('window'),
+  hotkeyState: invoke('hotkey:state'),
+  hotkeySuspend: invoke('hotkey:suspend'),
   volume: invoke('system:volume'),
   timerStart: invoke('timer:start'),
   timerPause: invoke('timer:pause'),
@@ -35,3 +39,7 @@ contextBridge.exposeInMainWorld('clockApi', {
 // 개정 기록 | 2026-11-11 | 단축키 포커스 전용 | 사용자 결정: onKey·drawer 통로 제거, volume 추가
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: addPerson·removePerson 통로 추가(연결·해제·목록은 사람 id를 인자로)
 // 개정 기록 | 2026-11-15 | setForcedNight 통로 노출 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청

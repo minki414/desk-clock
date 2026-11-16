@@ -1,6 +1,8 @@
 // 설정·캐시 저장소. userData 폴더 경로를 받아 JSON 두 개를 원자적(tmp→rename)으로 씁니다.
 const fs = require('node:fs');
 const path = require('node:path');
+const { parseCombo, formatCombo } = require('../renderer/keycombo.js');
+const normReturn = (v) => v === '' ? '' : parseCombo(v) ? formatCombo(v) : 'Ctrl+H';
 const { norm, t } = require('../renderer/i18n.js');
 
 const defaultSlots = () => {
@@ -18,7 +20,7 @@ const MAX_PEOPLE = 4;
 // 개발 판단: id 는 'p1'~ 형식으로 고정해 토큰 파일 이름(google-token-<id>.bin)에 그대로 써도 경로 문제가 없게 한다.
 const PERSON_ID = /^p\d{1,3}$/;
 const defaultPerson = (n, lang, id = `p${n}`) => ({
-  id, name: t(lang, 'person.default', { n }), google: { connected: false },
+  id, name: t(lang, 'person.default', { n }), google: { connected: false, expired: false, account: '' },
   calendar: { on: true, ids: [] }, tasks: { on: true, listId: '' },
 });
 const nextPersonId = (people) => { const used = new Set(people.map((p) => p.id)); let n = 1; while (used.has(`p${n}`)) n++; return `p${n}`; };
@@ -44,7 +46,7 @@ function normPeople(list, lang) {
     }
     out.push({
       id, name: String(p.name == null ? '' : p.name).trim().slice(0, 20) || t(lang, 'person.default', { n: out.length + 1 }),
-      google: { connected: !!(isObj(p.google) && p.google.connected) },
+      google: { connected: !!(isObj(p.google) && p.google.connected), expired: !!(isObj(p.google) && p.google.expired), account: isObj(p.google) && typeof p.google.account === 'string' ? p.google.account.slice(0, 254) : '' },
       calendar: calObj,
       tasks: { on: !!tk.on, listId: typeof tk.listId === 'string' ? tk.listId : '' },
     });
@@ -63,6 +65,7 @@ const defaults = () => ({
   minBrightness: 0,
   browser: 'brave',           // brave | chrome | edge | default
   hotkeysOn: true,
+  returnHotkey: 'Ctrl+H',
   autoStart: false,           // Windows 시작 시 자동 실행(portable exe에서만 적용)
   slots: defaultSlots(),
   location: { mode: 'auto', name: '', lat: null, lon: null, id: null },   // id: 지오코딩 지명 번호(언어를 바꾸면 이 번호로 이름을 다시 받음)
@@ -105,6 +108,7 @@ function createStore(dir) {
   const cFile = path.join(dir, 'cache.json');
   const saved = readJson(sFile, null);
   let settings = withDefaults(defaults(), saved);
+  settings.returnHotkey = normReturn(settings.returnHotkey);
   settings.lang = norm(settings.lang);   // 알 수 없는 값은 한국어로
   settings.people = normPeople(isObj(saved) && Array.isArray(saved.people) ? saved.people : settings.people, settings.lang);
   // 1회 이관: 버전 2 이전 설정은 야간 감광을 끄고 색 모드를 라이트로(옛 기본이 켬·자동이라 저장돼 있음). 감광 중이던 밝기는 dimmer.tick()이 복구
@@ -137,6 +141,7 @@ function createStore(dir) {
       for (const k of Object.keys(p)) {
         if (!(k in settings)) continue;
         if (k === 'lang' && norm(p[k]) !== p[k]) continue;   // 지원하지 않는 언어 값은 무시
+        if (k === 'returnHotkey') { next[k] = normReturn(p[k]); continue; }
         if (k === 'sharedLabel') {
           next[k] = typeof p[k] === 'string' ? p[k].trim().slice(0, 6) : '';
           continue;
@@ -164,3 +169,7 @@ module.exports = { createStore, defaults, withDefaults, writeAtomic, normPeople,
 // 개정 기록 | 2026-11-11 | v1.3 | lang 설정(기본 ko, 알 수 없는 값 무시)·location.id 추가 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: people(최대 4명)·settingsVersion 3 이관(단일 구글 연결→사람 1, 옛 설정 .v2.bak 보존)
 // 개정 기록 | 2026-11-15 | sharedLabel 설정 및 calendar.shared 저장 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청

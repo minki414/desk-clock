@@ -128,7 +128,7 @@ test('토큰 보관 불가면 연결을 거부하고 파일을 만들지 않음'
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
-test('연결 전·취소된 토큰은 needAuth', async () => {
+test('연결 전 needAuth, 갱신 중 invalid_grant는 expired와 토큰 삭제', async () => {
   const dir = tmpDir();
   const { server, uri } = await fakeTokenServer((p, res) => json(res, 400, { error: 'invalid_grant' }));
   try {
@@ -138,7 +138,7 @@ test('연결 전·취소된 토큰은 needAuth', async () => {
     await assert.rejects(g.fetchTasks('p1', '@default'), (e) => e.code === 'needAuth');   // 토큰 없음
     fs.writeFileSync(path.join(dir, 'google-token-p1.bin'), await safe.encrypt('OLD'));
     assert.equal(g.isConnected('p1'), true);
-    await assert.rejects(g.fetchEvents('p1', ['primary']), (e) => e.code === 'needAuth');   // 서버가 invalid_grant
+    await assert.rejects(g.fetchEvents('p1', ['primary']), (e) => e.code === 'expired');   // 서버가 invalid_grant
     assert.equal(g.isConnected('p1'), false);   // 취소된 토큰은 지움
   } finally { server.close(); fs.rmSync(dir, { recursive: true, force: true }); }
 });
@@ -233,3 +233,51 @@ test('이관 중 꺼졌던 경우(새 파일과 옛 파일이 둘 다 있음): �
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 사람별 토큰 파일 분리·삭제, 이관·되돌릴 길, 계정 선택 prompt 시험
+
+test('인증 주소 login_hint는 선택 사항이며 계정 선택과 동의는 유지', () => {
+  const opts = { redirect: 'http://127.0.0.1:5555', challenge: 'ch', state: 'st' };
+  const url = (o) => new URL(G.buildAuthUrl({ client_id: 'cid' }, o));
+  assert.equal(url(opts).searchParams.has('login_hint'), false);
+  assert.equal(url({ ...opts, loginHint: 'user@example.test' }).searchParams.get('login_hint'), 'user@example.test');
+  assert.equal(url(opts).searchParams.get('prompt'), 'select_account consent');
+});
+
+test('인증 코드 교환 invalid_grant는 만료 상태가 아니며 loginHint를 전달', async () => {
+  const dir = tmpDir();
+  const { server, uri } = await fakeTokenServer((p, res) => json(res, 400, { error: 'invalid_grant' }));
+  let hint;
+  try {
+    fs.writeFileSync(path.join(dir, 'google-client.json'), JSON.stringify({ installed: { client_id: 'cid', token_uri: uri } }));
+    const g = G.createGoogle({ dir, safe: fakeSafe(), openUrl: async (url) => {
+      const u = new URL(url); hint = u.searchParams.get('login_hint');
+      await fetch(`${u.searchParams.get('redirect_uri')}/?code=C&state=${u.searchParams.get('state')}`);
+    } });
+    await assert.rejects(g.connect('p1', { loginHint: 'user@example.test' }), (e) => e.code !== 'expired');
+    assert.equal(hint, 'user@example.test');
+    assert.equal(g.isConnected('p1'), false);
+  } finally { server.close(); fs.rmSync(dir, { recursive: true, force: true }); }
+});
+// 개정 기록 | 2026-11-16 | 만료 토큰과 재로그인 힌트 시험 | 사용자 요청
+
+for (const failure of ['invalid_grant', 'http500', 'network']) {
+  test(`lists ${failure}: only expiry deletes token and notifies once`, async (t) => {
+    const dir = tmpDir(), safe = fakeSafe(), expired = [];
+    try {
+      fs.writeFileSync(path.join(dir, 'google-client.json'), JSON.stringify({ installed: { client_id: 'cid' } }));
+      const file = path.join(dir, 'google-token-p2.bin');
+      const token = await safe.encrypt('OLD');
+      fs.writeFileSync(file, token);
+      t.mock.method(globalThis, 'fetch', async () => {
+        if (failure === 'network') throw new Error('offline');
+        return new Response(JSON.stringify({ error: failure === 'invalid_grant' ? failure : 'server_error' }), { status: failure === 'invalid_grant' ? 400 : 500 });
+      });
+      const g = G.createGoogle({ dir, safe, openUrl: () => {}, onExpired: (id) => expired.push(id) });
+      await assert.rejects(g.lists('p2'), (e) => failure === 'invalid_grant' ? e.code === 'expired' : e.code !== 'expired');
+      await new Promise(setImmediate); // Wait for both parallel API failures.
+      assert.equal(fs.existsSync(file), failure !== 'invalid_grant');
+      assert.deepEqual(expired, failure === 'invalid_grant' ? ['p2'] : []);
+      if (failure !== 'invalid_grant') assert.deepEqual(fs.readFileSync(file), token);
+    } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+  });
+}
+// 개정 기록 | 2026-11-16 | 목록 만료·일시 오류·멱등성 회귀 시험 | 사용자 요청

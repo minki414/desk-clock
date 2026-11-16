@@ -153,3 +153,8 @@
 #drawer .btn:disabled { opacity: .4; cursor: default; }
 /* 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭 사람 카드 모양 */
 /* 개정 기록 | 2026-11-15 | 캘린더별 공유 체크 및 sharedLabel 행 모양 | 사용자 요청 */
+
+#drawer .sdot.expired { background: #e8a33d; }
+#drawer .person .hint { overflow-wrap: anywhere; }
+
+/* // 개정 기록 | 2026-11-16 | 만료 경고 점과 계정 표시 | 사용자 요청 */

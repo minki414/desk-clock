@@ -5,6 +5,7 @@
   const stage = document.getElementById('stage');
   const $ = (id) => document.getElementById(id);
 
+  let fullscreen = true;
   let S = null;                       // 설정(메인이 정본)
   let D = { weather: null, people: {}, sync: {}, health: 'ok', dimOverlay: 0 };
   let T = { phase: 'idle', endAt: 0, remainingMs: 0, totalMs: 0 };   // 메인 타이머 스냅샷
@@ -90,9 +91,17 @@
 
   // 화면 언어: 스테이지·설정 서랍·문서 루트에 lang 속성을 붙이고(서체 선택에 쓰임), 문서 제목·접근성 이름을 바꿈
   let appliedLang = null;
+  function paintWindow() {
+    $('screenBtn').classList.toggle('windowed', !fullscreen);
+    const label = I.t(S ? S.lang : 'ko', fullscreen ? 'ui.fullscreenOff' : 'ui.fullscreenOn');
+    $('screenBtn').setAttribute('aria-label', label); $('screenBtn').title = label;
+  }
+  api.onWindow((state) => { fullscreen = state.fullscreen; paintWindow(); });
+  $('screenBtn').addEventListener('click', () => api.toggleFullscreen());
   function applyLang() {
     if (appliedLang === S.lang) return;
     appliedLang = S.lang;
+    paintWindow();
     const hl = I.htmlLang(S.lang);
     document.documentElement.lang = hl; stage.lang = hl; $('drawer').lang = hl;
     document.title = I.t(S.lang, 'app.title');
@@ -216,7 +225,7 @@
   window.addEventListener('resize', fit);
   fit();
   api.init().then((init) => {
-    D = init.data; T = init.timer;
+    D = init.data; T = init.timer; fullscreen = init.fullscreen;
     if (window.ClockSettings) {
       settings = window.ClockSettings.create({
         api, root: $('drawer'), scrim: $('scrim'),
@@ -235,3 +244,5 @@
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 모델 조립에 사람별 자료(S.people × D.people) 전달 | docs/v1.4-people-brief.md
 // 개정 기록 | 2026-11-15 | N 키 야간 강제 전환·2초 토스트·자동 해제 | 사용자 요청
 // 개정 기록 | 2026-11-15 | buildModel에 sharedLabel 및 sharedCalendarIds 전달 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청

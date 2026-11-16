@@ -145,41 +145,46 @@
     // ----- 탭: 단축키 -----
     // 사용자 의도 [2026-11-11 요청]: 보낼 키를 글로 적지 않고 실제로 눌러서 정한다. 녹화 중 Esc 는 서랍을 닫지 않고 녹화만 취소한다.
     // 개발 판단: 녹화 중에는 document 캡처 단계에서 키를 가로채 app.js 의 키 라우팅(Esc 닫기·숫자패드 실행)에 닿지 않게 한다. 수정키만 눌린 것은 무시한다.
-    function sendKeysRow(s, save) {
+    function sendKeysRow(s, save, returning = false, onState = () => {}) {
       let cur = KC.formatCombo(s.sendKeys), t = null;
       const val = h('span', { class: 'kv', textContent: cur || U('sendNone') });
       const show = (txt) => { val.textContent = txt; val.classList.toggle('none', !cur && txt === U('sendNone')); };
       const rec = btn(U('sendRec'), () => (recording ? stopRec() : start()), 'sm');
-      const clear = btn(U('sendClear'), () => { stopRec(); cur = ''; show(U('sendNone')); save({ sendKeys: '' }); }, 'sm');
+      const clear = btn(U('sendClear'), () => { stopRec(); cur = ''; show(U('sendNone')); save(returning ? { returnHotkey: '' } : { sendKeys: '' }); }, 'sm');
       let recording = false;
       const onKey = (e) => {
         e.preventDefault(); e.stopImmediatePropagation();
         if (['Control', 'Alt', 'Shift', 'Meta'].includes(e.key)) return;
         if (e.key === 'Escape') return stopRec();
-        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U('sendNone')); return save({ sendKeys: '' }); }
+        if (e.key === 'Backspace' || e.key === 'Delete') { stopRec(); cur = ''; show(U('sendNone')); return save(returning ? { returnHotkey: '' } : { sendKeys: '' }); }
         const combo = KC.comboFromEvent(e);
         stopRec();
+        if (returning && !KC.toAccelerator(combo)) { onState('invalid'); return; }
         if (!combo) { show(U('sendBad')); clearTimeout(t); t = setTimeout(() => show(cur || U('sendNone')), 1500); return; }
-        cur = combo; show(cur); save({ sendKeys: cur });
+        cur = combo; show(cur); save(returning ? { returnHotkey: cur } : { sendKeys: cur });
       };
       const end = () => {
         recording = false;
+        api.hotkeySuspend(false);
         document.removeEventListener('keydown', onKey, true);
         rec.removeEventListener('blur', end);
         rec.setAttribute('aria-pressed', 'false'); rec.textContent = U('sendRec');
         val.classList.remove('wait'); show(cur || U('sendNone'));
         stopRec = () => {};
       };
-      function start() {
+      async function start() {
         stopRec();
         recording = true;
         stopRec = end;
+        rec.addEventListener('blur', end);
+        await api.hotkeySuspend(true);
+        if (!recording) return;
+        if (!isOpen || tab !== 'keys' || !rec.isConnected) { end(); return; }
         rec.setAttribute('aria-pressed', 'true'); rec.textContent = '…';
         show(U('sendWait')); val.classList.add('wait');
         document.addEventListener('keydown', onKey, true);
-        rec.addEventListener('blur', end);
       }
-      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U('sendKeys') }), val, h('span', { class: 'grow' }), rec, clear);
+      return h('div', { class: 'l4' }, h('span', { class: 'kl', textContent: U(returning ? 'returnHotkey' : 'sendKeys') }), val, h('span', { class: 'grow' }), rec, clear);
     }
 
     function slotCard(s) {
@@ -217,7 +222,11 @@
     }
 
     function keys() {
+      const msg = hint(U('returnHotkeyNote'));
+      const state = (v) => { msg.textContent = U(v === 'taken' ? 'returnHotkeyTaken' : v === 'invalid' ? 'returnHotkeyInvalid' : 'returnHotkeyNote'); };
+      api.hotkeyState().then(state);
       return [
+        h('section', { class: 'field stack' }, sendKeysRow({ sendKeys: S.returnHotkey }, async (p) => { await set(p); state(await api.hotkeyState()); }, true, state), msg),
         field(U('hotkeys'), U('hotkeysNote'), (c) => toggle(S.hotkeysOn, (v) => c({ hotkeysOn: v }), U('hotkeys')), { inline: true }),
         field(U('browser'), '', (c) => seg([['brave', 'Brave'], ['chrome', 'Chrome'], ['edge', 'Edge'], ['default', U('browser.default')]], S.browser, (v) => c({ browser: v }), U('browser')), { cls: 'stack' }),
         h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('slots') }))), h('div', { class: 'slots' }, S.slots.map(slotCard))),
@@ -232,7 +241,8 @@
       loading[id] = true;
       const r = await api.googleLists(id);
       loading[id] = false;
-      lists[id] = r;   // 실패(null) 문구는 카드가 그릴 때 현재 언어로 만든다
+      if (S.people.some((p) => p.id === id && p.google.connected)) lists[id] = r;
+      else delete lists[id];
       render();
     }
     function ensureLists() {
@@ -248,12 +258,13 @@
     }
 
     function personCard(p, i, save) {
+      const expired = !p.google.connected && p.google.expired;
       const conn = p.google.connected, k = `g${p.id}`, L = lists[p.id];
-      const state = !S.google.hasClient ? U('gNoClient') : conn ? U('gConnected') : U('gDisconnected');
+      const state = expired ? U('gExpired') : !S.google.hasClient ? U('gNoClient') : conn ? U('gConnected') : U('gDisconnected');
       const name = text(p.name, U('personName'), (v) => save(p.id, (x) => ({ ...x, name: v })), { 'aria-label': U('personNameAria', { n: i + 1 }), maxLength: 20 });
       const btns = [];
       if (S.google.hasClient && !conn) {
-        btns.push(btn(U('gConnect'), async () => {
+        btns.push(btn(U(expired ? 'gReconnect' : 'gConnect'), async () => {
           note[k] = U('gWaiting'); render();
           const r = await api.googleConnect(p.id);
           note[k] = r.ok ? '' : r.error;
@@ -265,7 +276,7 @@
       const rows = [];
       // 캘린더: 켜기 + (연결됨·목록을 불러왔을 때) 체크 목록
       rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('calOn') }), toggle(p.calendar.on, (v) => save(p.id, (x) => ({ ...x, calendar: { ...x.calendar, on: v } })).then(render), `${p.name} ${U('calOn')}`)));
-      if (p.calendar.on && conn && L) {
+      if (p.calendar.on && (conn || expired) && L) {
         const ids = p.calendar.ids || [];
         const shared = p.calendar.shared || [];
         const boxes = L.calendars.map((c) => h('input', { type: 'checkbox', value: c.id, checked: ids.includes(c.id) || (!ids.length && c.primary) }));
@@ -282,9 +293,13 @@
       }
       // 메모: 켜기 + 메모 목록 고르기
       rows.push(h('div', { class: 'prow' }, h('span', { textContent: U('memoOn') }), toggle(p.tasks.on, (v) => save(p.id, (x) => ({ ...x, tasks: { ...x.tasks, on: v } })).then(render), `${p.name} ${U('memoOn')}`)));
-      if (p.tasks.on && conn && L) {
+      if (p.tasks.on && (conn || expired) && L) {
         rows.push(h('div', { class: 'plist' }, h('select', { 'aria-label': U('gTaskList'), on: { change: (e) => save(p.id, (x) => ({ ...x, tasks: { ...x.tasks, listId: e.target.value } })) } },
           [['', U('gDefaultList')], ...L.taskLists.map((t) => [t.id, t.name])].map(([v, t]) => h('option', { value: v, textContent: t, selected: v === p.tasks.listId })))));
+      }
+      if (expired && !L) {
+        if (p.calendar.on) rows.push(h('div', { class: 'plist' }, hint(U('gCalendars')), ...(p.calendar.ids.length ? p.calendar.ids : ['primary']).map((id) => h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: true, disabled: true }), id))));
+        if (p.tasks.on) rows.push(h('div', { class: 'plist' }, hint(U('gTaskList')), h('span', { textContent: p.tasks.listId || U('gDefaultList') })));
       }
       if (conn && L === null) rows.push(h('div', { class: 'btns' }, btn(U('gLists'), () => { delete lists[p.id]; loadLists(p.id); }, 'sm')));
       // 삭제: 한 번 더 눌러야 지움, 한 명뿐이면 삭제 불가
@@ -303,7 +318,8 @@
       } } });
       return h('div', { class: 'person', 'data-id': p.id },
         name,
-        h('div', { class: 'prow' }, h('p', { class: 'status' }, h('i', { class: `sdot ${conn ? 'ok' : ''}` }), state), h('div', { class: 'btns' }, btns)),
+        h('div', { class: 'prow' }, h('p', { class: 'status' }, h('i', { class: `sdot ${expired ? 'expired' : conn ? 'ok' : ''}` }), state), h('div', { class: 'btns' }, btns)),
+        expired && p.google.account ? hint(p.google.account) : null,
         hint(note[k] || (L === null ? U('gListFail') : '')),
         rows,
         h('div', { class: 'pfoot' }, del));
@@ -437,9 +453,12 @@
     function open() {
       if (isOpen || !S) return;
       isOpen = true; places = null; quitArmed = false; delArmed = null; closeToken++;
+      const expired = S.people.find((p) => !p.google.connected && p.google.expired);
+      if (expired) tab = 'links';
       root.hidden = false; scrim.hidden = false;
       onToggle(true);
       render(true);
+      if (expired) root.querySelector(`.person[data-id="${expired.id}"]`).scrollIntoView({ block: 'nearest' });
       void root.offsetWidth;                  // 숨김 해제 직후 시작 위치를 확정해야 슬라이드 전환이 보임
       root.classList.add('open'); scrim.classList.add('open');
       root.querySelector('[role=tab][aria-selected=true]').focus({ preventScroll: true });
@@ -464,7 +483,11 @@
 
     // 메인에서 온 설정 갱신. 서랍 안에 포커스가 있으면(조작 중) 화면을 다시 그리지 않아 포커스를 지킴
     function update(s) {
+      const expired = s.people.filter((p) => !p.google.connected && p.google.expired);
+      const becameExpired = expired.some((p) => S && S.people.some((old) => old.id === p.id && (old.google.connected || !old.google.expired)));
+      expired.forEach((p) => { delete lists[p.id]; });
       S = s;
+      if (isOpen && becameExpired) { render(); return; }
       // 내가 방금 저장한 값이 돌아온 것이면 다시 그리지 않음('저장됨' 표시와 포커스를 지킴)
       if (isOpen && !root.contains(document.activeElement) && Date.now() - ownAt > 1500) render();
     }
@@ -481,3 +504,9 @@
 // 개정 기록 | 2026-11-11 | v1.3 | 화면 탭 맨 위에 언어 선택(한국어·中文·English), 모든 문구를 사전(ClockI18n)에서 읽고 언어를 바꾸면 즉시 다시 그림 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 연결 탭을 구글(클라이언트 파일) + 사람 카드 목록(이름·연결/해제·캘린더·메모·삭제)과 '사람 추가'로 개편 | docs/v1.4-people-brief.md
 // 개정 기록 | 2026-11-15 | 캘린더별 공유 체크 및 sharedLabel 입력칸 추가 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 전역 복귀 단축키 설정·녹화·배선 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
+
+// 개정 기록 | 2026-11-16 | 만료 설정 푸시 즉시 카드 갱신과 오래된 목록 제거 | 사용자 요청

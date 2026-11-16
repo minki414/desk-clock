@@ -31,9 +31,9 @@ function createScheduler(jobs) {
 // 사용자 의도 [docs/v1.4-people-brief.md §4]: 일정·메모는 사람마다 (선택 캘린더 수 + 메모 1)건을 1분 주기로 받고, 한 사람이 실패하면 그 사람 것만 마지막 값을 유지한다.
 // 개발 판단: data.people[id] = { events, tasks, sync:{calendar,tasks} }. 스케줄러의 지수 백오프는 '켠 사람 전원이 실패'했을 때만 걸어
 // 한 사람의 실패(연결 풀림 등)가 다른 사람의 1분 갱신을 늦추지 않게 한다.
-function createSync({ store, data, push, google, onSettings = () => {} }) {
+function createSync({ store, data, push, google, onSettings = () => {}, onExpired = () => {} }) {
   const cache = store.cache();
-  const known = (e) => !!e && (e.code === 'needAuth' || e.code === 'tokenUnavailable');
+  const known = (e) => !!e && (e.code === 'needAuth' || e.code === 'expired' || e.code === 'tokenUnavailable');
   const blank = () => ({ events: [], tasks: [], sync: { calendar: { state: 'pending' }, tasks: { state: 'pending' } } });
   const setStatus = (kind, state, at) => {
     const prev = data.sync[kind] || {};
@@ -53,7 +53,7 @@ function createSync({ store, data, push, google, onSettings = () => {} }) {
     const c = (cache.people || {})[p.id] || (i === 0 && !cache.people ? cache : {});
     const d = data.people[p.id] = blank();
     d.events = c.events || []; d.tasks = c.tasks || [];
-    d.sync = { calendar: { state: c.eventsAt ? 'ok' : 'pending', at: c.eventsAt }, tasks: { state: c.tasksAt ? 'ok' : 'pending', at: c.tasksAt } };
+    d.sync = { calendar: { state: p.google && p.google.expired ? 'expired' : c.eventsAt ? 'ok' : 'pending', at: c.eventsAt }, tasks: { state: p.google && p.google.expired ? 'expired' : c.tasksAt ? 'ok' : 'pending', at: c.tasksAt } };
   });
   const persist = () => store.saveCache({
     people: Object.fromEntries(Object.entries(data.people).map(([id, d]) => [id, { events: d.events, eventsAt: d.sync.calendar.at, tasks: d.tasks, tasksAt: d.sync.tasks.at }])),
@@ -79,7 +79,11 @@ function createSync({ store, data, push, google, onSettings = () => {} }) {
         const d = data.people[p.id] || (data.people[p.id] = blank());
         d[kind === 'calendar' ? 'events' : 'tasks'] = v;
         setPerson(p.id, kind, 'ok', Date.now());
-      } catch (e) { setPerson(p.id, kind, known(e) ? e.code : 'failed'); errs.push(e); }   // 그 사람 것만 마지막 값 유지
+      } catch (e) {
+        if (e.code === 'expired') onExpired(p.id);
+        const state = e.code === 'needAuth' && p.google && p.google.expired ? 'expired' : known(e) ? e.code : 'failed';
+        setPerson(p.id, kind, state); errs.push(e);
+      }   // 그 사람 것만 마지막 값 유지
     }));
     persist();
     if (targets.length && errs.length === targets.length) {
@@ -118,3 +122,5 @@ module.exports = { createScheduler, createSync, backoff };
 // 개정 기록 | 2026-11-11 | 일정·메모 1분 주기 | 사용자 결정: 5분→1분(백오프 최대 30분 그대로)
 // 개정 기록 | 2026-11-11 | v1.3 | 언어를 바꾸면 직접 지정 지명의 이름을 새 언어로 갱신 | docs/v1.3-i18n-brief.md
 // 개정 기록 | 2026-11-12 | 사람 여러 명 | 사용자 결정: 일정·메모를 사람별로 받아 data.people[id]에 보관, 한 사람 실패는 그 사람 것만 유지, 백오프는 전원 실패 때만
+
+// 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
