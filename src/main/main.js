@@ -25,6 +25,7 @@ let google = null;
 let health = null;
 let dimmer = null;
 let hotkey = null;
+let updater = null;
 // 렌더러로 보내는 최신 자료 묶음(캐시에서 시작해 갱신 때마다 덮어씀)
 const data = { weather: null, people: {}, sync: {}, health: 'ok', dimOverlay: 0 };
 
@@ -154,6 +155,17 @@ function toggleFullscreen() {
 }
 
 function wireIpc() {
+  ipcMain.handle('update:state', () => ({ ...updater.state(), portable: !!(process.env && process.env.PORTABLE_EXECUTABLE_FILE) }));
+  ipcMain.handle('update:check', () => updater.check());
+  ipcMain.handle('update:download', () => updater.download());
+  ipcMain.handle('update:install', () => {
+    if (updater.state().phase !== 'ready') return updater.state();
+    if (timer.snapshot().phase !== 'idle') return { phase: 'ready', message: 'ui.update.timer' };
+    dimmer.restoreSync();
+    hotkey.dispose();
+    return updater.install();
+  });
+  ipcMain.handle('update:releases', () => shell.openExternal('https://github.com/minki414/desk-clock/releases/latest'));
   ipcMain.handle('app:init', () => ({ settings: store.settings(), data, fullscreen: win.isFullScreen(), timer: timer.snapshot() }));
   ipcMain.handle('settings:set', (_e, patch) => {
     const sig = feedSig();
@@ -240,7 +252,7 @@ function wireIpc() {
     return r.canceled || !r.filePaths[0] ? null : r.filePaths[0];
   });
   ipcMain.handle('health:servers', () => system.serverStates(store.settings().servers));
-  ipcMain.handle('autostart:available', () => !!autostart.pickPath());   // 개발 실행이면 false → 설정창이 토글을 막음
+  ipcMain.handle('autostart:available', () => !!autostart.pickPath(process.env, undefined, app));   // 개발 실행이면 false → 설정창이 토글을 막음
   ipcMain.handle('app:version', () => app.getVersion());
   ipcMain.handle('app:folder', () => shell.openPath(store.dir));
   ipcMain.handle('app:quit', () => app.quit());
@@ -252,6 +264,9 @@ if (!app.requestSingleInstanceLock()) {
   app.on('second-instance', bringToFront);
   app.whenReady().then(() => {
     Menu.setApplicationMenu(null);
+    const { createUpdater } = require('./updater');
+    const { autoUpdater } = require('electron-updater');
+    updater = createUpdater({ autoUpdater, isSupported: () => app.isPackaged && !(process.env && process.env.PORTABLE_EXECUTABLE_FILE), onState: (s) => send('update', s) });
     store = createStore(app.getPath('userData'));
     timer = createTimer({
       onChange: (s) => send('timer', s),
@@ -322,3 +337,4 @@ if (!app.requestSingleInstanceLock()) {
 // 개정 기록 | 2026-11-16 | customHotkeys 목록 배선 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 감사 후속: 상태 복구와 반복 실행 제한 | 사용자 요청
+// 개정 기록 | 2026-11-17 | 수동 업데이트 IPC와 설치 전 정리 | 사용자 요청

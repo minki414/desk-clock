@@ -43,3 +43,18 @@ npm start
 - v1.5 실기기 확인 결과에 따른 수정.
 
 // 개정 기록 | 2026-11-16 | v1.7 사용자 단축키 목록 검증 | 사용자 요청
+
+## v1.8 설치형 릴리스 절차
+
+배포는 NSIS x64 설치형이며 앱 안 업데이트는 정보 탭 버튼으로만 확인합니다. `electron-updater`는 GitHub Releases의 latest.yml로 내려받는 파일의 sha512를 확인합니다. 코드 서명과 publisherName은 사용하지 않습니다.
+
+1. `npm run dist`를 실행하고 완료를 기다립니다. dist에는 `DeskClock-Setup-X.exe`, 같은 이름의 `.blockmap`, `latest.yml` 세 파일을 남깁니다.
+2. 감사와 조정자의 게시 지시 후에만 public-release에 한 커밋으로 묶어 푸시합니다.
+3. `gh release create vX <세 파일> --target <공개 커밋> --title "DeskClock X" --notes-file <릴리스 노트>`로 정식 Latest 릴리스를 만듭니다.
+4. 게시한 latest.yml의 version, path, sha512를 로컬 파일과 대조합니다.
+
+이번 구현 작업에서는 푸시·public-release 조작·릴리스 게시를 실행하지 않습니다. 설치 파일도 이 PC에서 실행하지 않고 내부 app-update.yml·asar와 latest.yml을 정적으로 검증합니다.
+
+자동 실행은 portable 환경 변수가 있으면 그 경로, 설치판은 process.execPath, 개발 실행은 null입니다. 등록 이름 DeskClock은 유지하며 앱 시작 때 켜진 자동 실행을 현재 경로로 다시 등록합니다.
+
+// 개정 기록 | 2026-11-17 | 설치형 릴리스 절차와 정적 검증 | 사용자 요청

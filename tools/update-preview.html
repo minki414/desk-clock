@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>Update panel preview</title>
+<link rel="stylesheet" href="../src/renderer/settings.css">
+<style>body{margin:0;background:#303035}#drawer{width:520px}*{transition:none!important}</style></head>
+<body><div id="scrim" hidden></div><aside id="drawer" hidden></aside>
+<script src="../src/renderer/i18n.js"></script><script src="../src/renderer/keycombo.js"></script>
+<script src="../src/renderer/model.js"></script><script src="../src/renderer/settings.js"></script>
+<script>
+const q = new URLSearchParams(location.search), lang = q.get('lang') || 'ko', phase = q.get('phase') || 'idle';
+const state = { phase, version: '1.8.1', percent: 37, portable: true,
+  notes: ('Release summary: clearer display and improved reliability. 화면 개선과 안정성 향상. 显示及稳定性改进。 ').repeat(20).slice(0, 600) };
+let settings = {lang,people:[],theme:'bauhaus',mode:'light',night:{from:'22:00',to:'07:00'},dim:{enabled:false,min:0},slots:[],customHotkeys:[],servers:[]};
+const api = { version: async()=> '1.8.0', autoStartAvailable: async()=>true, updateState:async()=>state,
+  updateInstall:async()=>({phase:'ready',message:'ui.update.timer'}), onUpdate:()=>{},
+  hotkeyStates:async()=>({}),hotkeySuspend:async()=>({}),setSettings:async p=>(settings={...settings,...p}),
+  updateCheck:async()=>state,updateDownload:async()=>state,updateReleases:()=>{},openFolder:()=>{},quit:()=>{} };
+const drawer = window.ClockSettings.create({api,root:document.querySelector('#drawer'),scrim:document.querySelector('#scrim'),onToggle:()=>{}});
+drawer.update(settings); drawer.open(); document.querySelector('#tab-about').click();
+</script></body></html>
+<!-- // 개정 기록 | 2026-11-17 | 정보 탭 언어·상태 화면 검증용 가짜 API | 사용자 요청 -->

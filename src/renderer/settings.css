@@ -169,3 +169,5 @@
 /* 개정 기록 | 2026-11-16 | 520px 사용자 단축키 목록 레이아웃 | 사용자 요청 */
 
 /* // 개정 기록 | 2026-11-16 | 만료 경고 점과 계정 표시 | 사용자 요청 */
+#drawer .update-panel { min-width: 0; align-items: stretch; } #drawer .update-panel .btn { align-self: flex-start; max-width: 100%; height: auto; min-height: 34px; white-space: normal; } #drawer .update-panel .fd { overflow-wrap: anywhere; } #drawer .update-notes { font-size: 12px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; margin: 0; } #drawer .update-panel progress { width: 100%; height: 4px; }
+/* // 개정 기록 | 2026-11-17 | 업데이트 패널 줄바꿈과 요약 제한 | 사용자 요청 */

@@ -19,6 +19,19 @@
     let places = null;                 // 지명 검색 결과
     let avail = null;                  // 자동 실행 가능 여부(설치본에서만 true)
     let version = '';
+    let updateState = { phase: 'idle' }, portable = false, installing = false;
+    async function installUpdate() {
+      if (installing) return;
+      installing = true;
+      try { updateState = await api.updateInstall(); } finally { installing = false; render(); }
+    }
+    function receiveUpdate(s) {
+      const becameReady = s.phase === 'ready' && updateState.phase !== 'ready';
+      updateState = s;
+      render();
+      if (becameReady) installUpdate();
+    }
+    if (api.onUpdate) api.onUpdate(receiveUpdate);
     let svStates = [];                 // 감시 서버별 상태(true/false/null)
     let svTimer = null, quitTimer = null, quitArmed = false, svSeq = 0;
     let stopRec = () => {};            // 진행 중인 '실행 후 보낼 키' 녹화를 끝냄(없으면 아무 일도 안 함)
@@ -445,6 +458,19 @@
     }
 
     // ----- 탭: 정보 -----
+    function updatePanel() {
+      const s = updateState, p = s.phase;
+      const action = ['idle', 'latest', 'error'].includes(p) ? () => api.updateCheck().then(receiveUpdate) : p === 'available' ? () => api.updateDownload().then(receiveUpdate) : p === 'ready' ? installUpdate : p === 'unsupported' ? () => api.updateReleases() : null;
+      const label = { idle: 'check', latest: 'again', error: 'retry', available: 'download', ready: 'install', unsupported: 'github', checking: 'checking', downloading: 'downloading', installing: 'installing' }[p];
+      const b = btn(U(`update.${label}`, { percent: s.percent || 0 }), action || (() => {}));
+      b.disabled = !action;
+      return h('section', { class: 'field stack update-panel' },
+        h('span', { class: 'fn', textContent: U('update.title') }),
+        h('p', { class: 'fd', role: 'status', textContent: p === 'idle' ? '' : U(`update.${s.message === 'ui.update.timer' ? 'timer' : p}`, { version: s.version || '', percent: s.percent || 0 }) }),
+        p === 'available' && s.notes ? h('p', { class: 'update-notes', textContent: s.notes }) : null,
+        p === 'unsupported' && portable ? hint(U('update.portable')) : null,
+        p === 'downloading' ? h('progress', { max: 100, value: s.percent || 0, 'aria-label': U('update.title') }) : null, b);
+    }
     function about() {
       const q = h('button', { type: 'button', class: 'btn danger wide', textContent: U('quit'), on: { click: () => {
         if (!quitArmed) {
@@ -455,6 +481,7 @@
       } } });
       return [
         h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('version') }))), h('span', { class: 'val', textContent: version || '—' })),
+        updatePanel(),
         h('section', { class: 'field inline' }, h('div', { class: 'fh' }, h('div', { class: 'ft' }, h('span', { class: 'fn', textContent: U('folder') }))), btn(U('folderOpen'), () => api.openFolder())),
         h('section', { class: 'field stack' }, h('div', { class: 'fh' }, h('p', { class: 'fd', textContent: U('quitNote') })), q),
       ];
@@ -506,6 +533,7 @@
       root.querySelector('[role=tab][aria-selected=true]').focus({ preventScroll: true });
       if (avail === null) api.autoStartAvailable().then((v) => { avail = !!v; render(); });
       if (!version) api.version().then((v) => { version = v; if (tab === 'about') render(); });
+      if (api.updateState) api.updateState().then((s) => { portable = !!s.portable; receiveUpdate(s); });
       watchServers();
     }
     function close() {
@@ -556,3 +584,4 @@
 // 개정 기록 | 2026-11-16 | 사용자 단축키 목록 UI 3언어 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 감사 후속: 상태 복구와 반복 실행 제한 | 사용자 요청
+// 개정 기록 | 2026-11-17 | 정보 탭 업데이트 흐름 | 사용자 요청

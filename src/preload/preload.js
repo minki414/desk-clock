@@ -6,6 +6,12 @@ const on = (ch) => (cb) => { ipcRenderer.on(ch, (_e, v) => cb(v)); };
 
 contextBridge.exposeInMainWorld('clockApi', {
   init: invoke('app:init'),
+  updateState: invoke('update:state'),
+  updateCheck: invoke('update:check'),
+  updateDownload: invoke('update:download'),
+  updateInstall: invoke('update:install'),
+  updateReleases: invoke('update:releases'),
+  onUpdate: on('update'),
   setSettings: invoke('settings:set'),
   launch: invoke('launch'),
   toggleFullscreen: invoke('window:toggleFullscreen'),
@@ -46,3 +52,4 @@ contextBridge.exposeInMainWorld('clockApi', {
 // 개정 기록 | 2026-11-16 | 전체화면 전환 버튼과 창 상태 전달 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | customHotkeys 목록 배선 | 사용자 요청
+// 개정 기록 | 2026-11-17 | 업데이트 API 노출 | 사용자 요청

@@ -31,11 +31,19 @@ async function boot({ startAt = 10000 } = {}) {
     disconnect: async () => {connected=false;},
   };
   const shortcut = { register: (a,cb) => { if(taken)return false;registered.set(a,cb);return true; }, unregister: a => registered.delete(a) };
+  let timerPhase = 'idle';
+  app.isPackaged = true;
+  const autoUpdater = new EventEmitter();
+  autoUpdater.checkForUpdates = async () => {};
+  autoUpdater.downloadUpdate = async () => {};
+  autoUpdater.quitAndInstall = (...args) => calls.push(['install', ...args]);
   const modules = {
+    './updater': require('../src/main/updater'),
+    'electron-updater': { autoUpdater },
     './hotkey': require('../src/main/hotkey'),
     './hotkeyActions': require('../src/main/hotkeyActions'),
     electron: { app, BrowserWindow: Window, Menu: { setApplicationMenu() {} }, ipcMain: { handle: (n,fn) => handlers[n]=fn }, powerSaveBlocker: { start() {} }, powerMonitor:new EventEmitter(), shell:{},dialog:{},safeStorage:{},globalShortcut:shortcut },
-    './store': { createStore: () => store }, './timer': { createTimer: () => ({ snapshot: () => ({phase:'idle'}) }) },
+    './store': { createStore: () => store }, './timer': { createTimer: () => ({ snapshot: () => ({phase:timerPhase}) }) },
     './launcher': {launchSlot:async slot=>{calls.push(['launch',slot.key]);return {ok:true};}}, './foreground': { shouldReturn:()=>false,createForeground: () => ({ cancelWait: () => calls.push(['cancel']),allowSetForegroundWindow(){},getSlotWindow:()=>null,isWindowAlive:()=>false,decideLaunch:()=> 'launch',watch(){},waitStable(){} }) },
     './system': { createHealth: () => ({start(){},check(){}}), createDimmer: () => ({start(){},tick(){},restoreSync(){}}),
       affectOtherWindows:(a,pid)=>{calls.push(['others',a,pid]);return 2;},volume:up=>calls.push(['volume',up]),mediaKey:a=>calls.push(['media',a]),screenOff:()=>calls.push(['screenOff']) },
@@ -45,8 +53,21 @@ async function boot({ startAt = 10000 } = {}) {
   const main = path.join(__dirname,'../src/main/main.js');
   vm.runInNewContext(fs.readFileSync(main,'utf8'), { require: n => n in modules ? modules[n] : require(n.startsWith('../renderer/') ? path.join(__dirname,'../src/renderer',path.basename(n)) : n), __dirname:path.dirname(main), setTimeout:()=>0, Date:ClockDate, console, process:{pid:17} });
   await Promise.resolve(); await Promise.resolve();
-  return { handlers, sent, calls, registered, win, app, store, syncOptions, googleOptions, google,advance:ms=>clock+=ms,setTaken:v=>taken=v };
+  return { handlers, sent, calls, registered, win, app, store, syncOptions, googleOptions, google, autoUpdater, setTimerPhase: p => timerPhase = p, advance:ms=>clock+=ms,setTaken:v=>taken=v };
 }
+
+test('update install waits for running paused and ringing timers', async () => {
+  const b = await boot();
+  await b.handlers['update:check'](); b.autoUpdater.emit('update-available', { version: '1.8.1' });
+  await b.handlers['update:download'](); b.autoUpdater.emit('update-downloaded');
+  for (const phase of ['running', 'paused', 'ringing']) {
+    b.setTimerPhase(phase);
+    assert.equal(b.handlers['update:install']().message, 'ui.update.timer');
+    assert.ok(!b.calls.some(c => c[0] === 'install'));
+  }
+  b.setTimerPhase('idle'); b.handlers['update:install']();
+  assert.deepEqual(b.calls.at(-1), ['install', true, true]); assert.equal(b.registered.size, 0);
+});
 
 test('suspend returns states after re-registration fails',async()=>{
   const b=await boot();b.handlers['hotkey:suspend'](null,true);b.setTaken(true);
@@ -170,3 +191,4 @@ test('connect account lookup preserves expiry reported by the common callback', 
 // 개정 기록 | 2026-11-16 | 감사 후속: 상태 복구와 반복 실행 제한 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 슬롯 중복 실행 판정을 메인으로 통합 | 사용자 요청
+// 개정 기록 | 2026-11-17 | 업데이터 격리 주입 | 사용자 요청

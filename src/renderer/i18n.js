@@ -221,6 +221,16 @@
   };
 
   const dict = { ko, zh, en };
+  const updateText = {
+    ko: ['업데이트', '업데이트 확인', '다시 확인', '다시 시도', '업데이트', '지금 다시 시작해 업데이트', '깃허브에서 받기', '확인 중…', '내려받는 중 {percent}%', '다시 시작 중…', '최신 버전입니다', '새 버전 {version}이 있습니다', '타이머가 끝난 뒤 다시 눌러 주세요', '업데이트를 확인하지 못했습니다(인터넷 연결 확인)', 'portable·개발 실행에서는 앱 안 업데이트를 쓸 수 없습니다', '1.8.0부터는 설치판을 쓰면 여기서 바로 업데이트할 수 있습니다'],
+    zh: ['更新', '检查更新', '再次检查', '重试', '更新', '立即重启并更新', '从 GitHub 下载', '正在检查…', '正在下载 {percent}%', '正在重启…', '已是最新版本', '新版本 {version} 可用', '请在计时器结束后重试', '无法检查更新（请检查网络连接）', '便携版及开发模式不支持应用内更新', '从 1.8.0 开始，安装版可在此直接更新'],
+    en: ['Updates', 'Check for updates', 'Check again', 'Retry', 'Update', 'Restart now to update', 'Download from GitHub', 'Checking…', 'Downloading {percent}%', 'Restarting…', 'You are up to date', 'Version {version} is available', 'Please try again after the timer ends', 'Could not check for updates (check your internet connection)', 'In-app updates are unavailable in portable and development runs', 'From 1.8.0, use the installer to update directly here'],
+  };
+  const updateKeys = ['title', 'check', 'again', 'retry', 'download', 'install', 'github', 'checking', 'downloading', 'installing', 'latest', 'available', 'timer', 'error', 'unsupported', 'portable'];
+  for (const lang of Object.keys(dict)) {
+    updateKeys.forEach((key, i) => { dict[lang][`ui.update.${key}`] = updateText[lang][i]; });
+    dict[lang]['ui.update.ready'] = updateText[lang][12];
+  }
   // 언어 선택 버튼은 어느 언어 화면에서도 자기 언어로 보임
   const langs = [['ko', '한국어'], ['zh', '中文'], ['en', 'English']];
   const norm = (lang) => (dict[lang] ? lang : 'ko');
@@ -317,3 +327,4 @@
 // 개정 기록 | 2026-11-16 | 구글 만료 감지와 간편 재로그인 | 사용자 요청
 
 // 개정 기록 | 2026-11-16 | 사용자 단축키 목록 UI 3언어 | 사용자 요청
+// 개정 기록 | 2026-11-17 | 업데이트 3언어 문구 | 사용자 요청
